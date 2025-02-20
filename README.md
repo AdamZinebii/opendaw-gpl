@@ -25,3 +25,11 @@ We are committed to transparency and community-driven development. The source co
 ## Get Involved
 
 We welcome contributions from developers, musicians, educators, and enthusiasts. To learn more about how you can participate, visit our [Contribute](https://opendaw.org/contribute) page.
+
+## Links
+
+* [openDAW on Discord](https://discord.gg/B3C664wn)
+* [openDAW on Patreon](https://www.patreon.com/join/openDAW)
+* [openDAW on ko-fi](https://ko-fi.com/opendaw)
+* [opendaw.org (website)](https://opendaw.org)
+* [opendaw.studio (prototype)](https://opendaw.studio)
