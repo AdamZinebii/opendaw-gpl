@@ -20,7 +20,7 @@ Watch Polarity's Video *"there's a new FREE DAW in town"*
 
 ## Open-Source Release
 
-We are committed to transparency and community-driven development. The source code for openDAW will be made available under an open-source license with the release of version 1.0 by the end of the year.
+We are committed to transparency and community-driven development. The source code for openDAW will be made available under an open-source license on June, 6th 2025.
 
 ## Get Involved
 
