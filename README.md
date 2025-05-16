@@ -14,11 +14,12 @@ Watch Polarity's Video *"there's a new FREE DAW in town"*
 
 ## Goals
 
-- **Web-Based Platform**: Create and edit music directly from your browser.
-- **User-Friendly Interface**: Intuitive design for both beginners and professionals.
-- **Collaborative Tools**: Work seamlessly with others in real-time, building a community of shared creativity.
-- **Modular Systems**: Create your own devices and tools to extend the built-in feature-set.
-- **Educational Resources**: Access tutorials and guides to enhance your music production skills.
+* Multitrack audio and MIDI editing
+* Built-in instruments and effects
+* Clip- and region-based timeline workflows
+* Automation, quantization, groove control
+* Sample management and recording
+* Browser-based access with optional offline mode
 
 ## Get Involved
 
