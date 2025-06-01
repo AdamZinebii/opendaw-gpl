@@ -1,6 +1,8 @@
 # openDAW
 
-**openDAW** is a next-generation web-based Digital Audio Workstation (DAW) designed to democratize music production. Our mission is to make high-quality music creation accessible to everyone, regardless of their background or resources.
+**openDAW** is a next-generation web-based Digital Audio Workstation (DAW) designed to democratize music production and
+to resurface the process of making music. Our mission is to make high-quality music creation accessible to everyone,
+regardless of their background or resources.
 
 ## Open-Source Release
 
