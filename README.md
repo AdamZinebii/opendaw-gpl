@@ -33,8 +33,8 @@ Huge thanks to our [ambassadors](https://opendaw.org/ambassadors), whose dedicat
 ### Repositories
 
 * [openDAW](https://github.com/andremichelle/opendaw)
-* ~~[openDAW · studio](https://github.com/andremichelle/opendaw-studio)~~
-* ~~[openDAW · library (submodule)](https://github.com/andremichelle/opendaw-lib)~~
+* ~~[openDAW · studio](https://github.com/andremichelle/opendaw-studio)~~ (TOMORROW)
+* ~~[openDAW · library (submodule)](https://github.com/andremichelle/opendaw-lib)~~ (TOMORROW)
 
 For more information about our mission and goals, please join our [Discord](https://discord.gg/B3C664wn), visit
 our [official website](https://opendaw.org) and test our current [prototype](https://opendaw.studio/). Please consider
