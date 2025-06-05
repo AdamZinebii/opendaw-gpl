@@ -23,7 +23,7 @@ and [@xnstad](https://github.com/xnstad) for testing the repositories and identi
 openDAW!
 
 Special shout-out to the biggest bug hunters: [kanaris](https://kanaris.net/)
-and [BeatMax Prediction](https://soundcloud.com/beatmax_prediction). Your relentless attention to detail made a huge
+and [BeatMax Prediction](https://linktr.ee/beatmax_prediction). Your relentless attention to detail made a huge
 difference!
 
 Huge thanks to our [ambassadors](https://opendaw.org/ambassadors), whose dedication and outreach amplify our mission!
