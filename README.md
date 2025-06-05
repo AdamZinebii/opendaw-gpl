@@ -22,9 +22,13 @@ you [@ccswdavidson](https://github.com/ccswdavidson), [@Chaosmeister](https://gi
 and [@xnstad](https://github.com/xnstad) for testing the repositories and identifying issues during the installation of
 openDAW!
 
-Special thanks to our [ambassadors](https://opendaw.org/ambassadors), whose dedication and outreach amplify our mission.
+Special shout-out to the biggest bug hunters: [kanaris](https://kanaris.net/)
+and [BeatMax Prediction](https://soundcloud.com/beatmax_prediction). Your relentless attention to detail made a huge
+difference!
 
-Let’s keep building together!
+Huge thanks to our [ambassadors](https://opendaw.org/ambassadors), whose dedication and outreach amplify our mission!
+
+**Let’s keep building together!**
 
 ### Repositories
 
@@ -45,7 +49,7 @@ Watch Polarity's Video *"there's a new FREE DAW in town"*
 We welcome contributions from developers, musicians, educators, and enthusiasts. To learn more about how you can
 participate, visit our [Contribute](https://opendaw.org/contribute) page.
 
-## More Links
+## Links
 
 * [opendaw.studio (prototype)](https://opendaw.studio)
 * [opendaw.org (website)](https://opendaw.org)
