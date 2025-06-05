@@ -10,10 +10,15 @@ a strong focus on **education** and hands-on **learning**.
 
 We are committed to transparency and community-driven development. The source code for openDAW is available under GPL3.
 
+**COMING UP TOMORROW!**
+
 ## Huge Shoutout To The Incredible openDAW Community!
 
 To everyone who has contributed feedback, reported bugs, suggested improvements, or helped spread the word — thank you!
-Your support is shaping openDAW into something truly powerful.
+Your support is shaping openDAW into something truly powerful!
+
+Thank you @ccswdavidson, @Chaosmeister, @jeffreylouden, @solsos, @TheRealSyler, @Trinitou, and @xnstad for testing the
+repositories and identifying issues during the installation of openDAW!
 
 Special thanks to our [ambassadors](https://opendaw.org/ambassadors), whose dedication and outreach amplify our mission.
 
