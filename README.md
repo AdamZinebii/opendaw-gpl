@@ -8,7 +8,7 @@ a strong focus on **education** and hands-on **learning**.
 
 ## Open-Source
 
-We are committed to transparency and community-driven development. The source code for openDAW is available under GPL3.
+We are committed to transparency and community-driven development. The source code for openDAW is available under GPL3. (Links below)
 
 ## Huge Shoutout To The Incredible openDAW Community!
 
