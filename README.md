@@ -4,6 +4,11 @@
 and to **resurface the process of making music** by making **high-quality** creation tools accessible to everyone, with
 a strong focus on **education** and hands-on **learning**.
 
+For more information about our mission and goals, please join our [Discord](https://discord.opendaw.studio), visit
+our [official website](https://opendaw.org) and test our current [prototype](https://opendaw.studio/). 
+
+Please consider supporting this project on [Patreon](https://www.patreon.com/join/openDAW) or [ko-fi](https://ko-fi.com/opendaw)
+
 ![studio-teaser.png](assets/studio-teaser.png)
 
 ## Open-Source
@@ -28,7 +33,47 @@ difference!
 
 Huge thanks to our [ambassadors](https://opendaw.org/ambassadors), whose dedication and outreach amplify our mission!
 
+## And big hugs to all our supporters!
+
+### openDAW Top Supporter — $100.00  
+- Polarity
+
+### openDAW Visionary — $25.00  
+- kanaris  
+- Stephen Tai  
+- Thad Guidry  
+- Pathfinder  
+- One Sound Every Day (santino)
+
+### openDAW Supporter — $5.00  
+- Cal Lycus  
+- Jetdarc  
+- Truls Enstad  
+- p07a  
+- Ynot Etluhcs  
+- Mats Gisselson  
+- Dado  
+- centomila  
+- Ola  
+- SKYENCE  
+- BeatMax_Prediction  
+- Kim T  
+- Nyenoidz  
+- Bruce Hunter  
+- Steve Meiers  
+- 4ohm  
+- Yito  
+- Shawn Lukas  
+- Tommes  
+- David Thompson  
+- Harry Gillich
+
+### openDAW Custom Pledge
+- lokomotywa ($2.47)
+
 **Let’s keep building together!**
+
+---
 
 ### Repositories
 
@@ -36,9 +81,7 @@ Huge thanks to our [ambassadors](https://opendaw.org/ambassadors), whose dedicat
 * [openDAW · studio](https://github.com/andremichelle/opendaw-studio)
 * [openDAW · library (submodule)](https://github.com/andremichelle/opendaw-lib)
 
-For more information about our mission and goals, please join our [Discord](https://discord.opendaw.studio), visit
-our [official website](https://opendaw.org) and test our current [prototype](https://opendaw.studio/). Please consider
-supporting this project on [Patreon](https://www.patreon.com/join/openDAW) or [ko-fi](https://ko-fi.com/opendaw).
+---
 
 [![Custom Caption: Watch the Demo](https://img.youtube.com/vi/VPTXeJY6Eaw/0.jpg)](https://www.youtube.com/watch?v=VPTXeJY6Eaw)
 
