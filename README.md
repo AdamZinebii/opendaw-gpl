@@ -67,6 +67,7 @@ Huge thanks to our [ambassadors](https://opendaw.org/ambassadors), whose dedicat
 - Tommes  
 - David Thompson  
 - Harry Gillich
+- OxVolt
 
 ### openDAW Custom Pledge
 - lokomotywa ($2.47)
