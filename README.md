@@ -28,6 +28,8 @@ We are committed to transparency and community-driven development.
 
 The source code for openDAW is available under GPL3 (links below).
 
+If you are looking for a specific feature to implement, read the [wanted](https://github.com/andremichelle/openDAW/wiki/Wanted) page.
+
 ## Huge Shoutout To The Incredible openDAW Community!
 
 To everyone who has contributed feedback, reported bugs, suggested improvements, or helped spread the word — thank you!
