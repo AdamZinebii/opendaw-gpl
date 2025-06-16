@@ -4,6 +4,17 @@
 and to **resurface the process of making music** by making **high-quality** creation tools accessible to everyone, with
 a strong focus on **education** and hands-on **learning**.
 
+**openDAW** is designed with a strong focus on separation of concerns:
+* The studio runs independently of any specific service infrastructure.
+* There is no required login, no vendor lock-in.
+* Users can work immediately in the browser without creating an account.
+
+**openDAW** will be extendable through third party integrations with cloud storage, educational platforms, commercial services or institutional infrastructure. Schools, universities, sample providers or music technology companies will be able to connect their own policies, storage systems and user bases.
+
+This architecture will support a sustainable and future oriented ecosystem. The studio will remain open and accessible, while communities and businesses will be free to build services around it.
+
+The long term goal is to reach the level of professional desktop DAWs in terms of capability and performance. The core values are extendibility, sustainability, independence, openness, and a clear separation of concerns between software and service.
+
 For more information about our mission and goals, please join our [Discord](https://discord.opendaw.studio), visit
 our [official website](https://opendaw.org) and test our current [prototype](https://opendaw.studio/). 
 
