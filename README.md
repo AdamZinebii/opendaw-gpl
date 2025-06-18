@@ -30,6 +30,14 @@ The source code for openDAW is available under GPL3 (links below).
 
 If you are looking for a specific feature to implement, read the [wanted](https://github.com/andremichelle/openDAW/wiki/Wanted) page.
 
+### Repositories
+
+* [openDAW](https://github.com/andremichelle/opendaw)
+* [openDAW · studio](https://github.com/andremichelle/opendaw-studio)
+* [openDAW · library (submodule)](https://github.com/andremichelle/opendaw-lib)
+
+---
+
 ## Huge Shoutout To The Incredible openDAW Community!
 
 To everyone who has contributed feedback, reported bugs, suggested improvements, or helped spread the word — thank you!
@@ -86,14 +94,6 @@ Huge thanks to our [ambassadors](https://opendaw.org/ambassadors), whose dedicat
 - lokomotywa ($2.47)
 
 **Let’s keep building together!**
-
----
-
-### Repositories
-
-* [openDAW](https://github.com/andremichelle/opendaw)
-* [openDAW · studio](https://github.com/andremichelle/opendaw-studio)
-* [openDAW · library (submodule)](https://github.com/andremichelle/opendaw-lib)
 
 ---
 
