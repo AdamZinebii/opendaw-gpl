@@ -54,9 +54,7 @@ difference!
 
 Huge thanks to our [ambassadors](https://opendaw.org/ambassadors), whose dedication and outreach amplify our mission!
 
-## And big hugs to all our supporters!
-
-[Find them here.](https://opendaw.org/contribute)
+[And big hugs to all our supporters!](https://opendaw.org/contribute)
 
 ---
 
