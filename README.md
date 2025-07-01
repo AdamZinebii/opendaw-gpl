@@ -56,44 +56,7 @@ Huge thanks to our [ambassadors](https://opendaw.org/ambassadors), whose dedicat
 
 ## And big hugs to all our supporters!
 
-### openDAW Top Supporter — $100.00  
-- Polarity
-
-### openDAW Visionary — $25.00  
-- kanaris  
-- Stephen Tai  
-- Thad Guidry  
-- Pathfinder  
-- One Sound Every Day (santino)
-
-### openDAW Supporter — $5.00  
-- Cal Lycus  
-- Jetdarc  
-- Truls Enstad  
-- p07a  
-- Ynot Etluhcs  
-- Mats Gisselson  
-- Dado  
-- centomila  
-- Ola  
-- SKYENCE  
-- BeatMax_Prediction  
-- Kim T  
-- Nyenoidz  
-- Bruce Hunter  
-- Steve Meiers  
-- 4ohm  
-- Yito  
-- Shawn Lukas  
-- Tommes  
-- David Thompson  
-- Harry Gillich
-- OxVolt
-
-### openDAW Custom Pledge
-- lokomotywa ($2.47)
-
-**Let’s keep building together!**
+[Find them here.](https://opendaw.org/contribute)
 
 ---
 
