@@ -95,8 +95,7 @@ Huge thanks to our [ambassadors](https://opendaw.org/ambassadors), whose dedicat
 
 ### Prepare, Clone, Installation, and Run
 
-openDAW tries to avoid external libraries and frameworks. Following is a list of the internal core libraries and their
-dependencies. This is a list of the external libraries we currently use in the web studio:
+openDAW tries to avoid external libraries and frameworks. Following is a list of the external libraries we currently use in the web studio:
 
 * [jszip](https://www.npmjs.com/package/jszip) (for openDAW project bundle file)
 * [markdown-it](https://www.npmjs.com/package/markdown-it) + [markdown-it-table](https://www.npmjs.com/package/markdown-it-table) (for help pages)
