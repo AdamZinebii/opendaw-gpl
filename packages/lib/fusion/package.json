@@ -1,6 +1,6 @@
 {
   "name": "@opendaw/lib-fusion",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -18,12 +18,12 @@
     "test": "echo \"No tests to run\""
   },
   "dependencies": {
-    "@opendaw/lib-box": "^0.0.0",
-    "@opendaw/lib-runtime": "^0.0.0",
-    "@opendaw/lib-std": "^0.0.0"
+    "@opendaw/lib-box": "^0.0.1",
+    "@opendaw/lib-runtime": "^0.0.1",
+    "@opendaw/lib-std": "^0.0.1"
   },
   "devDependencies": {
-    "@opendaw/eslint-config": "^0.0.0",
-    "@opendaw/typescript-config": "^0.0.0"
+    "@opendaw/eslint-config": "^0.0.1",
+    "@opendaw/typescript-config": "^0.0.1"
   }
 }
