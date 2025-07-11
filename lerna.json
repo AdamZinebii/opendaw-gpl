@@ -4,7 +4,9 @@
   "npmClient": "npm",
   "command": {
     "publish": {
-      "conventionalCommits": true
+      "conventionalCommits": true,
+      "registry": "https://registry.npmjs.org/",
+      "access": "public"
     }
   },
   "packages": [

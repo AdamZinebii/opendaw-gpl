@@ -1,6 +1,7 @@
 {
   "name": "@opendaw/lib-jsx",
   "version": "0.0.3",
+  "license": "LGPL-3.0-or-later",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -25,5 +26,5 @@
     "@opendaw/eslint-config": "^0.0.3",
     "@opendaw/typescript-config": "^0.0.3"
   },
-  "gitHead": "a014f3d36189a96266fc553ceeddf7fe0d97c116"
+  "gitHead": "ae2a6095e2c7a6e56cb7238037868e027bb8b21f"
 }
