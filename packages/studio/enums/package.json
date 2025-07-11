@@ -1,6 +1,6 @@
 {
   "name": "@opendaw/studio-enums",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "license": "LGPL-3.0-or-later",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -19,8 +19,8 @@
     "test": "echo \"No tests to run\""
   },
   "devDependencies": {
-    "@opendaw/eslint-config": "^0.0.3",
-    "@opendaw/typescript-config": "^0.0.3"
+    "@opendaw/eslint-config": "^0.0.4",
+    "@opendaw/typescript-config": "^0.0.4"
   },
   "gitHead": "ae2a6095e2c7a6e56cb7238037868e027bb8b21f"
 }
