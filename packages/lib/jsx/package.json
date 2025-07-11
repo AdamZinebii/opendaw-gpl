@@ -1,0 +1,28 @@
+{
+  "name": "@opendaw/lib-jsx",
+  "version": "0.0.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist/**/*"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint \"**/*.ts\"",
+    "test": "echo \"No tests to run\""
+  },
+  "dependencies": {
+    "@opendaw/lib-dom": "^0.0.0",
+    "@opendaw/lib-std": "^0.0.0"
+  },
+  "devDependencies": {
+    "@opendaw/eslint-config": "^0.0.0",
+    "@opendaw/typescript-config": "^0.0.0"
+  }
+}

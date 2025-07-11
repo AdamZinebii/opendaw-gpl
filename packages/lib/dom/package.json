@@ -1,0 +1,29 @@
+{
+  "name": "@opendaw/lib-dom",
+  "version": "0.0.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist/**/*"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint \"**/*.ts\"",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@opendaw/lib-runtime": "^0.0.0",
+    "@opendaw/lib-std": "^0.0.0",
+    "@types/wicg-file-system-access": "^2023.10.6"
+  },
+  "devDependencies": {
+    "@opendaw/eslint-config": "^0.0.0",
+    "@opendaw/typescript-config": "^0.0.0"
+  }
+}

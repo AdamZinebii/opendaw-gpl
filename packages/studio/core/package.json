@@ -1,0 +1,43 @@
+{
+  "name": "@opendaw/studio-core",
+  "version": "0.0.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./engine-processor.js": "./dist/engine-processor.js",
+    "./meter-processor.js": "./dist/meter-processor.js",
+    "./recording-processor.js": "./dist/recording-processor.js"
+  },
+  "files": [
+    "dist/**/*",
+    "dist/engine-processor.js",
+    "dist/meter-processor.js",
+    "dist/recording-processor.js"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint \"**/*.ts\"",
+    "test": "echo \"No tests to run\""
+  },
+  "dependencies": {
+    "@opendaw/lib-box": "^0.0.0",
+    "@opendaw/lib-dom": "^0.0.0",
+    "@opendaw/lib-dsp": "^0.0.0",
+    "@opendaw/lib-fusion": "^0.0.0",
+    "@opendaw/lib-runtime": "^0.0.0",
+    "@opendaw/lib-std": "^0.0.0",
+    "@opendaw/studio-adapters": "^0.0.0",
+    "@opendaw/studio-boxes": "^0.0.0",
+    "@opendaw/studio-enums": "^0.0.0"
+  },
+  "devDependencies": {
+    "@opendaw/eslint-config": "^0.0.0",
+    "@opendaw/typescript-config": "^0.0.0",
+    "@opendaw/studio-core-processors": "^0.0.0",
+    "@opendaw/studio-forge-boxes": "^0.0.0"
+  }
+}

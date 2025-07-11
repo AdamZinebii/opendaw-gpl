@@ -1,0 +1,34 @@
+{
+  "name": "@opendaw/studio-sdk",
+  "version": "0.0.0",
+  "license": "GPL-3.0-or-later",
+  "description": "One-line installer for the complete OpenDAW Studio tool-chain",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/andremichelle/opendaw"
+  },
+  "keywords": [
+    "opendaw",
+    "audio-dev",
+    "daw-sdk",
+    "web-audio",
+    "music-apps",
+    "typescript",
+    "synth",
+    "fx"
+  ],
+  "files": [
+    "README.md"
+  ],
+  "dependencies": {
+    "@opendaw/lib-box": "^0.0.0",
+    "@opendaw/lib-dsp": "^0.0.0",
+    "@opendaw/lib-fusion": "^0.0.0",
+    "@opendaw/lib-runtime": "^0.0.0",
+    "@opendaw/lib-std": "^0.0.0",
+    "@opendaw/studio-adapters": "^0.0.0",
+    "@opendaw/studio-boxes": "^0.0.0",
+    "@opendaw/studio-core": "^0.0.0",
+    "@opendaw/studio-enums": "^0.0.0"
+  }
+}

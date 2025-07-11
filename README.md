@@ -17,6 +17,21 @@ We are committed to transparency and community-driven development.
 
 The source code for openDAW is available under GPL3 (links below).
 
+### Built on Trust and Transparency
+
+**openDAW stands for radical simplicity and respect.**
+
+- **No SignUp**
+- **No Tracking**
+- **No Cookie Banners**
+- **No User Profiling**
+- **No Terms & Conditions**
+- **No Ads**
+- **No Paywalls**
+- **No Data Mining**
+
+**Just a free, open-source DAW in your browser.**
+
 ## Huge Shoutout To The Incredible openDAW Community!
 
 To everyone who has contributed feedback, reported bugs, suggested improvements, or helped spread the word — thank you!
@@ -35,10 +50,8 @@ Huge thanks to our [ambassadors](https://opendaw.org/ambassadors), whose dedicat
 
 ## And big hugs to all our supporters!
 
-### openDAW Top Supporter — $100.00  
-- Polarity
-
 ### openDAW Visionary — $25.00  
+- Polarity
 - kanaris  
 - Stephen Tai  
 - Thad Guidry  
@@ -71,15 +84,46 @@ Huge thanks to our [ambassadors](https://opendaw.org/ambassadors), whose dedicat
 ### openDAW Custom Pledge
 - lokomotywa ($2.47)
 
-**Let’s keep building together!**
-
 ---
 
 ### Repositories
 
 * [openDAW](https://github.com/andremichelle/opendaw)
-* [openDAW · studio](https://github.com/andremichelle/opendaw-studio)
-* [openDAW · library (submodule)](https://github.com/andremichelle/opendaw-lib)
+
+### Prepare, Clone, Installation, and Run
+
+openDAW tries to avoid external libraries and frameworks. Following is a list of the internal core libraries and their
+dependencies. This is a list of the external libraries we currently use in the web studio:
+
+* [jszip](https://www.npmjs.com/package/jszip) (for openDAW project bundle file)
+* [markdown-it](https://www.npmjs.com/package/markdown-it) + [markdown-it-table](https://www.npmjs.com/package/markdown-it-table) (for help pages)
+
+Before starting, ensure you have the following installed on your system:
+
+- [Git](https://git-scm.com/) is required for cloning the repository and managing submodules.
+- [mkcert](https://github.com/FiloSottile/mkcert#installation) is required to create a certificate for developing with
+  https protocol.
+- [Node.js](nodejs.org) version **>= 23**. This is necessary for running the development server and installing
+  dependencies.
+- [Sass](https://sass-lang.com/) While Sass is handled internally during the development process, you will need to
+  ensure you have the
+  binaries available in your environment if used outside the build system.
+- [TypeScript](https://www.typescriptlang.org/)
+- [OpenSSL](https://chocolatey.org/) For generating local development certificates (), OpenSSL needs to be installed on
+  your system. Most Linux/macOS systems have OpenSSL pre-installed.
+
+### Clone
+
+`git clone https://github.com/andremichelle/opendaw.git && cd opendaw`
+
+### Installation
+
+* `npm run cert` (only for the very first time)
+* `npm run clean` (to revert to clean slate, removes all `node_modules` and `dist` folders)
+* `npm install` (for the first time and after `npm run clean`)
+* `npm run build` (for the first time and after `npm run clean`)
+* `npm run dev:studio` | `npm run dev:headless` (start dev server)
+* Navigate to https://localhost:8080 (port is important > cors sample api)
 
 ---
 
@@ -91,6 +135,19 @@ Watch Polarity's Video *"there's a new FREE DAW in town"*
 
 We welcome contributions from developers, musicians, educators, and enthusiasts. To learn more about how you can
 participate, visit our [Contribute](https://opendaw.org/contribute) page.
+
+### What We Are Looking For:
+
+1. **Offline desktop build (e.g., via Tauri) or a standalone installable PWA** — offer offline capability.
+2. **Cloud-agnostic project storage** — a facade layer that lets users plug in different cloud services (e.g., Drive,
+   S3, Dropbox) for projects and sample libraries.
+3. **Live remote collaboration** — real-time session sharing and sync so multiple users can edit the same project
+   concurrently.
+4. **AI manual assistant** — an embedded agent that answers context-aware questions and guides users through features as
+   they work.
+5. **AI-powered stem splitting** — integrated source-separation to extract vocals, drums, and other stems directly
+   inside the DAW.
+6. **Import and Export** - Contribute every possible file format IO
 
 ## Links
 

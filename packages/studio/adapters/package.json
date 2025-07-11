@@ -1,0 +1,33 @@
+{
+  "name": "@opendaw/studio-adapters",
+  "version": "0.0.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist/**/*"
+  ],
+  "scripts": {
+    "generate-exports": "node generate-exports.mjs",
+    "build": "npm run generate-exports && tsc",
+    "lint": "eslint \"**/*.ts\"",
+    "test": "echo \"No tests to run\""
+  },
+  "dependencies": {
+    "@opendaw/lib-box": "^0.0.0",
+    "@opendaw/lib-dsp": "^0.0.0",
+    "@opendaw/lib-runtime": "^0.0.0",
+    "@opendaw/lib-std": "^0.0.0",
+    "@opendaw/studio-boxes": "^0.0.0",
+    "@opendaw/studio-enums": "^0.0.0"
+  },
+  "devDependencies": {
+    "@opendaw/eslint-config": "^0.0.0",
+    "@opendaw/typescript-config": "^0.0.0"
+  }
+}

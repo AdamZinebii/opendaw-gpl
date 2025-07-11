@@ -1,0 +1,28 @@
+{
+  "name": "@opendaw/lib-box-forge",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint \"**/*.ts\"",
+    "clear": "rm -rf ./test/gen/*",
+    "forge": "npx tsx test/schema.ts",
+    "format": "prettier --write \"./test/gen/**/*.ts\" --ignore-path /dev/null",
+    "gen": "npm run clear && npm run forge && npm run format",
+    "test": "npm run gen && vitest run"
+  },
+  "dependencies": {
+    "@opendaw/lib-box": "^0.0.0",
+    "@opendaw/lib-dom": "^0.0.0",
+    "@opendaw/lib-runtime": "^0.0.0",
+    "@opendaw/lib-std": "^0.0.0",
+    "ts-morph": "^25.0.1",
+    "tsx": "^4.20.3"
+  },
+  "devDependencies": {
+    "@opendaw/eslint-config": "^0.0.0",
+    "@opendaw/typescript-config": "^0.0.0"
+  }
+}

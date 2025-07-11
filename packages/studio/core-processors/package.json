@@ -1,0 +1,30 @@
+{
+  "name": "@opendaw/studio-core-processors",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint \"**/*.ts\"",
+    "build-engine": "esbuild src/EngineProcessor.ts --bundle --format=esm --platform=browser --minify --sourcemap --outfile=../core/dist/engine-processor.js",
+    "build-meter": "esbuild src/MeterProcessor.ts --bundle --format=esm --platform=browser --minify --sourcemap --outfile=../core/dist/meter-processor.js",
+    "build-recording": "esbuild src/RecordingProcessor.ts --bundle --format=esm --platform=browser --minify --sourcemap --outfile=../core/dist/recording-processor.js",
+    "build": "npm run build-engine && npm run build-meter && npm run build-recording",
+    "test": "echo \"No tests to run\""
+  },
+  "dependencies": {
+    "@opendaw/lib-box": "^0.0.0",
+    "@opendaw/lib-dsp": "^0.0.0",
+    "@opendaw/lib-runtime": "^0.0.0",
+    "@opendaw/lib-std": "^0.0.0",
+    "@opendaw/studio-adapters": "^0.0.0",
+    "@opendaw/studio-boxes": "^0.0.0",
+    "@opendaw/studio-enums": "^0.0.0",
+    "@types/audioworklet": "^0.0.77"
+  },
+  "devDependencies": {
+    "@opendaw/eslint-config": "^0.0.0",
+    "@opendaw/typescript-config": "^0.0.0"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "@opendaw/studio-forge-boxes",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint \"**/*.ts\"",
+    "format": "prettier --write \"../boxes/src/**/*.ts\" --ignore-path /dev/null",
+    "clear": "rm -rf ../boxes/src/*",
+    "build": "npm run clear && npx tsx src/forge.ts && npm run format",
+    "test": "echo \"No tests to run\""
+  },
+  "dependencies": {
+    "@opendaw/lib-box": "^0.0.0",
+    "@opendaw/lib-dsp": "^0.0.0",
+    "@opendaw/lib-runtime": "^0.0.0",
+    "@opendaw/lib-std": "^0.0.0",
+    "@opendaw/studio-enums": "^0.0.0"
+  },
+  "devDependencies": {
+    "@opendaw/eslint-config": "^0.0.0",
+    "@opendaw/typescript-config": "^0.0.0"
+  }
+}
