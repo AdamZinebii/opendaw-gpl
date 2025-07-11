@@ -1,9 +1,12 @@
 {
   "name": "@opendaw/lib-fusion",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "license": "LGPL-3.0-or-later",
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -19,13 +22,13 @@
     "test": "echo \"No tests to run\""
   },
   "dependencies": {
-    "@opendaw/lib-box": "^0.0.4",
-    "@opendaw/lib-runtime": "^0.0.4",
-    "@opendaw/lib-std": "^0.0.4"
+    "@opendaw/lib-box": "^0.0.5",
+    "@opendaw/lib-runtime": "^0.0.5",
+    "@opendaw/lib-std": "^0.0.5"
   },
   "devDependencies": {
-    "@opendaw/eslint-config": "^0.0.4",
-    "@opendaw/typescript-config": "^0.0.4"
+    "@opendaw/eslint-config": "^0.0.5",
+    "@opendaw/typescript-config": "^0.0.5"
   },
-  "gitHead": "ae2a6095e2c7a6e56cb7238037868e027bb8b21f"
+  "gitHead": "2a4ba5549aac4b77949bda473067d04fbcfb40f1"
 }
