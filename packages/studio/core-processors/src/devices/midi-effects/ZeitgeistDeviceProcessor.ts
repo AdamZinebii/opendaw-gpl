@@ -31,7 +31,7 @@ export class ZeitgeistDeviceProcessor extends EventProcessor implements MidiEffe
                     : context.boxAdapters.adapterFor(pointer.targetVertex.unwrap().box, GrooveAdapter.checkType))
             }),
             Terminable.create(() => {
-                this.#groove.ifSome(adapter => adapter.terminate())
+                this.#groove.ifSome(adapter => adapter.terminate()) // FIXME This processor does not OWN that adapter!
                 this.#groove = Option.None
             }),
             context.registerProcessor(this)
