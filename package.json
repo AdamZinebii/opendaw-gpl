@@ -1,5 +1,6 @@
 {
   "name": "opendaw",
+  "version": "0.0.0",
   "private": true,
   "license": "LGPL-3.0-or-later",
   "scripts": {
@@ -12,7 +13,7 @@
     "test": "turbo run test",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "publish-sdk": "lerna publish"
+    "publish-sdk": "lerna publish --force-publish"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^7.1.0",
@@ -32,8 +33,5 @@
   "packageManager": "npm@11.4.2",
   "workspaces": [
     "packages/**/*"
-  ],
-  "dependencies": {
-    "@opendaw/studio-core": "^0.0.0"
-  }
+  ]
 }
