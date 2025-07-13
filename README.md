@@ -2,14 +2,7 @@
 
 **openDAW** is a next-generation web-based Digital Audio Workstation (DAW) designed to **democratize** music production
 and to **resurface the process of making music** by making **high-quality** creation tools accessible to everyone, with
-a strong focus on **education** and hands-on **learning**.
-
-For more information about our mission and goals, please join our [Discord](https://discord.opendaw.studio), visit
-our [official website](https://opendaw.org) and test our current [prototype](https://opendaw.studio/). 
-
-Please consider supporting this project on [Patreon](https://www.patreon.com/join/openDAW) or [ko-fi](https://ko-fi.com/opendaw)
-
-![studio-teaser.png](assets/studio-teaser.png)
+a strong focus on **education** and hands-on **learning**. Please consider supporting this project on [Patreon](https://www.patreon.com/join/openDAW) or [ko-fi](https://ko-fi.com/opendaw).
 
 ## Open-Source
 
@@ -31,6 +24,8 @@ The source code for openDAW is available under GPL3 (links below).
 - **No Data Mining**
 
 **Just a free, open-source DAW in your browser.**
+
+![studio-teaser.png](assets/studio-teaser.png)
 
 ## Huge Shoutout To The Incredible openDAW Community!
 
