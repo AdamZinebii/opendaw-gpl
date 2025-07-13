@@ -106,7 +106,7 @@ Before starting, ensure you have the following installed on your system:
   ensure you have the
   binaries available in your environment if used outside the build system.
 - [TypeScript](https://www.typescriptlang.org/)
-- [OpenSSL](https://chocolatey.org/) For generating local development certificates (), OpenSSL needs to be installed on
+- [OpenSSL](https://openssl-library.org/) For generating local development certificates (), OpenSSL needs to be installed on
   your system. Most Linux/macOS systems have OpenSSL pre-installed.
 
 ### Clone
