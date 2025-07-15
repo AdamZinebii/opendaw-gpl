@@ -7,8 +7,8 @@ import {DeviceHost, VaporisateurDeviceBoxAdapter} from "@opendaw/studio-adapters
 import {ControlBuilder} from "@/ui/devices/ControlBuilder.tsx"
 import {DevicePeakMeter} from "@/ui/devices/panel/DevicePeakMeter.tsx"
 import {Html} from "@opendaw/lib-dom"
-import {Instruments} from "@/service/Instruments"
 import {StudioService} from "@/service/StudioService"
+import {Instruments} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "editor")
 

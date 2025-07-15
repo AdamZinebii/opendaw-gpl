@@ -3,14 +3,13 @@ import {createElement} from "@opendaw/lib-jsx"
 import {DeviceEditor} from "@/ui/devices/DeviceEditor.tsx"
 import {MenuItems} from "@/ui/devices/menu-items.ts"
 import {DevicePeakMeter} from "@/ui/devices/panel/DevicePeakMeter.tsx"
-import {Instruments} from "@/service/Instruments"
 import {DeviceHost, IconSymbol, NoteSender, NoteSustainer, PlayfieldSampleBoxAdapter} from "@opendaw/studio-adapters"
 import {SlotEditor} from "@/ui/devices/instruments/PlayfieldDeviceEditor/SlotEditor"
 import {Events} from "@opendaw/lib-dom"
 import {Icon} from "@/ui/components/Icon"
 import {TextTooltip} from "@/ui/surface/TextTooltip"
 import {StudioService} from "@/service/StudioService"
-import {Colors} from "@opendaw/studio-core"
+import {Colors, Instruments} from "@opendaw/studio-core"
 
 type Construct = {
     lifecycle: Lifecycle

@@ -3,11 +3,11 @@ import {createElement} from "@opendaw/lib-jsx"
 import {DeviceEditor} from "@/ui/devices/DeviceEditor.tsx"
 import {MenuItems} from "@/ui/devices/menu-items.ts"
 import {DevicePeakMeter} from "@/ui/devices/panel/DevicePeakMeter.tsx"
-import {Instruments} from "@/service/Instruments"
 import {DeviceHost, NoteSender, PlayfieldDeviceBoxAdapter} from "@opendaw/studio-adapters"
 import {MenuItem} from "@/ui/model/menu-item"
 import {SlotGrid} from "@/ui/devices/instruments/PlayfieldDeviceEditor/SlotGrid"
 import {StudioService} from "@/service/StudioService"
+import {Instruments} from "@opendaw/studio-core"
 
 type Construct = {
     lifecycle: Lifecycle

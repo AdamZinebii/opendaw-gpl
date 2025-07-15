@@ -1,7 +1,6 @@
 import {asDefined, panic, Terminable} from "@opendaw/lib-std"
 import {DragAndDrop} from "@/ui/DragAndDrop"
 import {AnyDragData} from "@/ui/AnyDragData"
-import {Instruments} from "@/service/Instruments"
 import {
     AudioEffectDeviceBoxAdapter,
     Devices,
@@ -10,7 +9,7 @@ import {
 } from "@opendaw/studio-adapters"
 import {InsertMarker} from "@/ui/components/InsertMarker"
 import {Pointers} from "@opendaw/studio-enums"
-import {Effects, Project} from "@opendaw/studio-core"
+import {Effects, Instruments, Project} from "@opendaw/studio-core"
 
 export namespace DevicePanelDragAndDrop {
     export const install = (project: Project,

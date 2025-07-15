@@ -4,11 +4,10 @@ import {AudioFileBox} from "@opendaw/studio-boxes"
 import {ClipCaptureTarget} from "@/ui/timeline/tracks/audio-unit/clips/ClipCapturing.ts"
 import {ElementCapturing} from "@/ui/canvas/capturing.ts"
 import {isDefined, Nullable, Option, panic, UUID} from "@opendaw/lib-std"
-import {Instruments} from "@/service/Instruments.ts"
 import {RegionCaptureTarget} from "./regions/RegionCapturing"
 import {Promises} from "@opendaw/lib-runtime"
 import {StudioService} from "@/service/StudioService"
-import {Project} from "@opendaw/studio-core"
+import {Instruments, Project} from "@opendaw/studio-core"
 
 export type CreateParameters = {
     event: DragEvent

@@ -12,7 +12,8 @@ import {Waveform} from "@opendaw/lib-dsp"
 import {BoxGraph} from "@opendaw/lib-box"
 import {AudioUnitType} from "@opendaw/studio-enums"
 import {AudioUnitBoxAdapter, DeviceHost, IconSymbol, TrackType} from "@opendaw/studio-adapters"
-import {Modifier, Project} from "@opendaw/studio-core"
+import {Modifier} from "./Modifier"
+import {Project} from "./Project"
 
 export namespace Instruments {
     export interface Factory {

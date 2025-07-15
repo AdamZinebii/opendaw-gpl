@@ -9,9 +9,9 @@ import {DevicePeakMeter} from "@/ui/devices/panel/DevicePeakMeter.tsx"
 import {Html} from "@opendaw/lib-dom"
 import {AudioFileBox} from "@opendaw/studio-boxes"
 import {Icon} from "@/ui/components/Icon"
-import {Instruments} from "@/service/Instruments"
 import {SampleSelector, SampleSelectStrategy} from "@/ui/devices/SampleSelector"
 import {StudioService} from "@/service/StudioService"
+import {Instruments} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "NanoDeviceEditor")
 
