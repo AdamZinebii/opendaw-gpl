@@ -1,9 +1,8 @@
 import {Option, Provider, UUID} from "@opendaw/lib-std"
 import {Promises} from "@opendaw/lib-runtime"
-import {Project} from "@opendaw/studio-core"
+import {Project, WorkerAgents} from "@opendaw/studio-core"
 import {StudioService} from "@/service/StudioService.ts"
 import {ProjectSession} from "./project/ProjectSession"
-import {OpfsAgent} from "@/service/agents.ts"
 import {ProjectMeta} from "@/project/ProjectMeta.ts"
 
 export class Recovery {
@@ -14,19 +13,19 @@ export class Recovery {
     constructor(service: StudioService) {this.#service = service}
 
     async restoreSession(): Promise<Option<ProjectSession>> {
-        const backupResult = await Promises.tryCatch(OpfsAgent.list(Recovery.#RESTORE_FILE_PATH))
+        const backupResult = await Promises.tryCatch(WorkerAgents.Opfs.list(Recovery.#RESTORE_FILE_PATH))
         if (backupResult.status === "rejected" || backupResult.value.length === 0) {return Option.None}
         const readResult = await Promises.tryCatch(Promise.all([
-            OpfsAgent.read(`${Recovery.#RESTORE_FILE_PATH}/uuid`)
+            WorkerAgents.Opfs.read(`${Recovery.#RESTORE_FILE_PATH}/uuid`)
                 .then(x => UUID.validate(x)),
-            OpfsAgent.read(`${Recovery.#RESTORE_FILE_PATH}/project.od`)
+            WorkerAgents.Opfs.read(`${Recovery.#RESTORE_FILE_PATH}/project.od`)
                 .then(x => Project.load(this.#service, x.buffer as ArrayBuffer)),
-            OpfsAgent.read(`${Recovery.#RESTORE_FILE_PATH}/meta.json`)
+            WorkerAgents.Opfs.read(`${Recovery.#RESTORE_FILE_PATH}/meta.json`)
                 .then(x => JSON.parse(new TextDecoder().decode(x.buffer as ArrayBuffer)) as ProjectMeta),
-            OpfsAgent.read(`${Recovery.#RESTORE_FILE_PATH}/saved`)
+            WorkerAgents.Opfs.read(`${Recovery.#RESTORE_FILE_PATH}/saved`)
                 .then(x => x.at(0) === 1)
         ]))
-        const deleteResult = await Promises.tryCatch(OpfsAgent.delete(Recovery.#RESTORE_FILE_PATH))
+        const deleteResult = await Promises.tryCatch(WorkerAgents.Opfs.delete(Recovery.#RESTORE_FILE_PATH))
         console.debug(`delete backup: "${deleteResult.status}"`)
         if (readResult.status === "rejected") {return Option.None}
         const [uuid, project, meta, saved] = readResult.value
@@ -40,10 +39,10 @@ export class Recovery {
             console.debug("temp storing project")
             const {project, meta, uuid} = session
             return Promises.tryCatch(Promise.all([
-                OpfsAgent.write(`${Recovery.#RESTORE_FILE_PATH}/uuid`, uuid),
-                OpfsAgent.write(`${Recovery.#RESTORE_FILE_PATH}/project.od`, new Uint8Array(project.toArrayBuffer())),
-                OpfsAgent.write(`${Recovery.#RESTORE_FILE_PATH}/meta.json`, new TextEncoder().encode(JSON.stringify(meta))),
-                OpfsAgent.write(`${Recovery.#RESTORE_FILE_PATH}/saved`, new Uint8Array([session.saved() ? 1 : 0]))
+                WorkerAgents.Opfs.write(`${Recovery.#RESTORE_FILE_PATH}/uuid`, uuid),
+                WorkerAgents.Opfs.write(`${Recovery.#RESTORE_FILE_PATH}/project.od`, new Uint8Array(project.toArrayBuffer())),
+                WorkerAgents.Opfs.write(`${Recovery.#RESTORE_FILE_PATH}/meta.json`, new TextEncoder().encode(JSON.stringify(meta))),
+                WorkerAgents.Opfs.write(`${Recovery.#RESTORE_FILE_PATH}/saved`, new Uint8Array([session.saved() ? 1 : 0]))
             ])).then(result => console.debug(`backup result: ${result.status}`))
         })
     }

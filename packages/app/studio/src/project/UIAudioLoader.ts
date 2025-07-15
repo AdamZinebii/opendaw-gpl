@@ -1,9 +1,19 @@
-import {ByteArrayInput, Exec, int, Notifier, Observer, Option, Progress, Subscription, Terminable, UUID} from "@opendaw/lib-std"
-import {AudioData} from "@opendaw/studio-adapters"
+import {
+    ByteArrayInput,
+    Exec,
+    int,
+    Notifier,
+    Observer,
+    Option,
+    Progress,
+    Subscription,
+    Terminable,
+    UUID
+} from "@opendaw/lib-std"
 import {Peaks} from "@opendaw/lib-fusion"
+import {AudioData, AudioLoader, AudioLoaderState} from "@opendaw/studio-adapters"
+import {WorkerAgents} from "@opendaw/studio-core"
 import {UIAudioManager} from "@/project/UIAudioManager"
-import {OpfsAgent} from "@/service/agents"
-import {AudioLoader, AudioLoaderState} from "@opendaw/studio-adapters"
 import {AudioMetaData} from "@/audio/AudioMetaData"
 import {AudioStorage} from "@/audio/AudioStorage"
 import {AudioPeaks} from "@/audio/AudioPeaks"
@@ -56,9 +66,9 @@ export class UIAudioLoader implements AudioLoader {
     async pipeFilesInto(zip: JSZip): Promise<void> {
         const exec: Exec = async () => {
             const path = `${AudioStorage.Folder}/${UUID.toString(this.#uuid)}`
-            zip.file("audio.wav", await OpfsAgent.read(`${path}/audio.wav`), {binary: true})
-            zip.file("peaks.bin", await OpfsAgent.read(`${path}/peaks.bin`), {binary: true})
-            zip.file("meta.json", await OpfsAgent.read(`${path}/meta.json`))
+            zip.file("audio.wav", await WorkerAgents.Opfs.read(`${path}/audio.wav`), {binary: true})
+            zip.file("peaks.bin", await WorkerAgents.Opfs.read(`${path}/peaks.bin`), {binary: true})
+            zip.file("meta.json", await WorkerAgents.Opfs.read(`${path}/meta.json`))
         }
         if (this.#state.type === "loaded") {
             return exec()

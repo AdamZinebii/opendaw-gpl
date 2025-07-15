@@ -14,13 +14,15 @@
     },
     "./engine-processor.js": "./dist/engine-processor.js",
     "./meter-processor.js": "./dist/meter-processor.js",
-    "./recording-processor.js": "./dist/recording-processor.js"
+    "./recording-processor.js": "./dist/recording-processor.js",
+    "./workers.js": "./dist/workers.js"
   },
   "files": [
     "dist/**/*",
     "dist/engine-processor.js",
     "dist/meter-processor.js",
-    "dist/recording-processor.js"
+    "dist/recording-processor.js",
+    "dist/workers.js"
   ],
   "scripts": {
     "build": "tsc",
@@ -41,6 +43,7 @@
   "devDependencies": {
     "@opendaw/eslint-config": "^0.0.6",
     "@opendaw/studio-core-processors": "^0.0.6",
+    "@opendaw/studio-core-workers": "^0.0.0",
     "@opendaw/studio-forge-boxes": "^0.0.6",
     "@opendaw/typescript-config": "^0.0.6"
   },
