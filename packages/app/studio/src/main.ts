@@ -20,12 +20,10 @@ import {AnimationFrame, Browser, Events, Keyboard} from "@opendaw/lib-dom"
 import {AudioOutputDevice} from "@/audio/AudioOutputDevice"
 import {FontLoader} from "@/ui/FontLoader"
 import {ErrorHandler} from "@/errors/ErrorHandler.ts"
-import {SampleProvider, SampleStorage, MainThreadSampleManager, WorkerAgents, Worklets} from "@opendaw/studio-core"
+import {MainThreadSampleManager, SampleProvider, SampleStorage, WorkerAgents, Worklets} from "@opendaw/studio-core"
 
 import WorkersUrl from "@opendaw/studio-core/workers.js?worker&url"
-import MeterProcessorUrl from "@opendaw/studio-core/meter-processor.js?url"
-import EngineProcessorUrl from "@opendaw/studio-core/engine-processor.js?url"
-import RecordingProcessorUrl from "@opendaw/studio-core/recording-processor.js?url"
+import WorkletsUrl from "@opendaw/studio-core/processors.js?worker&url"
 
 window.name = "main"
 
@@ -50,11 +48,7 @@ requestAnimationFrame(async () => {
         console.debug("requesting custom sampleRate", sampleRate ?? "'No (Firefox)'")
         const context = new AudioContext({sampleRate, latencyHint: 0})
         console.debug(`AudioContext state: ${context.state}, sampleRate: ${context.sampleRate}`)
-        const audioWorklets = await Promises.tryCatch(Worklets.install(context, {
-            meter: MeterProcessorUrl,
-            engine: EngineProcessorUrl,
-            recording: RecordingProcessorUrl
-        }))
+        const audioWorklets = await Promises.tryCatch(Worklets.install(context, WorkletsUrl))
         if (audioWorklets.status === "rejected") {
             showErrorDialog("Audio",
                 "Boot Error", `Could not boot audio-worklets (${audioWorklets.error})`, Option.None)

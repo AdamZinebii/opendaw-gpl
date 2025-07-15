@@ -1,6 +1,5 @@
 import {AudioUnitBoxAdapter} from "@opendaw/studio-adapters"
 import {EngineContext} from "./EngineContext"
-import {InstrumentDeviceProcessor} from "./processors"
 import {asInstanceOf, int, Option, Terminable, Terminator} from "@opendaw/lib-std"
 import {InstrumentDeviceProcessorFactory} from "./DeviceProcessorFactory"
 import {AudioBusProcessor} from "./AudioBusProcessor"
@@ -9,6 +8,7 @@ import {AudioDeviceChain} from "./AudioDeviceChain"
 import {MidiDeviceChain} from "./MidiDeviceChain"
 import {AudioUnitOptions} from "./AudioUnitOptions"
 import {AudioUnitInputAdapter} from "@opendaw/studio-adapters"
+import {InstrumentDeviceProcessor} from "./InstrumentDeviceProcessor"
 
 export class AudioUnit implements Terminable {
     static ID: int = 0 | 0

@@ -1,30 +1,16 @@
-import {EmptyExec, int} from "@opendaw/lib-std"
+import {EmptyExec} from "@opendaw/lib-std"
 import {Files} from "@opendaw/lib-dom"
 import {mergeChunkPlanes, RingBuffer} from "@opendaw/studio-adapters"
-import {WorkletFactory} from "./WorkletFactory"
 import {encodeWavFloat} from "./Wav"
-
-const RenderQuantum = 128
+import {RenderQuantum} from "./RenderQuantum"
 
 export class RecordingWorklet extends AudioWorkletNode {
-    static async bootFactory(context: BaseAudioContext, url: string): Promise<WorkletFactory<RecordingWorklet>> {
-        return WorkletFactory.boot(context, url)
-    }
-
-    static create(factory: WorkletFactory<RecordingWorklet>, numChannels: int, numChunks: int = 64): RecordingWorklet {
-        const audioBytes = numChannels * numChunks * RenderQuantum * Float32Array.BYTES_PER_ELEMENT
-        const pointerBytes = Int32Array.BYTES_PER_ELEMENT * 2
-        const sab = new SharedArrayBuffer(audioBytes + pointerBytes)
-        const buffer: RingBuffer.Config = {sab, numChunks, numChannels, bufferSize: RenderQuantum}
-        return factory.create(context => new RecordingWorklet(context, buffer))
-    }
-
     readonly #reader: RingBuffer.Reader
 
-    private constructor(context: BaseAudioContext, config: RingBuffer.Config) {
+    constructor(context: BaseAudioContext, config: RingBuffer.Config) {
         super(context, "recording-processor", {
             numberOfInputs: 1,
-            channelCount: config.numChannels,
+            channelCount: config.numberOfChannels,
             channelCountMode: "explicit",
             processorOptions: config
         })

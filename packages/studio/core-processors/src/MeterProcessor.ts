@@ -3,7 +3,7 @@ import {RenderQuantum} from "./constants"
 import {RMS} from "@opendaw/lib-dsp"
 import {Arrays, int, Schema, SyncStream} from "@opendaw/lib-std"
 
-registerProcessor("peak-meter-processor", class extends AudioWorkletProcessor {
+export class MeterProcessor extends AudioWorkletProcessor {
     readonly #numberOfChannels: int
     readonly #maxPeak: Float32Array
     readonly #maxSquared: Float32Array
@@ -64,4 +64,4 @@ registerProcessor("peak-meter-processor", class extends AudioWorkletProcessor {
         this.#writer.tryWrite()
         return true
     }
-})
+}

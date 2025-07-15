@@ -2,7 +2,6 @@ import {Id, int, Option, Terminable, UUID} from "@opendaw/lib-std"
 import {dbToGain, Event, NoteEvent} from "@opendaw/lib-dsp"
 import {AudioData, SampleLoader, NanoDeviceBoxAdapter} from "@opendaw/studio-adapters"
 import {EngineContext} from "../../EngineContext"
-import {DeviceProcessor, InstrumentDeviceProcessor} from "../../processors"
 import {AudioProcessor} from "../../AudioProcessor"
 import {AudioBuffer} from "../../AudioBuffer"
 import {Block, Processor} from "../../processing"
@@ -10,6 +9,8 @@ import {PeakBroadcaster} from "../../PeakBroadcaster"
 import {AutomatableParameter} from "../../AutomatableParameter"
 import {NoteEventSource, NoteEventTarget, NoteLifecycleEvent} from "../../NoteEventSource"
 import {NoteEventInstrument} from "../../NoteEventInstrument"
+import {DeviceProcessor} from "../../DeviceProcessor"
+import {InstrumentDeviceProcessor} from "../../InstrumentDeviceProcessor"
 
 export class NanoDeviceProcessor extends AudioProcessor implements InstrumentDeviceProcessor, NoteEventTarget {
     readonly #adapter: NanoDeviceBoxAdapter

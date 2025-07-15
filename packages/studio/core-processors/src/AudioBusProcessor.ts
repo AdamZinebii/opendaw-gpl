@@ -1,6 +1,5 @@
 import {Arrays, int, Option, Terminable, UUID} from "@opendaw/lib-std"
 import {AbstractProcessor} from "./AbstractProcessor"
-import {DeviceProcessor, InstrumentDeviceProcessor} from "./processors"
 import {AudioBusBoxAdapter} from "@opendaw/studio-adapters"
 import {AudioBuffer} from "./AudioBuffer"
 import {PeakBroadcaster} from "./PeakBroadcaster"
@@ -9,6 +8,8 @@ import {NoteEventTarget} from "./NoteEventSource"
 import {ProcessInfo, Processor} from "./processing"
 import {RenderQuantum} from "./constants"
 import {AutomatableParameter} from "./AutomatableParameter"
+import {DeviceProcessor} from "./DeviceProcessor"
+import {InstrumentDeviceProcessor} from "./InstrumentDeviceProcessor"
 
 export class AudioBusProcessor extends AbstractProcessor implements InstrumentDeviceProcessor, Terminable {
     static ID: int = 0 | 0

@@ -2,8 +2,8 @@
   "name": "@opendaw/app-headless",
   "private": true,
   "version": "0.0.7",
-  "license": "LGPL-3.0-or-later",
   "type": "module",
+  "license": "LGPL-3.0-or-later",
   "scripts": {
     "dev": "vite --clearScreen false",
     "build": "tsc && vite build",

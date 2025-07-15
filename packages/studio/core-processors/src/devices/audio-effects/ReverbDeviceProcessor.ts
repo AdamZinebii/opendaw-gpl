@@ -1,7 +1,6 @@
 import {int, Option, Terminable, UUID} from "@opendaw/lib-std"
 import {dbToGain} from "@opendaw/lib-dsp"
 import {AudioEffectDeviceBoxAdapter, ReverbDeviceBoxAdapter} from "@opendaw/studio-adapters"
-import {AudioEffectDeviceProcessor} from "../../processors"
 import {EngineContext} from "../../EngineContext"
 import {AudioBuffer} from "../../AudioBuffer"
 import {PeakBroadcaster} from "../../PeakBroadcaster"
@@ -9,6 +8,7 @@ import {FreeVerb} from "../../FreeVerb"
 import {AudioProcessor} from "../../AudioProcessor"
 import {AutomatableParameter} from "../../AutomatableParameter"
 import {Processor} from "../../processing"
+import {AudioEffectDeviceProcessor} from "../../AudioEffectDeviceProcessor"
 
 export class ReverbDeviceProcessor extends AudioProcessor implements AudioEffectDeviceProcessor {
     static ID: int = 0 | 0

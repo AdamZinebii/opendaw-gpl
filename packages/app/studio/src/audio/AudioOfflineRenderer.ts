@@ -1,4 +1,4 @@
-import {encodeWavFloat, EngineWorklet, Project} from "@opendaw/studio-core"
+import {encodeWavFloat, Project, Worklets} from "@opendaw/studio-core"
 import {PPQN} from "@opendaw/lib-dsp"
 import {DefaultObservableValue, int, Option, panic, TimeSpan} from "@opendaw/lib-std"
 import {showApproveDialog, showProcessDialog, showProcessMonolog} from "@/ui/components/dialogs.tsx"
@@ -7,7 +7,7 @@ import {AnimationFrame, Errors, Files} from "@opendaw/lib-dom"
 import {ProjectMeta} from "@/project/ProjectMeta"
 import {ExportStemsConfiguration} from "@opendaw/studio-adapters"
 import JSZip from "jszip"
-import EngineProcessorUrl from "@opendaw/studio-core/engine-processor.js?url"
+import WorkletsUrl from "@opendaw/studio-core/processors.js?url"
 
 export namespace AudioOfflineRenderer {
     export const start = async (source: Project,
@@ -25,9 +25,8 @@ export namespace AudioOfflineRenderer {
         const numSamples = PPQN.pulsesToSamples(durationInPulses, project.bpm, sampleRate)
         const context = new OfflineAudioContext(numStems * 2, numSamples, sampleRate)
         const durationInSeconds = numSamples / sampleRate
-        const engineFactory = await EngineWorklet.bootFactory(context, EngineProcessorUrl)
-        const engineWorklet = engineFactory.create(context =>
-            new EngineWorklet(context, project, optExportConfiguration.unwrapOrUndefined()))
+        const worklets = await Worklets.install(context, WorkletsUrl)
+        const engineWorklet = worklets.createEngine(project, optExportConfiguration.unwrapOrUndefined())
         engineWorklet.isPlaying().setValue(true)
         engineWorklet.connect(context.destination)
         await engineWorklet.isReady()

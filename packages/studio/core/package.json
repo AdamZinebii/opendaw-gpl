@@ -12,17 +12,13 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./engine-processor.js": "./dist/engine-processor.js",
-    "./meter-processor.js": "./dist/meter-processor.js",
-    "./recording-processor.js": "./dist/recording-processor.js",
-    "./workers.js": "./dist/workers.js"
+    "./workers.js": "./dist/workers.js",
+    "./processors.js": "./dist/processors.js"
   },
   "files": [
     "dist/**/*",
-    "dist/engine-processor.js",
-    "dist/meter-processor.js",
-    "dist/recording-processor.js",
-    "dist/workers.js"
+    "dist/workers.js",
+    "dist/processors.js"
   ],
   "scripts": {
     "build": "tsc",

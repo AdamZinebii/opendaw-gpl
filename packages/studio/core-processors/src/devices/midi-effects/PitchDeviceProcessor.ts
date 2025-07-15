@@ -3,10 +3,10 @@ import {NoteBroadcaster, PitchDeviceBoxAdapter} from "@opendaw/studio-adapters"
 import {Event, NoteEvent, ppqn} from "@opendaw/lib-dsp"
 import {EngineContext} from "../../EngineContext"
 import {EventProcessor} from "../../EventProcessor"
-import {MidiEffectProcessor} from "../../processors"
 import {Block, Processor} from "../../processing"
 import {AutomatableParameter} from "../../AutomatableParameter"
 import {NoteEventSource, NoteLifecycleEvent} from "../../NoteEventSource"
+import {MidiEffectProcessor} from "../../MidiEffectProcessor"
 
 export class PitchDeviceProcessor extends EventProcessor implements MidiEffectProcessor {
     readonly #adapter: PitchDeviceBoxAdapter

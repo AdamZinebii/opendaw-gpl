@@ -1,6 +1,5 @@
 import {int, Option, Terminable, UUID} from "@opendaw/lib-std"
 import {AudioEffectDeviceBoxAdapter} from "@opendaw/studio-adapters"
-import {AudioEffectDeviceProcessor} from "../../processors"
 import {EngineContext} from "../../EngineContext"
 import {ProcessInfo, Processor} from "../../processing"
 import {RenderQuantum} from "../../constants"
@@ -8,6 +7,7 @@ import {AbstractProcessor} from "../../AbstractProcessor"
 import {AudioBuffer} from "../../AudioBuffer"
 import {PeakBroadcaster} from "../../PeakBroadcaster"
 import {AutomatableParameter} from "../../AutomatableParameter"
+import {AudioEffectDeviceProcessor} from "../../AudioEffectDeviceProcessor"
 
 export class NopDeviceProcessor extends AbstractProcessor implements AudioEffectDeviceProcessor {
     static ID: int = 0 | 0

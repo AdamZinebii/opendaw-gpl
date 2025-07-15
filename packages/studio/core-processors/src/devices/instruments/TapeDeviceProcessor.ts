@@ -3,13 +3,13 @@ import {LoopableRegion} from "@opendaw/lib-dsp"
 import {AudioClipBoxAdapter, AudioData, AudioRegionBoxAdapter, TapeDeviceBoxAdapter, TrackType} from "@opendaw/studio-adapters"
 import {RenderQuantum} from "../../constants"
 import {EngineContext} from "../../EngineContext"
-import {DeviceProcessor} from "../../processors"
 import {AudioGenerator, Block, BlockFlag, ProcessInfo, Processor} from "../../processing"
 import {AbstractProcessor} from "../../AbstractProcessor"
 import {AudioBuffer} from "../../AudioBuffer"
 import {PeakBroadcaster} from "../../PeakBroadcaster"
 import {AutomatableParameter} from "../../AutomatableParameter"
 import {NoteEventTarget} from "../../NoteEventSource"
+import {DeviceProcessor} from "../../DeviceProcessor"
 
 export class TapeDeviceProcessor extends AbstractProcessor implements DeviceProcessor, AudioGenerator {
     readonly #adapter: TapeDeviceBoxAdapter

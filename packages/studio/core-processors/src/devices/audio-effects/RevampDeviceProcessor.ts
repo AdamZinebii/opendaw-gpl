@@ -1,7 +1,6 @@
 import {Arrays, int, Option, Terminable, UUID} from "@opendaw/lib-std"
 import {BiquadCoeff, BiquadMono, BiquadProcessor, BiquadStack} from "@opendaw/lib-dsp"
 import {AudioEffectDeviceBoxAdapter, RevampDeviceBoxAdapter} from "@opendaw/studio-adapters"
-import {AudioEffectDeviceProcessor} from "../../processors"
 import {EngineContext} from "../../EngineContext"
 import {Block, Processor} from "../../processing"
 import {AudioBuffer} from "../../AudioBuffer"
@@ -9,6 +8,7 @@ import {PeakBroadcaster} from "../../PeakBroadcaster"
 import {SpectrumAnalyser} from "../../SpectrumAnalyser"
 import {AudioProcessor} from "../../AudioProcessor"
 import {AutomatableParameter} from "../../AutomatableParameter"
+import {AudioEffectDeviceProcessor} from "../../AudioEffectDeviceProcessor"
 
 export class RevampDeviceProcessor extends AudioProcessor implements AudioEffectDeviceProcessor {
     static ID: int = 0 | 0

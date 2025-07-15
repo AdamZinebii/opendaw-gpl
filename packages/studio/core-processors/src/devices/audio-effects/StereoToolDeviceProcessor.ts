@@ -1,13 +1,13 @@
 import {int, Option, Terminable, UUID} from "@opendaw/lib-std"
 import {dbToGain, Ramp, StereoMatrix} from "@opendaw/lib-dsp"
 import {AudioEffectDeviceBoxAdapter, StereoToolDeviceBoxAdapter} from "@opendaw/studio-adapters"
-import {AudioEffectDeviceProcessor} from "../../processors"
 import {EngineContext} from "../../EngineContext"
 import {Block, Processor} from "../../processing"
 import {AudioBuffer} from "../../AudioBuffer"
 import {PeakBroadcaster} from "../../PeakBroadcaster"
 import {AutomatableParameter} from "../../AutomatableParameter"
 import {AudioProcessor} from "../../AudioProcessor"
+import {AudioEffectDeviceProcessor} from "../../AudioEffectDeviceProcessor"
 
 export class StereoToolDeviceProcessor extends AudioProcessor implements AudioEffectDeviceProcessor {
     readonly #adapter: StereoToolDeviceBoxAdapter

@@ -31,13 +31,8 @@ import {AnimationFrame} from "@opendaw/lib-dom"
 import {Communicator, Messenger} from "@opendaw/lib-runtime"
 import {BoxIO} from "@opendaw/studio-boxes"
 import {Project} from "./Project"
-import {WorkletFactory} from "./WorkletFactory"
 
 export class EngineWorklet extends AudioWorkletNode {
-    static bootFactory(context: BaseAudioContext, url: string): Promise<WorkletFactory<EngineWorklet>> {
-        return WorkletFactory.boot(context, url)
-    }
-
     static ID: int = 0 | 0
 
     readonly id = EngineWorklet.ID++

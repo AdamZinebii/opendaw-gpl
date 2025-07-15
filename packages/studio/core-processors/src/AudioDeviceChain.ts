@@ -1,5 +1,4 @@
 import {Arrays, assert, SortedSet, Subscription, Terminator, UUID} from "@opendaw/lib-std"
-import {AudioDeviceProcessor, AudioEffectDeviceProcessor} from "./processors"
 import {AuxSendProcessor} from "./AuxSendProcessor"
 import {ChannelStripProcessor} from "./ChannelStripProcessor"
 import {AudioEffectDeviceBoxAdapter} from "@opendaw/studio-adapters"
@@ -9,6 +8,8 @@ import {ProcessPhase} from "./processing"
 import {AudioUnit} from "./AudioUnit"
 import {DeviceChain} from "./DeviceChain"
 import {AudioUnitOptions} from "./AudioUnitOptions"
+import {AudioDeviceProcessor} from "./AudioDeviceProcessor"
+import {AudioEffectDeviceProcessor} from "./AudioEffectDeviceProcessor"
 
 type AudioEffectDeviceEntry = {
     device: AudioEffectDeviceProcessor

@@ -1,5 +1,4 @@
 import {Arrays, assert, SortedSet, Subscription, Terminator, UUID} from "@opendaw/lib-std"
-import {AudioDeviceProcessor, AudioEffectDeviceProcessor, DeviceProcessor} from "./processors"
 import {AudioEffectDeviceBoxAdapter} from "@opendaw/studio-adapters"
 import {AudioEffectDeviceProcessorFactory} from "./DeviceProcessorFactory"
 import {AudioInput, ProcessPhase} from "./processing"
@@ -7,6 +6,9 @@ import {DeviceChain} from "./DeviceChain"
 import {EngineContext} from "./EngineContext"
 import {SortedBoxAdapterCollection} from "@opendaw/studio-adapters"
 import {Pointers} from "@opendaw/studio-enums"
+import {DeviceProcessor} from "./DeviceProcessor"
+import {AudioDeviceProcessor} from "./AudioDeviceProcessor"
+import {AudioEffectDeviceProcessor} from "./AudioEffectDeviceProcessor"
 
 // TODO Open this to MidiEffects as well
 

@@ -1,4 +1,3 @@
-import {AudioEffectDeviceProcessor, InstrumentDeviceProcessor, MidiEffectProcessor} from "./processors"
 import {
     ArpeggioDeviceBox,
     AudioBusBox,
@@ -48,6 +47,9 @@ import {
 import {StereoToolDeviceProcessor} from "./devices/audio-effects/StereoToolDeviceProcessor"
 import {ZeitgeistDeviceProcessor} from "./devices/midi-effects/ZeitgeistDeviceProcessor"
 import {ZeitgeistDeviceBoxAdapter} from "@opendaw/studio-adapters"
+import {MidiEffectProcessor} from "./MidiEffectProcessor"
+import {InstrumentDeviceProcessor} from "./InstrumentDeviceProcessor"
+import {AudioEffectDeviceProcessor} from "./AudioEffectDeviceProcessor"
 
 export namespace InstrumentDeviceProcessorFactory {
     export const create = (context: EngineContext,

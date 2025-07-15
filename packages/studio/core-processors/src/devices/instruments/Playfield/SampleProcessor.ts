@@ -2,7 +2,6 @@ import {int, UUID} from "@opendaw/lib-std"
 import {Event} from "@opendaw/lib-dsp"
 import {PlayfieldSampleBoxAdapter} from "@opendaw/studio-adapters"
 import {AudioProcessor} from "../../../AudioProcessor"
-import {DeviceProcessor} from "../../../processors"
 import {AudioGenerator, Block, Processor} from "../../../processing"
 import {AudioBuffer} from "../../../AudioBuffer"
 import {EngineContext} from "../../../EngineContext"
@@ -14,6 +13,7 @@ import {PlayfieldDeviceProcessor} from "../PlayfieldDeviceProcessor"
 import {SampleVoice} from "./SampleVoice"
 import {AutomatableParameters} from "./AutomatableParameters"
 import {MixProcessor} from "./MixProcessor"
+import {DeviceProcessor} from "../../../DeviceProcessor"
 
 export class SampleProcessor extends AudioProcessor implements DeviceProcessor, AudioGenerator {
     readonly #device: PlayfieldDeviceProcessor

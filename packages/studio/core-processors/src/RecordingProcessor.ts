@@ -1,7 +1,6 @@
-import {RingBuffer} from "@opendaw/studio-adapters"
-import {RecordingProcessorOptions} from "@opendaw/studio-adapters"
+import {RecordingProcessorOptions, RingBuffer} from "@opendaw/studio-adapters"
 
-registerProcessor("recording-processor", class extends AudioWorkletProcessor {
+export class RecordingProcessor extends AudioWorkletProcessor {
     readonly #writer: RingBuffer.Writer
 
     constructor({processorOptions: config}: { processorOptions: RecordingProcessorOptions } & AudioNodeOptions) {
@@ -14,4 +13,4 @@ registerProcessor("recording-processor", class extends AudioWorkletProcessor {
         this.#writer.write(inputs[0])
         return true
     }
-})
+}

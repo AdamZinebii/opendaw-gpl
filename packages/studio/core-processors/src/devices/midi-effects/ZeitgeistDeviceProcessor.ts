@@ -1,12 +1,12 @@
 import {assert, clamp, identity, int, Objects, Option, Terminable, UUID} from "@opendaw/lib-std"
 import {Event, Groove, NoteEvent, ppqn} from "@opendaw/lib-dsp"
-import {MidiEffectProcessor} from "../../processors"
 import {AutomatableParameter} from "../../AutomatableParameter"
 import {NoteEventSource, NoteLifecycleEvent} from "../../NoteEventSource"
 import {GrooveAdapter, NoteBroadcaster, ZeitgeistDeviceBoxAdapter} from "@opendaw/studio-adapters"
 import {EventProcessor} from "../../EventProcessor"
 import {Block} from "../../processing"
 import {EngineContext} from "../../EngineContext"
+import {MidiEffectProcessor} from "../../MidiEffectProcessor"
 
 export class ZeitgeistDeviceProcessor extends EventProcessor implements MidiEffectProcessor {
     readonly #adapter: ZeitgeistDeviceBoxAdapter

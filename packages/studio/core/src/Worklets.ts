@@ -1,55 +1,41 @@
 import {asDefined, int} from "@opendaw/lib-std"
-import {ExportStemsConfiguration} from "@opendaw/studio-adapters"
-import {WorkletFactory} from "./WorkletFactory"
+import {ExportStemsConfiguration, RingBuffer} from "@opendaw/studio-adapters"
 import {EngineWorklet} from "./EngineWorklet"
 import {MeterWorklet} from "./MeterWorklet"
 import {RecordingWorklet} from "./RecordingWorklet"
 import {Project} from "./Project"
-
-export type WorkletUrls = {
-    meter: string
-    engine: string
-    recording: string
-}
+import {RenderQuantum} from "./RenderQuantum"
 
 export class Worklets {
-    static async install(context: AudioContext, {engine, meter, recording}: WorkletUrls): Promise<Worklets> {
-        return Promise.all([
-            EngineWorklet.bootFactory(context, engine),
-            MeterWorklet.bootFactory(context, meter),
-            RecordingWorklet.bootFactory(context, recording)
-        ]).then(([engine, meter, recording]) => {
-            const worklets = new Worklets(engine, meter, recording)
+    static async install(context: BaseAudioContext, workletURL: string): Promise<Worklets> {
+        return context.audioWorklet.addModule(workletURL).then(() => {
+            const worklets = new Worklets(context)
             this.#map.set(context, worklets)
             return worklets
         })
     }
 
-    static get(context: AudioContext): Worklets {return asDefined(this.#map.get(context), "Worklets not installed")}
+    static get(context: BaseAudioContext): Worklets {return asDefined(this.#map.get(context), "Worklets not installed")}
 
-    static #map: WeakMap<AudioContext, Worklets> = new WeakMap<AudioContext, Worklets>()
+    static #map: WeakMap<BaseAudioContext, Worklets> = new WeakMap<AudioContext, Worklets>()
 
-    readonly #meter: WorkletFactory<MeterWorklet>
-    readonly #engine: WorkletFactory<EngineWorklet>
-    readonly #recording: WorkletFactory<RecordingWorklet>
+    readonly #context: BaseAudioContext
 
-    constructor(engine: WorkletFactory<EngineWorklet>,
-                meter: WorkletFactory<MeterWorklet>,
-                recording: WorkletFactory<RecordingWorklet>) {
-        this.#meter = meter
-        this.#engine = engine
-        this.#recording = recording
-    }
+    constructor(context: BaseAudioContext) {this.#context = context}
 
     createMeter(numberOfChannels: int): MeterWorklet {
-        return MeterWorklet.create(this.#meter, numberOfChannels)
+        return new MeterWorklet(this.#context, numberOfChannels)
     }
 
     createEngine(project: Project, exportConfiguration?: ExportStemsConfiguration): EngineWorklet {
-        return this.#engine.create(context => new EngineWorklet(context, project, exportConfiguration))
+        return new EngineWorklet(this.#context, project, exportConfiguration)
     }
 
     createRecording(numberOfChannels: int, numChunks: int): RecordingWorklet {
-        return RecordingWorklet.create(this.#recording, numberOfChannels, numChunks)
+        const audioBytes = numberOfChannels * numChunks * RenderQuantum * Float32Array.BYTES_PER_ELEMENT
+        const pointerBytes = Int32Array.BYTES_PER_ELEMENT * 2
+        const sab = new SharedArrayBuffer(audioBytes + pointerBytes)
+        const buffer: RingBuffer.Config = {sab, numChunks, numberOfChannels, bufferSize: RenderQuantum}
+        return new RecordingWorklet(this.#context, buffer)
     }
 }

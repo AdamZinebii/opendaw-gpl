@@ -6,7 +6,7 @@ export namespace RingBuffer {
     export interface Config {
         sab: SharedArrayBuffer
         numChunks: int
-        numChannels: int
+        numberOfChannels: int
         bufferSize: int
     }
 
@@ -17,13 +17,13 @@ export namespace RingBuffer {
     export const reader = ({
                                sab,
                                numChunks,
-                               numChannels,
+                               numberOfChannels,
                                bufferSize
                            }: Config, append: Procedure<Array<Float32Array>>): Reader => {
         let running = true
         const pointers = new Int32Array(sab, 0, 2)
         const audio = new Float32Array(sab, 8)
-        const planarChunk = new Float32Array(numChannels * bufferSize)
+        const planarChunk = new Float32Array(numberOfChannels * bufferSize)
         const canBlock = typeof document === "undefined" // for usage in workers
         const step = () => {
             if (!running) {return}
@@ -39,10 +39,10 @@ export namespace RingBuffer {
                 writePtr = Atomics.load(pointers, 0)
             }
             while (readPtr !== writePtr) {
-                const offset = readPtr * numChannels * bufferSize
-                planarChunk.set(audio.subarray(offset, offset + numChannels * bufferSize))
+                const offset = readPtr * numberOfChannels * bufferSize
+                planarChunk.set(audio.subarray(offset, offset + numberOfChannels * bufferSize))
                 const channels: Array<Float32Array> = []
-                for (let channel = 0; channel < numChannels; channel++) {
+                for (let channel = 0; channel < numberOfChannels; channel++) {
                     const start = channel * bufferSize
                     const end = start + bufferSize
                     channels.push(planarChunk.slice(start, end))
@@ -58,12 +58,12 @@ export namespace RingBuffer {
         return {stop: () => running = false}
     }
 
-    export const writer = ({sab, numChunks, numChannels, bufferSize}: Config): Writer => {
+    export const writer = ({sab, numChunks, numberOfChannels, bufferSize}: Config): Writer => {
         const pointers = new Int32Array(sab, 0, 2)
         const audio = new Float32Array(sab, 8)
         return Object.freeze({
             write: (channels: ReadonlyArray<Float32Array>): void => {
-                if (channels.length !== numChannels) {
+                if (channels.length !== numberOfChannels) {
                     // We ignore this. This can happen in the worklet setup phase.
                     return
                 }
@@ -73,7 +73,7 @@ export namespace RingBuffer {
                     }
                 }
                 const writePtr = Atomics.load(pointers, 0)
-                const offset = writePtr * numChannels * bufferSize
+                const offset = writePtr * numberOfChannels * bufferSize
                 channels.forEach((channel, index) => audio.set(channel, offset + index * bufferSize))
                 Atomics.store(pointers, 0, (writePtr + 1) % numChunks)
                 Atomics.notify(pointers, 0)

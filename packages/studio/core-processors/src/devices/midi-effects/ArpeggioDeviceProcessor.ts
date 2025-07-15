@@ -1,14 +1,14 @@
 import {ArpeggioDeviceBoxAdapter} from "@opendaw/studio-adapters"
-import {Event, EventSpanRetainer, Fraction, NoteEvent, ppqn} from "@opendaw/lib-dsp"
+import {Event, EventSpanRetainer, Fraction, Fragmentor, NoteEvent, ppqn} from "@opendaw/lib-dsp"
 import {assert, Bits, Id, int, Option, Terminable, UUID} from "@opendaw/lib-std"
 import {EngineContext} from "../../EngineContext"
 import {EventProcessor} from "../../EventProcessor"
-import {MidiEffectProcessor} from "../../processors"
-import {Fragmentor} from "@opendaw/lib-dsp"
 import {Block, BlockFlag, Processor} from "../../processing"
 import {AutomatableParameter} from "../../AutomatableParameter"
 import {NoteEventSource, NoteEventTarget, NoteLifecycleEvent} from "../../NoteEventSource"
 import {ArpeggioModes, Mode, VelocityMatrix} from "./ArpeggioDevice/ArpeggioModes"
+
+import {MidiEffectProcessor} from "../../MidiEffectProcessor"
 
 export class ArpeggioDeviceProcessor extends EventProcessor implements MidiEffectProcessor {
     readonly #adapter: ArpeggioDeviceBoxAdapter

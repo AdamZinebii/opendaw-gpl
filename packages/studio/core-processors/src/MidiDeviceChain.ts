@@ -1,5 +1,4 @@
 import {assert, SortedSet, Subscription, Terminator, UUID} from "@opendaw/lib-std"
-import {MidiEffectProcessor} from "./processors"
 import {NoteSequencer} from "./NoteSequencer"
 import {ProcessPhase} from "./processing"
 import {AudioUnit} from "./AudioUnit"
@@ -7,6 +6,7 @@ import {DeviceChain} from "./DeviceChain"
 import {MidiEffectDeviceAdapter} from "@opendaw/studio-adapters"
 import {MidiEffectDeviceProcessorFactory} from "./DeviceProcessorFactory"
 import {NoteEventSource} from "./NoteEventSource"
+import {MidiEffectProcessor} from "./MidiEffectProcessor"
 
 type MidiEffectDeviceEntry = {
     device: MidiEffectProcessor

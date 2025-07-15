@@ -1,7 +1,6 @@
 import {AudioEffectDeviceBoxAdapter, DelayDeviceBoxAdapter} from "@opendaw/studio-adapters"
 import {Bits, int, Option, Terminable, UUID} from "@opendaw/lib-std"
 import {dbToGain, Event, Fraction, PPQN, StereoMatrix} from "@opendaw/lib-dsp"
-import {AudioEffectDeviceProcessor} from "../../processors"
 import {EngineContext} from "../../EngineContext"
 import {Block, BlockFlag, Processor} from "../../processing"
 import {AudioBuffer} from "../../AudioBuffer"
@@ -9,6 +8,7 @@ import {PeakBroadcaster} from "../../PeakBroadcaster"
 import {AudioProcessor} from "../../AudioProcessor"
 import {AutomatableParameter} from "../../AutomatableParameter"
 import {DelayDeviceDsp} from "./DelayDeviceDsp"
+import {AudioEffectDeviceProcessor} from "../../AudioEffectDeviceProcessor"
 
 export class DelayDeviceProcessor extends AudioProcessor implements AudioEffectDeviceProcessor {
     static ID: int = 0 | 0

@@ -25,7 +25,6 @@ import {TimeInfo} from "./TimeInfo"
 import {
     AnyClipBoxAdapter,
     AudioData,
-    SampleManager,
     AudioUnitBoxAdapter,
     BoxAdapters,
     ClipAdapters,
@@ -38,6 +37,7 @@ import {
     ParameterFieldAdapters,
     ProjectDecoder,
     RootBoxAdapter,
+    SampleManager,
     TimelineBoxAdapter,
     TrackBoxAdapter
 } from "@opendaw/studio-adapters"
@@ -57,7 +57,7 @@ import {AudioUnitOptions} from "./AudioUnitOptions"
 
 const DEBUG = false
 
-registerProcessor("engine-processor", class extends AudioWorkletProcessor implements EngineContext {
+export class EngineProcessor extends AudioWorkletProcessor implements EngineContext {
     readonly #terminator: Terminator
     readonly #messenger: Messenger
     readonly #boxGraph: BoxGraph<BoxIO.TypeMap>
@@ -271,7 +271,7 @@ registerProcessor("engine-processor", class extends AudioWorkletProcessor implem
         } else {
             this.#stemExports.forEach((unit: AudioUnit, index: int) => {
                 const [l, r] = unit.audioOutput().channels()
-                output[index * 2 + 0].set(l)
+                output[index * 2].set(l)
                 output[index * 2 + 1].set(r)
             })
         }
@@ -333,4 +333,4 @@ registerProcessor("engine-processor", class extends AudioWorkletProcessor implem
         this.#audioUnits.forEach(unit => unit.terminate())
         this.#audioUnits.clear()
     }
-})
+}
