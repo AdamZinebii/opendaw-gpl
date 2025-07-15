@@ -2,14 +2,7 @@
 
 **openDAW** is a next-generation web-based Digital Audio Workstation (DAW) designed to **democratize** music production
 and to **resurface the process of making music** by making **high-quality** creation tools accessible to everyone, with
-a strong focus on **education** and hands-on **learning**.
-
-For more information about our mission and goals, please join our [Discord](https://discord.opendaw.studio), visit
-our [official website](https://opendaw.org) and test our current [prototype](https://opendaw.studio/). 
-
-Please consider supporting this project on [Patreon](https://www.patreon.com/join/openDAW) or [ko-fi](https://ko-fi.com/opendaw)
-
-![studio-teaser.png](assets/studio-teaser.png)
+a strong focus on **education** and hands-on **learning**. Please consider supporting this project on [Patreon](https://www.patreon.com/join/openDAW) or [ko-fi](https://ko-fi.com/opendaw).
 
 ## Open-Source
 
@@ -31,6 +24,8 @@ The source code for openDAW is available under GPL3 (links below).
 - **No Data Mining**
 
 **Just a free, open-source DAW in your browser.**
+
+![studio-teaser.png](assets/studio-teaser.png)
 
 ## Huge Shoutout To The Incredible openDAW Community!
 
@@ -80,6 +75,9 @@ Huge thanks to our [ambassadors](https://opendaw.org/ambassadors), whose dedicat
 - Tommes  
 - David Thompson  
 - Harry Gillich
+- OxVolt
+- Wojciech Miłkowski
+- Client
 
 ### openDAW Custom Pledge
 - lokomotywa ($2.47)
@@ -92,8 +90,7 @@ Huge thanks to our [ambassadors](https://opendaw.org/ambassadors), whose dedicat
 
 ### Prepare, Clone, Installation, and Run
 
-openDAW tries to avoid external libraries and frameworks. Following is a list of the internal core libraries and their
-dependencies. This is a list of the external libraries we currently use in the web studio:
+openDAW tries to avoid external libraries and frameworks. Following is a list of the external libraries we currently use in the web studio:
 
 * [jszip](https://www.npmjs.com/package/jszip) (for openDAW project bundle file)
 * [markdown-it](https://www.npmjs.com/package/markdown-it) + [markdown-it-table](https://www.npmjs.com/package/markdown-it-table) (for help pages)
@@ -109,7 +106,7 @@ Before starting, ensure you have the following installed on your system:
   ensure you have the
   binaries available in your environment if used outside the build system.
 - [TypeScript](https://www.typescriptlang.org/)
-- [OpenSSL](https://chocolatey.org/) For generating local development certificates (), OpenSSL needs to be installed on
+- [OpenSSL](https://openssl-library.org/) For generating local development certificates (), OpenSSL needs to be installed on
   your system. Most Linux/macOS systems have OpenSSL pre-installed.
 
 ### Clone
@@ -124,6 +121,10 @@ Before starting, ensure you have the following installed on your system:
 * `npm run build` (for the first time and after `npm run clean`)
 * `npm run dev:studio` | `npm run dev:headless` (start dev server)
 * Navigate to https://localhost:8080 (port is important > cors sample api)
+
+### Flow Charts
+
+<img width="6551" height="5971" alt="image" src="https://github.com/user-attachments/assets/09aaf742-6175-42ba-946b-a66e5f5dac72" />
 
 ---
 
