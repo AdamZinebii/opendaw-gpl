@@ -5,7 +5,6 @@ import {ScaleConfigurator} from "@/ui/timeline/editors/notes/pitch/ScaleConfigur
 import {MenuButton} from "@/ui/components/MenuButton.tsx"
 import {MenuItem} from "@/ui/model/menu-item.ts"
 import {MidiKeys} from "@opendaw/lib-dsp"
-import {Colors} from "@/ui/Colors.ts"
 import {Icon} from "@/ui/components/Icon.tsx"
 import {createElement} from "@opendaw/lib-jsx"
 import {ScaleConfig} from "@/ui/timeline/editors/notes/pitch/ScaleConfig.ts"
@@ -16,6 +15,7 @@ import {ObservableModifyContext} from "@/ui/timeline/ObservableModifyContext.ts"
 import {NoteModifier} from "@/ui/timeline/editors/notes/NoteModifier.ts"
 import {IconSymbol} from "@opendaw/studio-adapters"
 import {Html} from "@opendaw/lib-dom"
+import {Colors} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "PitchEditorHeader")
 

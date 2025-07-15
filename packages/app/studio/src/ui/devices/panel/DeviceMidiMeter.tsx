@@ -3,9 +3,9 @@ import {Lifecycle} from "@opendaw/lib-std"
 import {createElement, DomElement} from "@opendaw/lib-jsx"
 import {Address} from "@opendaw/lib-box"
 import {LiveStreamReceiver} from "@opendaw/lib-fusion"
-import {Colors} from "@/ui/Colors.ts"
 import {Html} from "@opendaw/lib-dom"
 import {NoteStreamReceiver} from "@opendaw/studio-adapters"
+import {Colors} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "DeviceMidiMeter")
 

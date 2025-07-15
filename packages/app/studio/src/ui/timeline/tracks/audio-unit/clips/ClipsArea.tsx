@@ -14,13 +14,13 @@ import {ClipWidth} from "@/ui/timeline/tracks/audio-unit/clips/constants.ts"
 import {installAutoScroll} from "@/ui/AutoScroll.ts"
 import {ScrollModel} from "@/ui/components/ScrollModel.ts"
 import {installClipContextMenu} from "@/ui/timeline/tracks/audio-unit/clips/ClipContextMenu.ts"
-import {Modifier} from "@/ui/Modifier.ts"
 import {PanelType} from "@/ui/workspace/PanelType"
 import {ClipSampleDragAndDrop} from "./ClipSampleDragAndDrop.ts"
 import {Dragging, Events, Html, Keyboard} from "@opendaw/lib-dom"
 import {DragAndDrop} from "@/ui/DragAndDrop.ts"
 import {AnyDragData} from "@/ui/AnyDragData"
 import {showProcessMonolog} from "@/ui/components/dialogs"
+import {Modifier} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "ClipsArea")
 

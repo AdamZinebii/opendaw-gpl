@@ -1,10 +1,10 @@
 import {asDefined, Lifecycle, quantizeFloor} from "@opendaw/lib-std"
 import {deferNextFrame, Html} from "@opendaw/lib-dom"
 import {PPQN} from "@opendaw/lib-dsp"
-import {Colors} from "@/ui/Colors.ts"
 import {createElement} from "@opendaw/lib-jsx"
 import {AudioUnitTracks} from "@opendaw/studio-adapters"
 import {StudioService} from "@/service/StudioService"
+import {Colors} from "@opendaw/studio-core"
 
 type Construct = {
     lifecycle: Lifecycle

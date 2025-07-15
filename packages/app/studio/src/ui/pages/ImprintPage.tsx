@@ -2,7 +2,7 @@ import css from "./ImprintPage.sass?inline"
 import {createElement, PageContext, PageFactory} from "@opendaw/lib-jsx"
 import {StudioService} from "@/service/StudioService.ts"
 import {Html} from "@opendaw/lib-dom"
-import {Colors} from "@/ui/Colors.ts"
+import {Colors} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "ImprintPage")
 

@@ -3,9 +3,9 @@ import {Icon} from "@/ui/components/Icon.tsx"
 import {createElement} from "@opendaw/lib-jsx"
 import {StudioService} from "@/service/StudioService"
 import {Button} from "@/ui/components/Button.tsx"
-import {Colors} from "@/ui/Colors.ts"
 import {Lifecycle, MutableObservableValue} from "@opendaw/lib-std"
 import {IconSymbol} from "@opendaw/studio-adapters"
+import {Colors} from "@opendaw/studio-core"
 
 type Construct = {
     lifecycle: Lifecycle

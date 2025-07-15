@@ -7,12 +7,10 @@ import {MenuItem} from "@/ui/model/menu-item.ts"
 import {AuxSendBox} from "@opendaw/studio-boxes"
 import {MenuButton} from "@/ui/components/MenuButton.tsx"
 import {Icon} from "../components/Icon"
-import {Colors} from "../Colors.ts"
 import {showNewAudioBusOrAuxDialog} from "@/ui/dialogs.tsx"
 import {AudioUnitType} from "@opendaw/studio-enums"
-import {Modifier} from "@/ui/Modifier.ts"
 import {Html} from "@opendaw/lib-dom"
-import {Project} from "@opendaw/studio-core"
+import {Colors, Modifier, Project} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "AuxSendGroup")
 

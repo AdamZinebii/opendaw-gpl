@@ -17,9 +17,9 @@ import {Box, BoxGraph} from "@opendaw/lib-box"
 import {BoxDebugView} from "./BoxDebugView"
 import {BoxesDebugView} from "@/ui/components/BoxesDebugView.tsx"
 import {ProgressBar} from "@/ui/components/ProgressBar.tsx"
-import {Colors} from "../Colors"
 import EmailBody from "@/ErrorMail.txt?raw"
 import {Errors} from "@opendaw/lib-dom"
+import {Colors} from "@opendaw/studio-core"
 
 export const showDialog = async ({headline, content, okText, buttons, origin}: {
     headline?: string,

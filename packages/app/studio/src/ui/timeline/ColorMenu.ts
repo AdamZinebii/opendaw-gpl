@@ -1,7 +1,7 @@
 import {MenuItem} from "@/ui/model/menu-item"
-import {ColorCodes} from "@/ui/mixer/ColorCodes"
 import {TrackType} from "@opendaw/studio-adapters"
 import {Procedure} from "@opendaw/lib-std"
+import {ColorCodes} from "@opendaw/studio-core"
 
 export namespace ColorMenu {
     const Colors: ReadonlyArray<{ label: string, hue: number }> = [

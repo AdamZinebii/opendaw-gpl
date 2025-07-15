@@ -7,9 +7,8 @@ import {IconSymbol} from "@opendaw/studio-adapters"
 import {Icon} from "@/ui/components/Icon"
 import {TextInput} from "@/ui/components/TextInput"
 import {ExportStemsConfiguration} from "@opendaw/studio-adapters"
-import {ColorCodes} from "@/ui/mixer/ColorCodes"
-import {Colors} from "@/ui/Colors"
 import {AudioUnitType} from "@opendaw/studio-enums"
+import {ColorCodes, Colors} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "ExportStemsConfigurator")
 

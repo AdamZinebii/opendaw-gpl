@@ -1,5 +1,4 @@
 import {AudioClipBox} from "@opendaw/studio-boxes"
-import {ColorCodes} from "@/ui/mixer/ColorCodes.ts"
 import {ElementCapturing} from "@/ui/canvas/capturing.ts"
 import {PPQN} from "@opendaw/lib-dsp"
 import {UUID} from "@opendaw/lib-std"
@@ -7,6 +6,7 @@ import {CreateParameters, TimelineDragAndDrop} from "@/ui/timeline/tracks/audio-
 import {ClipCaptureTarget} from "./ClipCapturing"
 import {ClipWidth} from "@/ui/timeline/tracks/audio-unit/clips/constants"
 import {StudioService} from "@/service/StudioService"
+import {ColorCodes} from "@opendaw/studio-core"
 
 export class ClipSampleDragAndDrop extends TimelineDragAndDrop<ClipCaptureTarget> {
     constructor(service: StudioService, capturing: ElementCapturing<ClipCaptureTarget>) {

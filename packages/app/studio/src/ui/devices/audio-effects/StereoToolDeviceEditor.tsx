@@ -6,10 +6,8 @@ import {DeviceEditor} from "@/ui/devices/DeviceEditor.tsx"
 import {ControlBuilder} from "@/ui/devices/ControlBuilder.tsx"
 import {DevicePeakMeter} from "@/ui/devices/panel/DevicePeakMeter.tsx"
 import {Html} from "@opendaw/lib-dom"
-import {Effects} from "@/service/Effects"
 import {SnapCenter, SnapCommonDecibel} from "@/ui/configs"
 import {LKR} from "@/ui/devices/constants"
-import {Colors} from "@/ui/Colors"
 import {Column} from "@/ui/devices/Column"
 import {Checkbox} from "@/ui/components/Checkbox"
 import {EditWrapper} from "@/ui/wrapper/EditWrapper.ts"
@@ -20,6 +18,7 @@ import {MenuItem} from "@/ui/model/menu-item"
 import {StereoMatrix} from "@opendaw/lib-dsp"
 import {MenuItems} from "../menu-items"
 import {StudioService} from "@/service/StudioService"
+import {Colors, Effects} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "StereoToolDeviceEditor")
 

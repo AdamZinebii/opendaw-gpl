@@ -3,7 +3,6 @@ import {Lifecycle} from "@opendaw/lib-std"
 import {RelativeUnitValueDragging} from "@/ui/wrapper/RelativeUnitValueDragging.tsx"
 import {SnapCenter, SnapCommonDecibel} from "@/ui/configs.ts"
 import {Knob} from "@/ui/components/Knob.tsx"
-import {Colors} from "@/ui/Colors.ts"
 import {Checkbox} from "@/ui/components/Checkbox.tsx"
 import {Icon} from "@/ui/components/Icon.tsx"
 import {createElement} from "@opendaw/lib-jsx"
@@ -15,6 +14,7 @@ import {AudioUnitBoxAdapter} from "@opendaw/studio-adapters"
 import {ControlIndicator} from "@/ui/components/ControlIndicator"
 import {Html} from "@opendaw/lib-dom"
 import {MIDILearning} from "@/midi/devices/MIDILearning"
+import {Colors} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "AudioUnitChannelControls")
 

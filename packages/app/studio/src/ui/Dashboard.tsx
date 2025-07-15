@@ -2,10 +2,10 @@ import css from "./Dashboard.sass?inline"
 import {Lifecycle, TimeSpan} from "@opendaw/lib-std"
 import {createElement, LocalLink} from "@opendaw/lib-jsx"
 import {StudioService} from "@/service/StudioService.ts"
-import {Colors} from "@/ui/Colors.ts"
 import {Html} from "@opendaw/lib-dom"
 import {ProjectBrowser} from "@/project/ProjectBrowser"
 import {showProcessMonolog} from "@/ui/components/dialogs"
+import {Colors} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "Dashboard")
 

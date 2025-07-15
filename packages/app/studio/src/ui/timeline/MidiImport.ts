@@ -15,11 +15,10 @@ import {NoteEventBox, NoteEventCollectionBox, NoteRegionBox, TrackBox} from "@op
 import {AudioUnitBoxAdapter, TrackType} from "@opendaw/studio-adapters"
 import {PPQN, ppqn} from "@opendaw/lib-dsp"
 import {showInfoDialog, showProcessDialog} from "@/ui/components/dialogs.tsx"
-import {ColorCodes} from "@/ui/mixer/ColorCodes.ts"
 import {ControlType} from "@/midi/ControlType"
 import {Promises, Wait} from "@opendaw/lib-runtime"
 import {Errors, Files} from "@opendaw/lib-dom"
-import {Project} from "@opendaw/studio-core"
+import {ColorCodes, Project} from "@opendaw/studio-core"
 
 export namespace MidiImport {
     export const toTracks = async (project: Project, audioUnitBoxAdapter: AudioUnitBoxAdapter) => {

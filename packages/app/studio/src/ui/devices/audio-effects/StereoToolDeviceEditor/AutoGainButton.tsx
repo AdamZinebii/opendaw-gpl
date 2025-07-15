@@ -3,13 +3,12 @@ import {Events, Html} from "@opendaw/lib-dom"
 import {Lifecycle, Terminator} from "@opendaw/lib-std"
 import {createElement} from "@opendaw/lib-jsx"
 import {LKR} from "@/ui/devices/constants"
-import {Colors} from "@/ui/Colors"
 import {Column} from "@/ui/devices/Column"
 import {Icon} from "@/ui/components/Icon"
 import {IconSymbol, StereoToolDeviceBoxAdapter} from "@opendaw/studio-adapters"
 import {gainToDb} from "@opendaw/lib-dsp"
 import {Runtime} from "@opendaw/lib-runtime"
-import {Project} from "@opendaw/studio-core"
+import {Colors, Project} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "AutoGainButton")
 

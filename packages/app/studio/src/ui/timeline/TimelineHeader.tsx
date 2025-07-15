@@ -4,11 +4,11 @@ import {StudioService} from "@/service/StudioService.ts"
 import {SnapSelector} from "@/ui/timeline/SnapSelector.tsx"
 import {createElement} from "@opendaw/lib-jsx"
 import {FlexSpacer} from "@/ui/components/FlexSpacer.tsx"
-import {Colors} from "@/ui/Colors.ts"
 import {Icon} from "@/ui/components/Icon.tsx"
 import {Checkbox} from "@/ui/components/Checkbox.tsx"
 import {IconSymbol} from "@opendaw/studio-adapters"
 import {Html} from "@opendaw/lib-dom"
+import {Colors} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "TimelineHeader")
 

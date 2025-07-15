@@ -3,11 +3,11 @@ import {assert, Lifecycle, Point, SortedSet, Subscription, Terminable, Terminato
 import {appendChildren, createElement} from "@opendaw/lib-jsx"
 import {ConnectorViewAdapter, ModularEnvironment, WiringPreview} from "@/ui/modular/ModularEnvironment.ts"
 import {ModuleConnectionAdapter} from "@opendaw/studio-adapters"
-import {Colors} from "@/ui/Colors.ts"
 import {ModuleAdapter} from "@opendaw/studio-adapters"
 import {ModuleConnectorAdapter} from "@opendaw/studio-adapters"
 import {Camera} from "@/ui/modular/Camera.ts"
 import {AnimationFrame, deferNextFrame, Html} from "@opendaw/lib-dom"
+import {Colors} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "ModularWires")
 

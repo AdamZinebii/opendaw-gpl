@@ -2,11 +2,11 @@ import css from "./SnapSelector.sass?inline"
 import {Lifecycle} from "@opendaw/lib-std"
 import {MenuButton} from "@/ui/components/MenuButton.tsx"
 import {Snapping} from "@/ui/timeline/Snapping.ts"
-import {Colors} from "@/ui/Colors.ts"
 import {Icon} from "@/ui/components/Icon.tsx"
 import {createElement, Inject} from "@opendaw/lib-jsx"
 import {IconSymbol} from "@opendaw/studio-adapters"
 import {Html} from "@opendaw/lib-dom"
+import {Colors} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "SnapSelector")
 

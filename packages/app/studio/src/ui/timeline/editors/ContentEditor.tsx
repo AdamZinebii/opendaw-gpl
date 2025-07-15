@@ -25,7 +25,6 @@ import {FlexSpacer} from "@/ui/components/FlexSpacer.tsx"
 import {AudioRegionBoxAdapter} from "@opendaw/studio-adapters"
 import {PPQN} from "@opendaw/lib-dsp"
 import {AudioEditor} from "@/ui/timeline/editors/audio/AudioEditor.tsx"
-import {Colors} from "@/ui/Colors.ts"
 import {MenuButton} from "@/ui/components/MenuButton"
 import {MenuItem} from "@/ui/model/menu-item.ts"
 import {EditorMenuCollector} from "@/ui/timeline/editors/EditorMenuCollector.ts"
@@ -45,6 +44,7 @@ import {ValueClipBoxAdapter} from "@opendaw/studio-adapters"
 import {Pointers} from "@opendaw/studio-enums"
 import {ValueEditingContext} from "@/ui/timeline/editors/value/ValueEditingContext.ts"
 import {Html} from "@opendaw/lib-dom"
+import {Colors} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "ContentEditor")
 

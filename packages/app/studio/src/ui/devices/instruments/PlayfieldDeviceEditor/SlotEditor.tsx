@@ -4,10 +4,9 @@ import {asDefined, clamp, Lifecycle, Option} from "@opendaw/lib-std"
 import {createElement} from "@opendaw/lib-jsx"
 import {StudioService} from "@/service/StudioService.ts"
 import {Icon} from "@/ui/components/Icon"
-import {IconSymbol} from "@opendaw/studio-adapters"
+import {AutomatableParameterFieldAdapter, Gate, IconSymbol, PlayfieldSampleBoxAdapter} from "@opendaw/studio-adapters"
 import {CanvasPainter} from "@/ui/canvas/painter"
 import {EditWrapper} from "@/ui/wrapper/EditWrapper.ts"
-import {Colors} from "@/ui/Colors"
 import {Checkbox} from "@/ui/components/Checkbox"
 import {ControlIndicator} from "@/ui/components/ControlIndicator"
 import {MidiKeys} from "@opendaw/lib-dsp"
@@ -15,12 +14,8 @@ import {SlotUtils} from "@/ui/devices/instruments/PlayfieldDeviceEditor/SlotUtil
 import {RadioGroup} from "@/ui/components/RadioGroup"
 import {ParameterLabel} from "@/ui/components/ParameterLabel"
 import {RelativeUnitValueDragging} from "@/ui/wrapper/RelativeUnitValueDragging"
-import {AutomatableParameterFieldAdapter} from "@opendaw/studio-adapters"
-import {Gate} from "@opendaw/studio-adapters"
-import {
-    PlayfieldSampleBoxAdapter
-} from "@opendaw/studio-adapters"
 import {SnapValueThresholdInPixels} from "@/ui/timeline/editors/value/ValueMoveModifier"
+import {Colors} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "SlotEditor")
 

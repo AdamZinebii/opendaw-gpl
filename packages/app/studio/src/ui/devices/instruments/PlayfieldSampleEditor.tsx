@@ -6,11 +6,11 @@ import {DevicePeakMeter} from "@/ui/devices/panel/DevicePeakMeter.tsx"
 import {Instruments} from "@/service/Instruments"
 import {DeviceHost, IconSymbol, NoteSender, NoteSustainer, PlayfieldSampleBoxAdapter} from "@opendaw/studio-adapters"
 import {SlotEditor} from "@/ui/devices/instruments/PlayfieldDeviceEditor/SlotEditor"
-import {Colors} from "@/ui/Colors"
 import {Events} from "@opendaw/lib-dom"
 import {Icon} from "@/ui/components/Icon"
 import {TextTooltip} from "@/ui/surface/TextTooltip"
 import {StudioService} from "@/service/StudioService"
+import {Colors} from "@opendaw/studio-core"
 
 type Construct = {
     lifecycle: Lifecycle

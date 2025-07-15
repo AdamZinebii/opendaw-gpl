@@ -1,5 +1,7 @@
 import {assert, int, Option, panic, UUID} from "@opendaw/lib-std"
+import {ppqn, PPQN} from "@opendaw/lib-dsp"
 import {Field} from "@opendaw/lib-box"
+import {AudioUnitType} from "@opendaw/studio-enums"
 import {
     AudioBusBox,
     AudioUnitBox,
@@ -23,13 +25,9 @@ import {
     TrackRegions,
     TrackType
 } from "@opendaw/studio-adapters"
-import {Effects} from "@/service/Effects.ts"
-import {ColorCodes} from "@/ui/mixer/ColorCodes.ts"
-import {ppqn, PPQN} from "@opendaw/lib-dsp"
-import {showInfoDialog} from "./components/dialogs"
-import {AudioUnitType} from "@opendaw/studio-enums"
-import {StudioService} from "@/service/StudioService"
-import {Project} from "@opendaw/studio-core"
+import {Project} from "./Project"
+import {ColorCodes} from "./ColorCodes"
+import {Effects} from "./Effects"
 
 export namespace Modifier {
     const AudioUnitOrdering = {
@@ -107,7 +105,7 @@ export namespace Modifier {
         return audioBusBox
     }
 
-    export const createEffect = (service: StudioService, host: DeviceHost, entry: Effects.Entry, newIndex: int) => {
+    export const createEffect = (project: Project, host: DeviceHost, entry: Effects.Entry, newIndex: int) => {
         let chain: ReadonlyArray<EffectDeviceBoxAdapter>
         let field: Field<EffectPointerType>
         if (entry.type === "audio") {
@@ -119,12 +117,12 @@ export namespace Modifier {
         } else {
             return panic(`Unknown factory type: ${entry.type}`)
         }
-        const {project} = service
-        project.editing.modify(() => {
-            entry.create(service, project, field, newIndex)
+        return project.editing.modify(() => {
+            const box = entry.create(project, field, newIndex)
             for (let index = newIndex; index < chain.length; index++) {
                 chain[index].indexField.setValue(index + 1)
             }
+            return box
         })
     }
 
@@ -162,9 +160,6 @@ export namespace Modifier {
                     box.clips.refer(clips.trackBoxAdapter.box.clips)
                 }))
             }
-            case TrackType.Audio: {
-                showInfoDialog({message: "Please drag and drop samples from the sample editor."}).then()
-            }
         }
         return Option.None
     }
@@ -200,9 +195,6 @@ export namespace Modifier {
                     box.events.refer(events.owners)
                     box.regions.refer(regions.trackBoxAdapter.box.regions)
                 }))
-            }
-            case TrackType.Audio: {
-                showInfoDialog({message: "Please drag and drop samples from the sample browser."}).then()
             }
         }
         return Option.None

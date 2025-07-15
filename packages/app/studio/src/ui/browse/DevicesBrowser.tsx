@@ -1,16 +1,16 @@
 import css from "./DevicesBrowser.sass?inline"
-import {Lifecycle, Objects, panic} from "@opendaw/lib-std"
-import {StudioService} from "@/service/StudioService.ts"
+import {isInstanceOf, Lifecycle, Objects, panic} from "@opendaw/lib-std"
+import {Html} from "@opendaw/lib-dom"
 import {createElement} from "@opendaw/lib-jsx"
+import {StudioService} from "@/service/StudioService.ts"
 import {Instruments} from "@/service/Instruments.ts"
 import {DragAndDrop} from "@/ui/DragAndDrop"
 import {DragDevice} from "@/ui/AnyDragData"
-import {Effects} from "@/service/Effects"
 import {TextTooltip} from "@/ui/surface/TextTooltip"
-import {Icon} from "../components/Icon"
-import {Html} from "@opendaw/lib-dom"
 import {DeviceHost, Devices} from "@opendaw/studio-adapters"
-import {Project} from "@opendaw/studio-core"
+import {Effects, Project} from "@opendaw/studio-core"
+import {ModularBox} from "@opendaw/studio-boxes"
+import {Icon} from "../components/Icon"
 
 const className = Html.adoptStyleSheet(css, "DevicesBrowser")
 
@@ -100,7 +100,13 @@ const createEffectList = <
                             type === "audio-effect" ? deviceHost.audioEffects.field()
                                 : type === "midi-effect" ? deviceHost.midiEffects.field()
                                     : panic(`Unknown ${type}`)
-                        editing.modify(() => entry.create(service, project, effectField, effectField.pointerHub.incoming().length))
+                        editing.modify(() => {
+                            const box = entry.create(project, effectField, effectField.pointerHub.incoming().length)
+                            if (isInstanceOf(box, ModularBox)) {
+                                service.switchScreen("modular")
+                            }
+                            return box
+                        })
                     })
                 }}>
                     <div className="icon">

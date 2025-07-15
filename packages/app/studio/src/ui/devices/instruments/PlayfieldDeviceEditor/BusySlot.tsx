@@ -20,7 +20,6 @@ import {SlotUtils} from "@/ui/devices/instruments/PlayfieldDeviceEditor/SlotUtil
 import {Icon} from "@/ui/components/Icon"
 import {IconSymbol} from "@opendaw/studio-adapters"
 import {Checkbox} from "@/ui/components/Checkbox"
-import {Colors} from "@/ui/Colors"
 import {Editing} from "@opendaw/lib-box"
 import {ContextMenu} from "@/ui/ContextMenu"
 import {MenuItem} from "@/ui/model/menu-item"
@@ -32,6 +31,7 @@ import {
     PlayfieldSampleBoxAdapter
 } from "@opendaw/studio-adapters"
 import {TextTooltip} from "@/ui/surface/TextTooltip"
+import {Colors} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "BusySlot")
 

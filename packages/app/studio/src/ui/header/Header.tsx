@@ -1,7 +1,6 @@
 import css from "./Header.sass?inline"
 import {Checkbox} from "@/ui/components/Checkbox.tsx"
 import {Icon} from "@/ui/components/Icon.tsx"
-import {Colors} from "@/ui/Colors.ts"
 import {Lifecycle, Nullable, ObservableValue, Observer, Subscription} from "@opendaw/lib-std"
 import {TransportGroup} from "@/ui/header/TransportGroup.tsx"
 import {TimeStateDisplay} from "@/ui/header/TimeStateDisplay.tsx"
@@ -14,6 +13,7 @@ import {IconSymbol} from "@opendaw/studio-adapters"
 import {MidiDeviceAccess} from "@/midi/devices/MidiDeviceAccess"
 import {Html} from "@opendaw/lib-dom"
 import {MenuItem} from "@/ui/model/menu-item"
+import {Colors} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "Header")
 

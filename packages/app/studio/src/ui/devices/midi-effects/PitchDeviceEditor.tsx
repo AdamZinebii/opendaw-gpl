@@ -7,8 +7,8 @@ import {createElement} from "@opendaw/lib-jsx"
 import {ControlBuilder} from "@/ui/devices/ControlBuilder.tsx"
 import {DeviceMidiMeter} from "@/ui/devices/panel/DeviceMidiMeter.tsx"
 import {Html} from "@opendaw/lib-dom"
-import {Effects} from "@/service/Effects"
 import {StudioService} from "@/service/StudioService"
+import {Effects} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "PitchDeviceEditor")
 

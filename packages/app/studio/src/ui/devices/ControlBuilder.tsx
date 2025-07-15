@@ -2,11 +2,11 @@ import {AutomatableParameterFieldAdapter, DeviceBoxAdapter} from "@opendaw/studi
 import {Column} from "@/ui/devices/Column.tsx"
 import {createElement} from "@opendaw/lib-jsx"
 import {LKR} from "@/ui/devices/constants.ts"
-import {Colors} from "@/ui/Colors.ts"
 import {ParameterLabelKnob} from "@/ui/devices/ParameterLabelKnob.tsx"
 import {TerminableOwner, ValueGuide} from "@opendaw/lib-std"
 import {Editing, PrimitiveValues} from "@opendaw/lib-box"
 import {MIDILearning} from "@/midi/devices/MIDILearning"
+import {Colors} from "@opendaw/studio-core"
 
 type Creation<T extends PrimitiveValues> = {
     lifecycle: TerminableOwner

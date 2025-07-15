@@ -6,10 +6,10 @@ import {PitchPositioner} from "@/ui/timeline/editors/notes/pitch/PitchPositioner
 import {MidiKeys} from "@opendaw/lib-dsp"
 import {ScaleConfig} from "@/ui/timeline/editors/notes/pitch/ScaleConfig.ts"
 import {NoteStreamReceiver} from "@opendaw/studio-adapters"
-import {Colors} from "@/ui/Colors"
 import {NoteSender} from "@opendaw/studio-adapters"
 import {Dragging, Events, Html} from "@opendaw/lib-dom"
 import {Fonts} from "@/ui/Fonts"
+import {Colors} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "PianoRoll")
 

@@ -1,13 +1,13 @@
 import css from "./DropDown.sass?inline"
 import {Func, Lifecycle, MutableObservableValue, Provider} from "@opendaw/lib-std"
 import {MenuButton} from "@/ui/components/MenuButton.tsx"
-import {Colors} from "@/ui/Colors.ts"
 import {createElement, Inject} from "@opendaw/lib-jsx"
 import {MenuItem} from "@/ui/model/menu-item.ts"
 import {Appearance} from "../components/ButtonCheckboxRadio"
 import {IconSymbol} from "@opendaw/studio-adapters"
 import {Icon} from "@/ui/components/Icon"
 import {Html} from "@opendaw/lib-dom"
+import {Colors} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "DropDown")
 

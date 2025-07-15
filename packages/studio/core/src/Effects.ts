@@ -1,3 +1,4 @@
+import {int, INVERSE_SQRT_2, UUID} from "@opendaw/lib-std"
 import {Box, Field} from "@opendaw/lib-box"
 import {
     ArpeggioDeviceBox,
@@ -14,10 +15,8 @@ import {
     StereoToolDeviceBox,
     ZeitgeistDeviceBox
 } from "@opendaw/studio-boxes"
-import {int, INVERSE_SQRT_2, UUID} from "@opendaw/lib-std"
 import {EffectPointerType, IconSymbol} from "@opendaw/studio-adapters"
-import {StudioService} from "@/service/StudioService"
-import {Project} from "@opendaw/studio-core"
+import {Project} from "./Project"
 
 export namespace Effects {
     export interface Entry {
@@ -27,7 +26,7 @@ export namespace Effects {
         get separatorBefore(): boolean
         get type(): "audio" | "midi"
 
-        create(service: StudioService, project: Project, unit: Field<EffectPointerType>, index: int): Box
+        create(project: Project, unit: Field<EffectPointerType>, index: int): Box
     }
 
     export const MidiNamed = {
@@ -37,7 +36,7 @@ export namespace Effects {
             icon: IconSymbol.Stack,
             separatorBefore: false,
             type: "midi",
-            create: (_service, {boxGraph}, unit, index) => ArpeggioDeviceBox.create(boxGraph, UUID.generate(), box => {
+            create: ({boxGraph}, unit, index) => ArpeggioDeviceBox.create(boxGraph, UUID.generate(), box => {
                 box.label.setValue("Arpeggio")
                 box.index.setValue(index)
                 box.host.refer(unit)
@@ -49,7 +48,7 @@ export namespace Effects {
             icon: IconSymbol.Note,
             separatorBefore: false,
             type: "midi",
-            create: (_service, {boxGraph}, unit, index) => PitchDeviceBox.create(boxGraph, UUID.generate(), box => {
+            create: ({boxGraph}, unit, index) => PitchDeviceBox.create(boxGraph, UUID.generate(), box => {
                 box.label.setValue("Pitch")
                 box.index.setValue(index)
                 box.host.refer(unit)
@@ -61,7 +60,7 @@ export namespace Effects {
             icon: IconSymbol.Zeitgeist,
             separatorBefore: false,
             type: "midi",
-            create: (_service, {boxGraph, rootBoxAdapter}, unit, index) => {
+            create: ({boxGraph, rootBoxAdapter}, unit, index) => {
                 const useGlobal = false // TODO First Zeitgeist should be true
                 const shuffleBox = useGlobal
                     ? rootBoxAdapter.groove.box
@@ -86,7 +85,7 @@ export namespace Effects {
             icon: IconSymbol.Stereo,
             separatorBefore: false,
             type: "audio",
-            create: (_service, {boxGraph}, unit, index) => StereoToolDeviceBox.create(boxGraph, UUID.generate(), box => {
+            create: ({boxGraph}, unit, index) => StereoToolDeviceBox.create(boxGraph, UUID.generate(), box => {
                 box.label.setValue("Stereo Tool")
                 box.index.setValue(index)
                 box.host.refer(unit)
@@ -98,7 +97,7 @@ export namespace Effects {
             icon: IconSymbol.Time,
             separatorBefore: false,
             type: "audio",
-            create: (_service, {boxGraph}, unit, index) => DelayDeviceBox.create(boxGraph, UUID.generate(), box => {
+            create: ({boxGraph}, unit, index) => DelayDeviceBox.create(boxGraph, UUID.generate(), box => {
                 box.label.setValue("Delay")
                 box.index.setValue(index)
                 box.host.refer(unit)
@@ -110,7 +109,7 @@ export namespace Effects {
             icon: IconSymbol.Cube,
             separatorBefore: false,
             type: "audio",
-            create: (_service, {boxGraph}, unit, index) => ReverbDeviceBox.create(boxGraph, UUID.generate(), box => {
+            create: ({boxGraph}, unit, index) => ReverbDeviceBox.create(boxGraph, UUID.generate(), box => {
                 box.label.setValue("Reverb")
                 box.preDelay.setInitValue(0.001)
                 box.index.setValue(index)
@@ -123,7 +122,7 @@ export namespace Effects {
             icon: IconSymbol.EQ,
             separatorBefore: false,
             type: "audio",
-            create: (_service, {boxGraph}, unit, index) => RevampDeviceBox.create(boxGraph, UUID.generate(), box => {
+            create: ({boxGraph}, unit, index) => RevampDeviceBox.create(boxGraph, UUID.generate(), box => {
                 box.label.setValue("Revamp")
                 box.highPass.frequency.setInitValue(40.0)
                 box.highPass.order.setInitValue(2)
@@ -155,7 +154,7 @@ export namespace Effects {
             icon: IconSymbol.Box,
             separatorBefore: true,
             type: "audio",
-            create: (service, project, unit, index) => {
+            create: (project, unit, index) => {
                 const graph = project.boxGraph
                 const moduleSetupBox = ModularBox.create(graph, UUID.generate(), box => {
                     box.collection.refer(project.rootBox.modularSetups)
@@ -179,7 +178,6 @@ export namespace Effects {
                     box.target.refer(modularOutput.input)
                 })
                 project.userEditingManager.modularSystem.edit(moduleSetupBox.editing)
-                service.switchScreen("modular")
                 return ModularDeviceBox.create(graph, UUID.generate(), box => {
                     box.label.setValue("Modular")
                     box.modularSetup.refer(moduleSetupBox.device)

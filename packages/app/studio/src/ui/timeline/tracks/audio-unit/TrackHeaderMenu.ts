@@ -4,8 +4,8 @@ import {AudioUnitBoxAdapter, DeviceAccepts, TrackBoxAdapter, TrackType} from "@o
 import {DebugMenus} from "@/ui/menu/debug"
 import {MidiImport} from "@/ui/timeline/MidiImport.ts"
 import {TrackBox} from "@opendaw/studio-boxes"
-import {Modifier} from "@/ui/Modifier.ts"
 import {StudioService} from "@/service/StudioService"
+import {Modifier} from "@opendaw/studio-core"
 
 export const installTrackHeaderMenu = (service: StudioService,
                                        audioUnitBoxAdapter: AudioUnitBoxAdapter,

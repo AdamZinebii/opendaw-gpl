@@ -4,7 +4,6 @@ import {asDefined, int, Lifecycle} from "@opendaw/lib-std"
 import {createElement} from "@opendaw/lib-jsx"
 import {DeviceEditor} from "@/ui/devices/DeviceEditor.tsx"
 import {Column} from "@/ui/devices/Column.tsx"
-import {Colors} from "@/ui/Colors.ts"
 import {ParameterLabel} from "@/ui/components/ParameterLabel.tsx"
 import {createCurveRenderer, plotSpectrum} from "@/ui/devices/audio-effects/RevampDeviceEditor/Renderer.ts"
 import {createDisplay} from "@/ui/devices/audio-effects/RevampDeviceEditor/Display.tsx"
@@ -27,8 +26,8 @@ import {DevicePeakMeter} from "@/ui/devices/panel/DevicePeakMeter.tsx"
 import {ControlIndicator} from "@/ui/components/ControlIndicator"
 import {attachParameterContextMenu} from "@/ui/menu/automation"
 import {Html} from "@opendaw/lib-dom"
-import {Effects} from "@/service/Effects"
 import {StudioService} from "@/service/StudioService"
+import {Colors, Effects} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "RevampDeviceEditor")
 

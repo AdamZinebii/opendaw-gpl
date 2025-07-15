@@ -1,7 +1,6 @@
 import css from "./TimeAxis.sass?inline"
 import {clamp, EmptyExec, isDefined, Lifecycle, Nullable, Option} from "@opendaw/lib-std"
 import {createElement} from "@opendaw/lib-jsx"
-import {Colors} from "@/ui/Colors.ts"
 import {Propagation} from "@opendaw/lib-box"
 import {StudioService} from "@/service/StudioService.ts"
 import {TimeGrid} from "@/ui/timeline/TimeGrid.ts"
@@ -12,6 +11,7 @@ import {ppqn, PPQN} from "@opendaw/lib-dsp"
 import {Dragging, Events, Html} from "@opendaw/lib-dom"
 import {DblClckTextInput} from "@/ui/wrapper/DblClckTextInput"
 import {TextTooltip} from "@/ui/surface/TextTooltip"
+import {Colors} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "time-axis")
 

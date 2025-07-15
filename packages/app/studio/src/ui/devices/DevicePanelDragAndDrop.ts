@@ -8,15 +8,12 @@ import {
     MidiEffectDeviceAdapter,
     SortedBoxAdapterCollection
 } from "@opendaw/studio-adapters"
-import {Effects} from "@/service/Effects"
 import {InsertMarker} from "@/ui/components/InsertMarker"
 import {Pointers} from "@opendaw/studio-enums"
-import {StudioService} from "@/service/StudioService"
-import {Project} from "@opendaw/studio-core"
+import {Effects, Project} from "@opendaw/studio-core"
 
 export namespace DevicePanelDragAndDrop {
-    export const install = (service: StudioService,
-                            project: Project,
+    export const install = (project: Project,
                             editors: HTMLElement,
                             midiEffectsContainer: HTMLElement,
                             instrumentContainer: HTMLElement,
@@ -91,7 +88,7 @@ export namespace DevicePanelDragAndDrop {
                 const [index] = DragAndDrop.findInsertLocation(event, container)
                 if (dragData.start_index === null) {
                     editing.modify(() => {
-                        Effects.MergedNamed[dragData.device].create(service, project, field, index)
+                        Effects.MergedNamed[dragData.device].create(project, field, index)
                         const adapters = collection.adapters()
                         for (let i = index; i < adapters.length; i++) {
                             adapters[i].indexField.setValue(i + 1)

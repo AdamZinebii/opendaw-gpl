@@ -21,13 +21,13 @@ import {RegionDurationModifier} from "@/ui/timeline/tracks/audio-unit/regions/Re
 import {RegionMoveModifier} from "@/ui/timeline/tracks/audio-unit/regions/RegionMoveModifier.ts"
 import {RegionLoopDurationModifier} from "@/ui/timeline/tracks/audio-unit/regions/RegionLoopDurationModifier.ts"
 import {ScrollModel} from "@/ui/components/ScrollModel.ts"
-import {Modifier} from "@/ui/Modifier.ts"
 import {RegionSampleDragAndDrop} from "@/ui/timeline/tracks/audio-unit/regions/RegionSampleDragAndDrop.ts"
 import {PanelType} from "@/ui/workspace/PanelType.ts"
 import {CssUtils, Dragging, Events, Html, Keyboard} from "@opendaw/lib-dom"
 import {DragAndDrop} from "@/ui/DragAndDrop"
 import {AnyDragData} from "@/ui/AnyDragData"
 import {showProcessMonolog} from "@/ui/components/dialogs"
+import {Modifier} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "RegionsArea")
 

@@ -3,14 +3,12 @@ import {assert, DefaultObservableValue, Lifecycle, StringComparator, UUID} from 
 import {AudioUnitBoxAdapter, IconSymbol} from "@opendaw/studio-adapters"
 import {createElement, DomElement, Frag} from "@opendaw/lib-jsx"
 import {IconCartridge} from "@/ui/components/Icon.tsx"
-import {Colors} from "@/ui/Colors.ts"
 import {Html} from "@opendaw/lib-dom"
 import {MenuItem} from "@/ui/model/menu-item"
 import {showNewAudioBusOrAuxDialog} from "@/ui/dialogs"
-import {Modifier} from "@/ui/Modifier"
 import {AudioUnitType} from "@opendaw/studio-enums"
 import {MenuButton} from "@/ui/components/MenuButton"
-import {Project} from "@opendaw/studio-core"
+import {Colors, Modifier, Project} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "OutputSelector")
 

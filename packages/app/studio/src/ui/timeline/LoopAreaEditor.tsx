@@ -2,13 +2,13 @@ import css from "./LoopAreaEditor.sass?inline"
 import {asDefined, Lifecycle, Nullable, Option} from "@opendaw/lib-std"
 import {CssUtils, deferNextFrame, Dragging, Html} from "@opendaw/lib-dom"
 import {createElement} from "@opendaw/lib-jsx"
-import {Colors} from "@/ui/Colors.ts"
 import {Editing, Propagation} from "@opendaw/lib-box"
 import {ElementCapturing} from "@/ui/canvas/capturing.ts"
 import {installCursor} from "@/ui/hooks/cursor.ts"
 import {TimelineRange} from "@/ui/timeline/TimelineRange.ts"
 import {Snapping} from "@/ui/timeline/Snapping.ts"
 import {LoopArea} from "@opendaw/studio-boxes"
+import {Colors} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "loop-area-editor")
 
@@ -68,7 +68,6 @@ export const LoopAreaEditor = ({lifecycle, editing, range, snapping, loopArea}: 
         const target = capturing.captureEvent(event)
         if (target === null) {return Option.None}
         const pointerPulse = range.xToUnit(event.clientX)
-        if (target === null) {return Option.None}
         const wasLoopFrom = loopFrom.getValue()
         const wasLoopTo = loopTo.getValue()
         const referencePulse = target === "loop-end" ? wasLoopTo : wasLoopFrom

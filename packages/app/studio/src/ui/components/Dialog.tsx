@@ -3,9 +3,9 @@ import {Exec, Procedure, safeExecute, Terminator} from "@opendaw/lib-std"
 import {createElement, JsxValue} from "@opendaw/lib-jsx"
 import {Button} from "@/ui/components/Button.tsx"
 import {Icon} from "@/ui/components/Icon.tsx"
-import {Colors} from "@/ui/Colors.ts"
 import {IconSymbol} from "@opendaw/studio-adapters"
 import {Events, Html} from "@opendaw/lib-dom"
+import {Colors} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "Dialog")
 

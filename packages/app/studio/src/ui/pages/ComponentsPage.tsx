@@ -4,7 +4,6 @@ import {StudioService} from "@/service/StudioService.ts"
 import {Checkbox} from "@/ui/components/Checkbox.tsx"
 import {DefaultObservableValue, Option, panic, UUID} from "@opendaw/lib-std"
 import {Icon} from "@/ui/components/Icon.tsx"
-import {Colors} from "@/ui/Colors.ts"
 import {RadioGroup} from "@/ui/components/RadioGroup.tsx"
 import {Button} from "@/ui/components/Button.tsx"
 import {MenuItem} from "@/ui/model/menu-item.ts"
@@ -25,6 +24,7 @@ import {ProgressBar} from "@/ui/components/ProgressBar.tsx"
 import {TextInput} from "../components/TextInput"
 import {SearchInput} from "../components/SearchInput"
 import {Html} from "@opendaw/lib-dom"
+import {Colors} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "ComponentsPage")
 

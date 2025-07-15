@@ -8,7 +8,6 @@ import {
     ModuleAdapter,
     ModuleConnectorAdapter
 } from "@opendaw/studio-adapters"
-import {Colors} from "@/ui/Colors.ts"
 import {Icon} from "@/ui/components/Icon.tsx"
 import {MenuButton} from "@/ui/components/MenuButton.tsx"
 import {MenuItem} from "../model/menu-item"
@@ -21,6 +20,7 @@ import {RelativeUnitValueDragging} from "@/ui/wrapper/RelativeUnitValueDragging.
 import {ContextMenu} from "@/ui/ContextMenu.ts"
 import {DeviceInterfaceKnobBox} from "@opendaw/studio-boxes"
 import {Events, Html} from "@opendaw/lib-dom"
+import {Colors} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "GenericModuleView")
 

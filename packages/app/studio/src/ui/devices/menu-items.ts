@@ -1,13 +1,12 @@
 import {DeviceHost, Devices, EffectDeviceBoxAdapter} from "@opendaw/studio-adapters"
 import {MenuItem} from "@/ui/model/menu-item.ts"
-import {Effects} from "@/service/Effects.ts"
 import {Editing, PrimitiveField, PrimitiveValues, StringField} from "@opendaw/lib-box"
-import {Modifier} from "@/ui/Modifier.ts"
-import {EmptyExec, panic} from "@opendaw/lib-std"
+import {EmptyExec, isInstanceOf, panic} from "@opendaw/lib-std"
 import {Surface} from "@/ui/surface/Surface"
 import {FloatingTextInput} from "@/ui/components/FloatingTextInput"
 import {StudioService} from "@/service/StudioService"
-import {Project} from "@opendaw/studio-core"
+import {Effects, Modifier, Project} from "@opendaw/studio-core"
+import {ModularDeviceBox} from "@opendaw/studio-boxes"
 
 export namespace MenuItems {
     export const forAudioUnitInput = (parent: MenuItem, service: StudioService, deviceHost: DeviceHost): void => {
@@ -29,14 +28,17 @@ export namespace MenuItems {
                     .map(entry => MenuItem.default({
                         label: entry.name,
                         separatorBefore: entry.separatorBefore
-                    }).setTriggerProcedure(() => Modifier.createEffect(service, deviceHost, entry, 0)))
+                    }).setTriggerProcedure(() => Modifier.createEffect(service.project, deviceHost, entry, 0)))
                 )),
             MenuItem.default({label: "Add Audio Effect"})
                 .setRuntimeChildrenProcedure(parent => parent.addMenuItem(...Effects.AudioList
                     .map(entry => MenuItem.default({
                         label: entry.name,
                         separatorBefore: entry.separatorBefore
-                    }).setTriggerProcedure(() => Modifier.createEffect(service, deviceHost, entry, 0)))
+                    }).setTriggerProcedure(() => Modifier.createEffect(service.project, deviceHost, entry, 0)
+                        .ifSome(box => {
+                            if (isInstanceOf(box, ModularDeviceBox)) {service.switchScreen("modular")}
+                        })))
                 ))
         )
     }
@@ -95,14 +97,18 @@ export namespace MenuItems {
                 .setRuntimeChildrenProcedure(parent => parent
                     .addMenuItem(...Effects.AudioList
                         .map(entry => MenuItem.default({label: entry.name, separatorBefore: entry.separatorBefore})
-                            .setTriggerProcedure(() => Modifier.createEffect(service, host, entry, adapter.indexField.getValue() + 1)))
+                            .setTriggerProcedure(() =>
+                                Modifier.createEffect(service.project, host, entry, adapter.indexField.getValue() + 1)
+                                    .ifSome(box => {
+                                        if (isInstanceOf(box, ModularDeviceBox)) {service.switchScreen("modular")}
+                                    })))
                     ))
             : adapter.accepts === "midi"
                 ? MenuItem.default({label: "Add Midi Effect", separatorBefore: true})
                     .setRuntimeChildrenProcedure(parent => parent
                         .addMenuItem(...Effects.MidiList
                             .map(entry => MenuItem.default({label: entry.name, separatorBefore: entry.separatorBefore})
-                                .setTriggerProcedure(() => Modifier.createEffect(service, host, entry, adapter.indexField.getValue() + 1)))
+                                .setTriggerProcedure(() => Modifier.createEffect(service.project, host, entry, adapter.indexField.getValue() + 1)))
                         )) : panic(`Unknown accepts value: ${adapter.accepts}`)
 
     const createMenuItemToMoveEffect = (project: Project, host: DeviceHost, adapter: EffectDeviceBoxAdapter) =>

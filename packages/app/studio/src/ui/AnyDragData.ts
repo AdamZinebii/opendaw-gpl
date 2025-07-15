@@ -1,7 +1,7 @@
 import {byte, int} from "@opendaw/lib-std"
-import {Effects} from "@/service/Effects"
 import {Instruments} from "@/service/Instruments"
 import {Sample} from "@opendaw/studio-adapters"
+import {Effects} from "@opendaw/studio-core"
 
 export type DragCopyHint = { copy?: boolean }
 export type DragSample = { type: "sample", sample: Sample } & DragCopyHint

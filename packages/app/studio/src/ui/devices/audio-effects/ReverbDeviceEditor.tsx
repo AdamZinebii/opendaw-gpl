@@ -7,9 +7,9 @@ import {MenuItems} from "@/ui/devices/menu-items.ts"
 import {ControlBuilder} from "@/ui/devices/ControlBuilder.tsx"
 import {SnapCommonDecibel} from "@/ui/configs.ts"
 import {DevicePeakMeter} from "@/ui/devices/panel/DevicePeakMeter.tsx"
-import {Effects} from "@/service/Effects"
 import {Html} from "@opendaw/lib-dom"
 import {StudioService} from "@/service/StudioService"
+import {Effects} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "ReverbDeviceEditor")
 

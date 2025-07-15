@@ -11,7 +11,7 @@ import {Icon} from "@/ui/components/Icon.tsx"
 import {AudioUnitBoxAdapter, IconSymbol, RootBoxAdapter, TrackBoxAdapter, TrackType} from "@opendaw/studio-adapters"
 import {RadioGroup} from "@/ui/components/RadioGroup.tsx"
 import {EditWrapper} from "@/ui/wrapper/EditWrapper.ts"
-import {Colors} from "@/ui/Colors.ts"
+import {Colors} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "PianoModePanel")
 

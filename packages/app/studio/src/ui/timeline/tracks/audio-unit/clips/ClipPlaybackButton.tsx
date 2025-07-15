@@ -1,12 +1,12 @@
 import css from "./ClipPlaybackButton.sass?inline"
 import {DefaultObservableValue, Lifecycle} from "@opendaw/lib-std"
 import {AnyClipBoxAdapter, IconSymbol} from "@opendaw/studio-adapters"
-import {Colors} from "@/ui/Colors"
 import {IconCartridge} from "@/ui/components/Icon"
 import {createElement} from "@opendaw/lib-jsx"
 import {ClipState} from "./Clip"
 import {Html} from "@opendaw/lib-dom"
 import {StudioService} from "@/service/StudioService"
+import {Colors} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "ClipPlaybackButton")
 

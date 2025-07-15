@@ -8,8 +8,8 @@ import {ControlBuilder} from "@/ui/devices/ControlBuilder.tsx"
 import {SnapCommonDecibel} from "@/ui/configs.ts"
 import {DevicePeakMeter} from "@/ui/devices/panel/DevicePeakMeter.tsx"
 import {Html} from "@opendaw/lib-dom"
-import {Effects} from "@/service/Effects"
 import {StudioService} from "@/service/StudioService"
+import {Effects} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "DelayDeviceEditor")
 
