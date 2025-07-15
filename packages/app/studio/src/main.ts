@@ -66,12 +66,12 @@ requestAnimationFrame(async () => {
                     console.debug(`AudioContext resumed (${context.state})`)), {capture: true, once: true})
         }
         const audioDevices = await AudioOutputDevice.create(context)
-        const audioManager = new MainThreadSampleManager({
+        const sampleManager = new MainThreadSampleManager({
             fetch: async (uuid: UUID.Format, progress: Procedure<unitValue>): Promise<[AudioData, SampleMetaData]> =>
                 SampleApi.load(context, uuid, progress)
         } satisfies SampleProvider, context)
         const service: StudioService =
-            new StudioService(context, audioWorklets.value, audioDevices, audioManager, buildInfo)
+            new StudioService(context, audioWorklets.value, audioDevices, sampleManager, buildInfo)
         const errorHandler = new ErrorHandler(service)
         const surface = Surface.main({
             config: (surface: Surface) => {
