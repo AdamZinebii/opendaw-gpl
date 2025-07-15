@@ -1,14 +1,17 @@
 import "./style.css"
-import {assert} from "@opendaw/lib-std"
+import {assert, ProgressHandler, UUID} from "@opendaw/lib-std"
 import {PPQN} from "@opendaw/lib-dsp"
 import {AnimationFrame, Browser} from "@opendaw/lib-dom"
 import {Promises} from "@opendaw/lib-runtime"
-import {Project, Worklets} from "@opendaw/studio-core"
+import {MainThreadSampleManager, Project, WorkerAgents, Worklets} from "@opendaw/studio-core"
+import {testFeatures} from "./features"
+import {AudioData, SampleMetaData} from "@opendaw/studio-adapters"
+import {SampleApi} from "./SampleApi"
+
+import WorkersUrl from "@opendaw/studio-core/workers.js?worker&url"
 import MeterProcessorUrl from "@opendaw/studio-core/meter-processor.js?url"
 import EngineProcessorUrl from "@opendaw/studio-core/engine-processor.js?url"
 import RecordingProcessorUrl from "@opendaw/studio-core/recording-processor.js?url"
-import {testFeatures} from "./features"
-import {MainThreadAudioLoaderManager} from "./MainThreadAudioLoaderManager"
 
 (async () => {
     console.debug("openDAW -> headless")
@@ -17,6 +20,7 @@ import {MainThreadAudioLoaderManager} from "./MainThreadAudioLoaderManager"
     assert(crossOriginIsolated, "window must be crossOriginIsolated")
     console.debug("booting...")
     document.body.textContent = "booting..."
+    WorkerAgents.install(WorkersUrl)
     {
         const {status, error} = await Promises.tryCatch(testFeatures())
         if (status === "rejected") {
@@ -39,8 +43,11 @@ import {MainThreadAudioLoaderManager} from "./MainThreadAudioLoaderManager"
         }
     }
     {
-        const audioManager = new MainThreadAudioLoaderManager(context)
-        const project = Project.load({sampleManager: audioManager}, await fetch("subset.od").then(x => x.arrayBuffer()))
+        const sampleManager = new MainThreadSampleManager({
+            fetch: (uuid: UUID.Format, progress: ProgressHandler): Promise<[AudioData, SampleMetaData]> =>
+                SampleApi.load(context, uuid, progress)
+        }, context)
+        const project = Project.load({sampleManager}, await fetch("subset.od").then(x => x.arrayBuffer()))
         const worklet = Worklets.get(context).createEngine(project)
         await worklet.isReady()
         while (!await worklet.queryLoadingComplete()) {}
