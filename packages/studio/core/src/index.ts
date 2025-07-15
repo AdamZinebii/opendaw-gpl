@@ -2,6 +2,12 @@ export * from "./sync-log/Commit"
 export * from "./sync-log/SyncLogReader"
 export * from "./sync-log/SyncLogWriter"
 
+export * from "./samples/SamplePeaks"
+export * from "./samples/SampleStorage"
+export * from "./samples/MainThreadSampleLoader"
+export * from "./samples/MainThreadSampleManager"
+export * from "./samples/SampleProvider"
+
 export * from "./Engine"
 export * from "./EngineFacade"
 export * from "./EngineWorklet"

@@ -1,8 +1,8 @@
 import {SortedSet, UUID} from "@opendaw/lib-std"
-import {AudioLoader, AudioLoaderManager} from "@opendaw/studio-adapters"
+import {SampleLoader, SampleManager} from "@opendaw/studio-adapters"
 import {MainThreadAudioLoader} from "./MainThreadAudioLoader"
 
-export class MainThreadAudioLoaderManager implements AudioLoaderManager {
+export class MainThreadAudioLoaderManager implements SampleManager {
     readonly #context: AudioContext
     readonly #loaders: SortedSet<UUID.Format, MainThreadAudioLoader>
 
@@ -11,7 +11,7 @@ export class MainThreadAudioLoaderManager implements AudioLoaderManager {
         this.#loaders = UUID.newSet(loader => loader.uuid)
     }
 
-    getOrCreate(uuid: UUID.Format): AudioLoader {
+    getOrCreate(uuid: UUID.Format): SampleLoader {
         return this.#loaders.getOrCreate(uuid, uuid => new MainThreadAudioLoader(this.#context, uuid))
     }
 

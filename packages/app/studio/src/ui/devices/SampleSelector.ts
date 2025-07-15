@@ -1,4 +1,3 @@
-import {AudioSample} from "@/audio/AudioSample"
 import {AudioFileBox} from "@opendaw/studio-boxes"
 import {isDefined, Option, Terminable, UUID} from "@opendaw/lib-std"
 import {showProcessMonolog} from "@/ui/components/dialogs"
@@ -12,6 +11,7 @@ import {MenuItem} from "@/ui/model/menu-item"
 import {PointerField} from "@opendaw/lib-box"
 import {Pointers} from "@opendaw/studio-enums"
 import {DragAndDrop} from "@/ui/DragAndDrop"
+import {Sample} from "@opendaw/studio-adapters"
 
 export interface SampleSelectStrategy {
     hasSample(): boolean
@@ -55,7 +55,7 @@ export class SampleSelector {
         this.#strategy = strategy
     }
 
-    newSample(sample: AudioSample) {
+    newSample(sample: Sample) {
         if (!this.#service.hasProjectSession) {return}
         const {project: {boxGraph, editing}} = this.#service
         const {uuid: uuidAsString, name} = sample
@@ -109,7 +109,7 @@ export class SampleSelector {
             drop: async (_event: DragEvent, data: AnyDragData): Promise<void> => {
                 if (!(data.type === "sample" || data.type === "file")) {return}
                 const dialog = showProcessMonolog("Import Sample")
-                let sample: AudioSample
+                let sample: Sample
                 if (data.type === "sample") {
                     sample = data.sample
                 } else if (data.type === "file") {

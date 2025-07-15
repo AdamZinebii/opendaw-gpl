@@ -1,5 +1,5 @@
 import {ProgressHandler, UUID} from "@opendaw/lib-std"
-import {AudioSample} from "@/audio/AudioSample"
+import {Sample} from "@opendaw/studio-adapters"
 
 export type SampleImporter = {
     importSample(sample: {
@@ -7,5 +7,5 @@ export type SampleImporter = {
         name: string,
         arrayBuffer: ArrayBuffer,
         progressHandler?: ProgressHandler
-    }): Promise<AudioSample>
+    }): Promise<Sample>
 }

@@ -25,7 +25,7 @@ import {TimeInfo} from "./TimeInfo"
 import {
     AnyClipBoxAdapter,
     AudioData,
-    AudioLoaderManager,
+    SampleManager,
     AudioUnitBoxAdapter,
     BoxAdapters,
     ClipAdapters,
@@ -64,7 +64,7 @@ registerProcessor("engine-processor", class extends AudioWorkletProcessor implem
     readonly #timeInfo: TimeInfo
     readonly #engineToClient: EngineToClient
     readonly #boxAdapters: BoxAdapters
-    readonly #audioManager: AudioLoaderManager
+    readonly #audioManager: SampleManager
     readonly #audioUnits: SortedSet<UUID.Format, AudioUnit>
     readonly #rootBoxAdapter: RootBoxAdapter
     readonly #timelineBoxAdapter: TimelineBoxAdapter
@@ -311,7 +311,7 @@ registerProcessor("engine-processor", class extends AudioWorkletProcessor implem
 
     get boxGraph(): BoxGraph<BoxIO.TypeMap> {return this.#boxGraph}
     get boxAdapters(): BoxAdapters {return this.#boxAdapters}
-    get audioManager(): AudioLoaderManager {return this.#audioManager}
+    get audioManager(): SampleManager {return this.#audioManager}
     get rootBoxAdapter(): RootBoxAdapter {return this.#rootBoxAdapter}
     get timelineBoxAdapter(): TimelineBoxAdapter {return this.#timelineBoxAdapter}
     get bpm(): number {return this.#timelineBoxAdapter.box.bpm.getValue()}

@@ -11,13 +11,11 @@ import {
 import {StudioService} from "@/service/StudioService"
 import {ProjectMeta} from "@/project/ProjectMeta"
 import {AudioFileBox} from "@opendaw/studio-boxes"
-import {UIAudioLoader} from "@/project/UIAudioLoader"
 import JSZip from "jszip"
 import {ProjectSession} from "@/project/ProjectSession"
-import {AudioStorage} from "@/audio/AudioStorage"
 import {ProjectDecoder} from "@opendaw/studio-adapters"
 import {SampleUtils} from "@/project/SampleUtils"
-import {Project, WorkerAgents} from "@opendaw/studio-core"
+import {Project, SampleStorage, MainThreadSampleLoader, WorkerAgents} from "@opendaw/studio-core"
 
 export namespace ProjectPaths {
     export const Folder = "projects/v1"
@@ -52,7 +50,7 @@ export namespace Projects {
             .then(async array => {
                 const arrayBuffer = array.buffer as ArrayBuffer
                 const project = Project.load(service, arrayBuffer)
-                await SampleUtils.verify(project.boxGraph, service, service.audioManager)
+                await SampleUtils.verify(project.boxGraph, service, service.sampleManager)
                 return project
             })
     }
@@ -97,7 +95,7 @@ export namespace Projects {
         let boxIndex = 0
         const blob = await Promise.all(boxes
             .map(async ({address: {uuid}}) => {
-                const handler: UIAudioLoader = project.audioManager.getOrCreate(uuid) as UIAudioLoader // TODO get rid of cast
+                const handler: MainThreadSampleLoader = project.audioManager.getOrCreate(uuid) as MainThreadSampleLoader // TODO get rid of cast
                 const folder: JSZip = asDefined(samples.folder(UUID.toString(uuid)), "Could not create folder for sample")
                 return handler.pipeFilesInto(folder).then(() => progress.setValue(++boxIndex / boxes.length * 0.75))
             })).then(() => zip.generateAsync({
@@ -122,7 +120,7 @@ export namespace Projects {
             if (!file.dir) {
                 promises.push(file
                     .async("arraybuffer")
-                    .then(arrayBuffer => WorkerAgents.Opfs.write(`${AudioStorage.Folder}/${path}`, new Uint8Array(arrayBuffer))))
+                    .then(arrayBuffer => WorkerAgents.Opfs.write(`${SampleStorage.Folder}/${path}`, new Uint8Array(arrayBuffer))))
             }
         })
         await Promise.all(promises)

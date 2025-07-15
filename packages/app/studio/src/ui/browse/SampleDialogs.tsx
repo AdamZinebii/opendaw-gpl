@@ -1,6 +1,5 @@
-import {AudioSample} from "@/audio/AudioSample"
 import {Dialog} from "@/ui/components/Dialog"
-import {IconSymbol} from "@opendaw/studio-adapters"
+import {IconSymbol, Sample} from "@opendaw/studio-adapters"
 import {Surface} from "@/ui/surface/Surface"
 import {createElement} from "@opendaw/lib-jsx"
 import {showInfoDialog} from "@/ui/components/dialogs"
@@ -17,8 +16,8 @@ export namespace SampleDialogs {
     export const nativeFileBrowser = async (multiple: boolean = true) =>
         Promises.tryCatch(Files.open({types: SampleFileTypes, multiple}))
 
-    export const missingSampleDialog = async (importer: SampleImporter, uuid: UUID.Format, name: string): Promise<AudioSample> => {
-        const {resolve, reject, promise} = Promise.withResolvers<AudioSample>()
+    export const missingSampleDialog = async (importer: SampleImporter, uuid: UUID.Format, name: string): Promise<Sample> => {
+        const {resolve, reject, promise} = Promise.withResolvers<Sample>()
         const dialog: HTMLDialogElement = (
             <Dialog headline="Missing Sample"
                     icon={IconSymbol.Waveform}
@@ -74,11 +73,11 @@ export namespace SampleDialogs {
         return promise
     }
 
-    export const showEditSampleDialog = async (sample: AudioSample): Promise<AudioSample> => {
+    export const showEditSampleDialog = async (sample: Sample): Promise<Sample> => {
         if (sample.cloud) {
             return Promise.reject("Cannot change sample from the cloud")
         }
-        const {resolve, reject, promise} = Promise.withResolvers<AudioSample>()
+        const {resolve, reject, promise} = Promise.withResolvers<Sample>()
         const inputName: HTMLInputElement = <input className="default"
                                                    type="text"
                                                    value={sample.name}

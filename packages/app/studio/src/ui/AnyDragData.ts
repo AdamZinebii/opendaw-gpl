@@ -1,10 +1,10 @@
-import {AudioSample} from "@/audio/AudioSample"
 import {byte, int} from "@opendaw/lib-std"
 import {Effects} from "@/service/Effects"
 import {Instruments} from "@/service/Instruments"
+import {Sample} from "@opendaw/studio-adapters"
 
 export type DragCopyHint = { copy?: boolean }
-export type DragSample = { type: "sample", sample: AudioSample } & DragCopyHint
+export type DragSample = { type: "sample", sample: Sample } & DragCopyHint
 export type DragFile = { type: "file", file: File /* This cannot be accessed while dragging! */ } & DragCopyHint
 export type DragDevice = (
     {

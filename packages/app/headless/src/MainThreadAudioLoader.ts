@@ -1,22 +1,22 @@
 import {int, Notifier, Observer, Option, Subscription, Terminable, UUID} from "@opendaw/lib-std"
 import {Peaks} from "@opendaw/lib-fusion"
-import {AudioData, AudioLoader, AudioLoaderState} from "@opendaw/studio-adapters"
+import {AudioData, SampleLoader, SampleLoaderState} from "@opendaw/studio-adapters"
 import {SampleApi} from "./SampleApi"
 
-export class MainThreadAudioLoader implements AudioLoader {
+export class MainThreadAudioLoader implements SampleLoader {
     readonly #context: AudioContext
     readonly #uuid: UUID.Format
-    readonly #notifier: Notifier<AudioLoaderState>
+    readonly #notifier: Notifier<SampleLoaderState>
 
     #data: Option<AudioData> = Option.None
-    #state: AudioLoaderState = {type: "progress", progress: 0.0}
+    #state: SampleLoaderState = {type: "progress", progress: 0.0}
     #version: int = 0
 
     constructor(context: AudioContext, uuid: UUID.Format) {
         this.#context = context
         this.#uuid = uuid
 
-        this.#notifier = new Notifier<AudioLoaderState>()
+        this.#notifier = new Notifier<SampleLoaderState>()
         this.#get()
     }
 
@@ -27,7 +27,7 @@ export class MainThreadAudioLoader implements AudioLoader {
         this.#get()
     }
 
-    subscribe(observer: Observer<AudioLoaderState>): Subscription {
+    subscribe(observer: Observer<SampleLoaderState>): Subscription {
         if (this.#state.type === "loaded") {
             observer(this.#state)
             return Terminable.Empty
@@ -38,9 +38,9 @@ export class MainThreadAudioLoader implements AudioLoader {
     get uuid(): UUID.Format {return this.#uuid}
     get data(): Option<AudioData> {return this.#data}
     get peaks(): Option<Peaks> {return Option.None}
-    get state(): AudioLoaderState {return this.#state}
+    get state(): SampleLoaderState {return this.#state}
 
-    #setState(value: AudioLoaderState): void {
+    #setState(value: SampleLoaderState): void {
         this.#state = value
         this.#notifier.notify(this.#state)
     }

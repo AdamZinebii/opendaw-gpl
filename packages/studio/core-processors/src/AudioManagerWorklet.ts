@@ -1,10 +1,10 @@
 import {Peaks} from "@opendaw/lib-fusion"
-import {AudioData, AudioLoader, AudioLoaderManager, AudioLoaderState, EngineToClient} from "@opendaw/studio-adapters"
+import {AudioData, SampleLoader, SampleManager, SampleLoaderState, EngineToClient} from "@opendaw/studio-adapters"
 import {Observer, Option, SortedSet, Subscription, Terminable, UUID} from "@opendaw/lib-std"
 
-class AudioLoaderWorklet implements AudioLoader {
+class AudioLoaderWorklet implements SampleLoader {
     readonly peaks: Option<Peaks> = Option.None
-    readonly #state: AudioLoaderState = {type: "idle"}
+    readonly #state: SampleLoaderState = {type: "idle"}
 
     #data: Option<AudioData> = Option.None
 
@@ -13,21 +13,21 @@ class AudioLoaderWorklet implements AudioLoader {
     }
 
     get data(): Option<AudioData> {return this.#data}
-    get state(): AudioLoaderState {return this.#state}
+    get state(): SampleLoaderState {return this.#state}
 
-    subscribe(_observer: Observer<AudioLoaderState>): Subscription {return Terminable.Empty}
+    subscribe(_observer: Observer<SampleLoaderState>): Subscription {return Terminable.Empty}
 }
 
-export class AudioManagerWorklet implements AudioLoaderManager {
+export class AudioManagerWorklet implements SampleManager {
     readonly #engineToClient: EngineToClient
-    readonly #set: SortedSet<UUID.Format, AudioLoader>
+    readonly #set: SortedSet<UUID.Format, SampleLoader>
 
     constructor(engineToClient: EngineToClient) {
         this.#engineToClient = engineToClient
-        this.#set = UUID.newSet<AudioLoader>(handler => handler.uuid)
+        this.#set = UUID.newSet<SampleLoader>(handler => handler.uuid)
     }
 
-    getOrCreate(uuid: UUID.Format): AudioLoader {
+    getOrCreate(uuid: UUID.Format): SampleLoader {
         return this.#set.getOrCreate(uuid, uuid => new AudioLoaderWorklet(uuid, this.#engineToClient))
     }
 

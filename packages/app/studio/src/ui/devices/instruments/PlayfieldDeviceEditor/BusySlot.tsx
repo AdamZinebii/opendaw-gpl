@@ -122,7 +122,7 @@ export const BusySlot = ({
             fileHandlerSubscription.terminate()
             if (pointer.isEmpty()) {return}
             sample.file().ifSome(file => {
-                fileHandlerSubscription = file.getOrCreateAudioLoader().subscribe(state => {
+                fileHandlerSubscription = file.getOrCreateLoader().subscribe(state => {
                     if (state.type === "loaded") {
                         labelName.textContent = file.box.fileName.getValue()
                         waveformPainter.requestUpdate()

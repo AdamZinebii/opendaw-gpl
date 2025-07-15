@@ -1,8 +1,7 @@
-import {Dialog} from "@/ui/components/Dialog"
-import {IconSymbol} from "@opendaw/studio-adapters"
-import {Surface} from "@/ui/surface/Surface"
-import {AudioMetaData} from "@/audio/AudioMetaData"
 import {createElement} from "@opendaw/lib-jsx"
+import {IconSymbol, SampleMetaData} from "@opendaw/studio-adapters"
+import {Surface} from "@/ui/surface/Surface"
+import {Dialog} from "@/ui/components/Dialog"
 
 export namespace AudioDialogs {
     export const showImportSample = async ({
@@ -10,12 +9,12 @@ export namespace AudioDialogs {
                                                bpm,
                                                duration,
                                                sample_rate
-                                           }: AudioMetaData): Promise<AudioMetaData> => {
+                                           }: SampleMetaData): Promise<SampleMetaData> => {
         const inputField: HTMLInputElement = <input className="default" type="text" placeholder="Enter a name"/>
         inputField.value = name
         inputField.select()
         inputField.focus()
-        const {resolve, promise} = Promise.withResolvers<AudioMetaData>()
+        const {resolve, promise} = Promise.withResolvers<SampleMetaData>()
         const dialog: HTMLDialogElement = (
             <Dialog headline="Import Sample"
                     icon={IconSymbol.System}

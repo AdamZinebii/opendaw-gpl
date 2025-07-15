@@ -6,7 +6,7 @@ import {PPQN, ppqn} from "@opendaw/lib-dsp"
 import {TrackBoxAdapter} from "../TrackBoxAdapter"
 import {LoopableRegionBoxAdapter, RegionBoxAdapter, RegionBoxAdapterVisitor} from "../RegionBoxAdapter"
 import {BoxAdaptersContext} from "../../BoxAdaptersContext"
-import {AudioFileBoxAdapter} from "../../AudioFileBoxAdapter"
+import {AudioFileBoxAdapter} from "../../audio/AudioFileBoxAdapter"
 
 type CopyToParams = {
     track?: Field<Pointers.RegionCollection>
@@ -54,7 +54,7 @@ export class AudioRegionBoxAdapter implements LoopableRegionBoxAdapter<never> {
                 this.#fileAdapter = pointerField.targetVertex.map(vertex => this.#context.boxAdapters.adapterFor(vertex.box, AudioFileBoxAdapter))
                 this.#fileSubscription.ifSome(subscription => subscription.terminate())
                 this.#fileSubscription = this.#fileAdapter.map(adapter =>
-                    adapter.getOrCreateAudioLoader().subscribe(() => this.#dispatchChange()))
+                    adapter.getOrCreateLoader().subscribe(() => this.#dispatchChange()))
             }),
             this.#box.subscribe(Propagation.Children, (update: Update) => {
                 if (this.trackBoxAdapter.isEmpty()) {return}
@@ -126,7 +126,7 @@ export class AudioRegionBoxAdapter implements LoopableRegionBoxAdapter<never> {
     get optCollection(): Option<never> {return Option.None}
     get label(): string {
         if (this.#fileAdapter.isEmpty()) {return "No Audio File"}
-        const state = this.#fileAdapter.unwrap().getOrCreateAudioLoader().state
+        const state = this.#fileAdapter.unwrap().getOrCreateLoader().state
         if (state.type === "progress") {return `${Math.round(state.progress * 100)}%`}
         if (state.type === "error") {return String(state.reason)}
         return this.#box.label.getValue()

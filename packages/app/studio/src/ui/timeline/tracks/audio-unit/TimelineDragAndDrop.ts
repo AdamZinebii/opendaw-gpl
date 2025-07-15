@@ -1,12 +1,11 @@
 import {AnyDragData} from "@/ui/AnyDragData.ts"
-import {TrackBoxAdapter, TrackType} from "@opendaw/studio-adapters"
+import {Sample, TrackBoxAdapter, TrackType} from "@opendaw/studio-adapters"
 import {AudioFileBox} from "@opendaw/studio-boxes"
 import {ClipCaptureTarget} from "@/ui/timeline/tracks/audio-unit/clips/ClipCapturing.ts"
 import {ElementCapturing} from "@/ui/canvas/capturing.ts"
 import {isDefined, Nullable, Option, panic, UUID} from "@opendaw/lib-std"
 import {Instruments} from "@/service/Instruments.ts"
 import {RegionCaptureTarget} from "./regions/RegionCapturing"
-import {AudioSample} from "@/audio/AudioSample"
 import {Promises} from "@opendaw/lib-runtime"
 import {StudioService} from "@/service/StudioService"
 import {Project} from "@opendaw/studio-core"
@@ -15,7 +14,7 @@ export type CreateParameters = {
     event: DragEvent
     trackBoxAdapter: TrackBoxAdapter
     audioFileBox: AudioFileBox
-    sample: AudioSample
+    sample: Sample
 }
 
 export abstract class TimelineDragAndDrop<T extends (ClipCaptureTarget | RegionCaptureTarget)> {
@@ -52,7 +51,7 @@ export abstract class TimelineDragAndDrop<T extends (ClipCaptureTarget | RegionC
         if (optDrop.isEmpty()) {return}
         const drop = optDrop.unwrap()
         const {boxAdapters, boxGraph, editing} = this.project
-        let sample: AudioSample
+        let sample: Sample
         if (data.type === "sample") {
             sample = data.sample
         } else if (data.type === "file") {

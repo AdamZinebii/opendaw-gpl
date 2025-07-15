@@ -1,6 +1,6 @@
 import {ppqn} from "@opendaw/lib-dsp"
 import {byte, int, Nullable, Terminable, unitValue, UUID} from "@opendaw/lib-std"
-import {AudioData} from "./AudioData"
+import {AudioData} from "./audio/AudioData"
 import { ClipSequencingUpdates } from "./ClipNotifications"
 
 export interface EngineCommands extends Terminable {

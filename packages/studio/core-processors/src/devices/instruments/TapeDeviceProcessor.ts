@@ -55,7 +55,7 @@ export class TapeDeviceProcessor extends AbstractProcessor implements DeviceProc
                             none: () => {
                                 for (const region of trackBoxAdapter.regions.collection.iterateRange(p0, p1)) {
                                     if (region.mute || !isInstanceOf(region, AudioRegionBoxAdapter)) {continue}
-                                    const optData = region.file.getOrCreateAudioLoader().data
+                                    const optData = region.file.getOrCreateLoader().data
                                     if (optData.isEmpty()) {return}
                                     const data = optData.unwrap()
                                     for (const cycle of LoopableRegion.locateLoops(region, p0, p1)) {
@@ -65,7 +65,7 @@ export class TapeDeviceProcessor extends AbstractProcessor implements DeviceProc
                             },
                             some: clip => {
                                 if (!isInstanceOf(clip, AudioClipBoxAdapter)) {return}
-                                const optData = clip.file.getOrCreateAudioLoader().data
+                                const optData = clip.file.getOrCreateLoader().data
                                 if (optData.isEmpty()) {return}
                                 const data = optData.unwrap()
                                 for (const cycle of LoopableRegion.locateLoops({

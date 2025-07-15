@@ -23,7 +23,7 @@ import {
     ZeitgeistDeviceBox
 } from "@opendaw/studio-boxes"
 import {
-    AudioLoaderManager,
+    SampleManager,
     BoxAdapters,
     BoxAdaptersContext,
     ClipSequencing,
@@ -197,7 +197,7 @@ export class Project implements BoxAdaptersContext, Terminable, TerminableOwner 
     get bpm(): number {return this.timelineBox.bpm.getValue()}
     get rootBoxAdapter(): RootBoxAdapter {return this.boxAdapters.adapterFor(this.rootBox, RootBoxAdapter)}
     get timelineBoxAdapter(): TimelineBoxAdapter {return this.boxAdapters.adapterFor(this.timelineBox, TimelineBoxAdapter)}
-    get audioManager(): AudioLoaderManager {return this.#env.audioManager}
+    get audioManager(): SampleManager {return this.#env.sampleManager}
     get clipSequencing(): ClipSequencing {return panic("Only available in audio context")}
     get isAudioContext(): boolean {return false}
     get isMainThread(): boolean {return true}

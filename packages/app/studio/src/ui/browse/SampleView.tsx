@@ -2,26 +2,25 @@ import css from "./SampleView.sass?inline"
 import {createElement} from "@opendaw/lib-jsx"
 import {Exec, Lifecycle, Objects, UUID} from "@opendaw/lib-std"
 import {SamplePlayback} from "@/service/SamplePlayback"
-import {AudioSample} from "@/audio/AudioSample"
 import {Icon} from "../components/Icon"
-import {IconSymbol} from "@opendaw/studio-adapters"
+import {IconSymbol, Sample} from "@opendaw/studio-adapters"
 import {SampleLocation} from "@/ui/browse/SampleLocation"
 import {Button} from "../components/Button"
 import {SampleDialogs} from "@/ui/browse/SampleDialogs"
-import {AudioStorage} from "@/audio/AudioStorage"
 import {ContextMenu} from "@/ui/ContextMenu"
 import {MenuItem} from "@/ui/model/menu-item"
 import {SampleService} from "@/ui/browse/SampleService"
 import {Html} from "@opendaw/lib-dom"
 import {Promises} from "@opendaw/lib-runtime"
 import {DragAndDrop} from "@/ui/DragAndDrop"
+import {SampleStorage} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "Sample")
 
 type Construct = {
     lifecycle: Lifecycle
     sampleService: SampleService
-    sample: AudioSample
+    sample: Sample
     playback: SamplePlayback
     location: SampleLocation
     refresh: Exec
@@ -37,7 +36,7 @@ export const SampleView = ({lifecycle, sampleService, sample, playback, location
                     event.stopPropagation()
                     const {status, value: meta} = await Promises.tryCatch(SampleDialogs.showEditSampleDialog(sample))
                     if (status === "resolved") {
-                        await AudioStorage.updateMeta(UUID.parse(meta.uuid), Objects.exclude(meta, "uuid"))
+                        await SampleStorage.updateMeta(UUID.parse(meta.uuid), Objects.exclude(meta, "uuid"))
                         refresh()
                     }
                 }}>

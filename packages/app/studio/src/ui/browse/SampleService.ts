@@ -1,20 +1,18 @@
-import {AudioSample} from "@/audio/AudioSample"
-import {HTMLSelection} from "@/ui/HTMLSelection"
 import {asDefined, DefaultObservableValue, UUID} from "@opendaw/lib-std"
-import {StudioService} from "@/service/StudioService"
-import {AudioFileBox, AudioRegionBox} from "@opendaw/studio-boxes"
-import {Modifier} from "../Modifier"
-import {AudioUnitType} from "@opendaw/studio-enums"
-import {Instruments} from "@/service/Instruments"
 import {PPQN} from "@opendaw/lib-dsp"
+import {Promises} from "@opendaw/lib-runtime"
+import {AudioUnitType} from "@opendaw/studio-enums"
+import {AudioFileBox, AudioRegionBox} from "@opendaw/studio-boxes"
+import {AudioUnitBoxAdapter, IconSymbol, Sample} from "@opendaw/studio-adapters"
+import {SampleStorage} from "@opendaw/studio-core"
+import {HTMLSelection} from "@/ui/HTMLSelection"
+import {StudioService} from "@/service/StudioService"
+import {Modifier} from "../Modifier"
+import {Instruments} from "@/service/Instruments"
 import {ColorCodes} from "../mixer/ColorCodes"
-import {IconSymbol} from "@opendaw/studio-adapters"
 import {showApproveDialog, showInfoDialog, showProcessDialog} from "../components/dialogs"
-import {AudioStorage} from "@/audio/AudioStorage"
 import {Projects} from "@/project/Projects"
 import {SampleApi} from "@/service/SampleApi"
-import {Promises} from "@opendaw/lib-runtime"
-import {AudioUnitBoxAdapter} from "@opendaw/studio-adapters"
 
 export class SampleService {
     readonly #service: StudioService
@@ -61,7 +59,7 @@ export class SampleService {
 
     async deleteSelected() {return this.deleteSamples(...this.#samples())}
 
-    async deleteSamples(...samples: ReadonlyArray<AudioSample>) {
+    async deleteSamples(...samples: ReadonlyArray<Sample>) {
         const processDialog = showProcessDialog("Checking Sample Usages", new DefaultObservableValue(0.5))
         const used = await Projects.listUsedSamples()
         const online = new Set<string>((await SampleApi.all()).map(({uuid}) => uuid))
@@ -78,13 +76,13 @@ export class SampleService {
             if (isUsed && !isOnline) {
                 await showInfoDialog({headline: "Cannot Delete Sample", message: `${name} is used by a project.`})
             } else {
-                await AudioStorage.remove(UUID.parse(uuid))
+                await SampleStorage.remove(UUID.parse(uuid))
             }
         }
     }
 
-    #samples(): ReadonlyArray<AudioSample> {
+    #samples(): ReadonlyArray<Sample> {
         const selected = this.#selection.getSelected()
-        return selected.map(element => JSON.parse(asDefined(element.getAttribute("data-selection"))) as AudioSample)
+        return selected.map(element => JSON.parse(asDefined(element.getAttribute("data-selection"))) as Sample)
     }
 }

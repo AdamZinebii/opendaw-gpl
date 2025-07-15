@@ -12,7 +12,7 @@ import {
 import {IndexedBoxAdapter, SortedBoxAdapterCollection} from "../../../SortedBoxAdapterCollection"
 import {BoxAdaptersContext} from "../../../BoxAdaptersContext"
 import {ParameterAdapterSet} from "../../../ParameterAdapterSet"
-import {AudioFileBoxAdapter} from "../../../AudioFileBoxAdapter"
+import {AudioFileBoxAdapter} from "../../../audio/AudioFileBoxAdapter"
 import {Gate} from "./Gate"
 import {TrackType} from "../../../timeline/TrackType"
 import {AudioUnitInputAdapter} from "../../../audio-unit/AudioUnitInputAdapter"
@@ -51,7 +51,7 @@ export class PlayfieldSampleBoxAdapter implements DeviceHost, InstrumentDeviceBo
 
         this.#terminator.own(this.#box.file.catchupAndSubscribe(pointer => {
             this.#file = pointer.targetVertex.map(({box}) => this.#context.boxAdapters.adapterFor(box, AudioFileBoxAdapter))
-            this.#file.unwrapOrNull()?.getOrCreateAudioLoader() // triggers preloading file if available
+            this.#file.unwrapOrNull()?.getOrCreateLoader() // triggers preloading file if available
         }))
     }
 

@@ -1,11 +1,10 @@
 import {Arrays, ByteArrayInput, EmptyExec, UUID} from "@opendaw/lib-std"
 import {Peaks} from "@opendaw/lib-fusion"
-import {AudioData} from "@opendaw/studio-adapters"
-import {encodeWavFloat, WorkerAgents} from "@opendaw/studio-core"
-import {AudioMetaData} from "@/audio/AudioMetaData"
-import {AudioSample} from "@/audio/AudioSample"
+import {AudioData, Sample, SampleMetaData} from "@opendaw/studio-adapters"
+import {WorkerAgents} from "../WorkerAgents"
+import {encodeWavFloat} from "../Wav"
 
-export namespace AudioStorage {
+export namespace SampleStorage {
     // CAUTION! Next time you would kill all locally imported files, so it is not that easy!
     export const clean = () => WorkerAgents.Opfs.delete("samples/v1").catch(EmptyExec)
 
@@ -14,7 +13,7 @@ export namespace AudioStorage {
     export const store = async (uuid: UUID.Format,
                                 audio: AudioData,
                                 peaks: ArrayBuffer,
-                                meta: AudioMetaData): Promise<void> => {
+                                meta: SampleMetaData): Promise<void> => {
         const path = `${Folder}/${UUID.toString(uuid)}`
         return Promise.all([
             WorkerAgents.Opfs.write(`${path}/audio.wav`, new Uint8Array(encodeWavFloat({
@@ -27,12 +26,12 @@ export namespace AudioStorage {
         ]).then(EmptyExec)
     }
 
-    export const updateMeta = async (uuid: UUID.Format, meta: AudioMetaData): Promise<void> => {
+    export const updateMeta = async (uuid: UUID.Format, meta: SampleMetaData): Promise<void> => {
         const path = `${Folder}/${UUID.toString(uuid)}`
         return WorkerAgents.Opfs.write(`${path}/meta.json`, new TextEncoder().encode(JSON.stringify(meta)))
     }
 
-    export const load = async (uuid: UUID.Format, context: AudioContext): Promise<[AudioData, Peaks, AudioMetaData]> => {
+    export const load = async (uuid: UUID.Format, context: AudioContext): Promise<[AudioData, Peaks, SampleMetaData]> => {
         const path = `${Folder}/${UUID.toString(uuid)}`
         return Promise.all([
             WorkerAgents.Opfs.read(`${path}/audio.wav`)
@@ -54,12 +53,12 @@ export namespace AudioStorage {
         return WorkerAgents.Opfs.delete(`${path}`)
     }
 
-    export const list = async (): Promise<ReadonlyArray<AudioSample>> => {
+    export const list = async (): Promise<ReadonlyArray<Sample>> => {
         return WorkerAgents.Opfs.list(Folder)
             .then(files => Promise.all(files.filter(file => file.kind === "directory")
                 .map(async ({name}) => {
                     const array = await WorkerAgents.Opfs.read(`${Folder}/${name}/meta.json`)
-                    return ({uuid: name, ...(JSON.parse(new TextDecoder().decode(array)) as AudioMetaData)})
+                    return ({uuid: name, ...(JSON.parse(new TextDecoder().decode(array)) as SampleMetaData)})
                 })), () => [])
     }
 }

@@ -2,8 +2,7 @@ import "./main.sass"
 import {App} from "@/ui/App.tsx"
 import {Option, panic, Procedure, unitValue, UUID} from "@opendaw/lib-std"
 import {StudioService} from "@/service/StudioService"
-import {UIAudioManager} from "@/project/UIAudioManager"
-import {AudioData} from "@opendaw/studio-adapters"
+import {AudioData, SampleMetaData} from "@opendaw/studio-adapters"
 import {showCacheDialog, showErrorDialog, showInfoDialog} from "@/ui/components/dialogs.tsx"
 import {installCursors} from "@/ui/Cursors.ts"
 import {BuildInfo} from "./BuildInfo"
@@ -15,16 +14,13 @@ import {SampleApi} from "@/service/SampleApi.ts"
 import {testFeatures} from "@/features.ts"
 import {MissingFeature} from "@/ui/MissingFeature.tsx"
 import {UpdateMessage} from "@/ui/UpdateMessage.tsx"
-import {AudioServerApi} from "@/audio/AudioServerApi"
-import {AudioMetaData} from "@/audio/AudioMetaData"
-import {AudioStorage} from "@/audio/AudioStorage"
 import {showStoragePersistDialog} from "@/AppDialogs"
 import {Promises} from "@opendaw/lib-runtime"
 import {AnimationFrame, Browser, Events, Keyboard} from "@opendaw/lib-dom"
 import {AudioOutputDevice} from "@/audio/AudioOutputDevice"
 import {FontLoader} from "@/ui/FontLoader"
 import {ErrorHandler} from "@/errors/ErrorHandler.ts"
-import {WorkerAgents, Worklets} from "@opendaw/studio-core"
+import {SampleProvider, SampleStorage, MainThreadSampleManager, WorkerAgents, Worklets} from "@opendaw/studio-core"
 
 import WorkersUrl from "@opendaw/studio-core/workers.js?worker&url"
 import MeterProcessorUrl from "@opendaw/studio-core/meter-processor.js?url"
@@ -70,10 +66,10 @@ requestAnimationFrame(async () => {
                     console.debug(`AudioContext resumed (${context.state})`)), {capture: true, once: true})
         }
         const audioDevices = await AudioOutputDevice.create(context)
-        const audioManager = new UIAudioManager({
-            fetch: async (uuid: UUID.Format, progress: Procedure<unitValue>): Promise<[AudioData, AudioMetaData]> =>
+        const audioManager = new MainThreadSampleManager({
+            fetch: async (uuid: UUID.Format, progress: Procedure<unitValue>): Promise<[AudioData, SampleMetaData]> =>
                 SampleApi.load(context, uuid, progress)
-        } satisfies AudioServerApi, context)
+        } satisfies SampleProvider, context)
         const service: StudioService =
             new StudioService(context, audioWorklets.value, audioDevices, audioManager, buildInfo)
         const errorHandler = new ErrorHandler(service)
@@ -144,6 +140,6 @@ requestAnimationFrame(async () => {
         // delete obsolete indexedDB
         try {indexedDB.deleteDatabase("audio-file-cache")} catch (_: any) {}
         // delete obsolete samples
-        AudioStorage.clean().then()
+        SampleStorage.clean().then()
     }
 )

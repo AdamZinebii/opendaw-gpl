@@ -11,32 +11,31 @@ import {
     UUID
 } from "@opendaw/lib-std"
 import {Peaks} from "@opendaw/lib-fusion"
-import {AudioData, AudioLoader, AudioLoaderState} from "@opendaw/studio-adapters"
-import {WorkerAgents} from "@opendaw/studio-core"
-import {UIAudioManager} from "@/project/UIAudioManager"
-import {AudioMetaData} from "@/audio/AudioMetaData"
-import {AudioStorage} from "@/audio/AudioStorage"
-import {AudioPeaks} from "@/audio/AudioPeaks"
 import {Promises} from "@opendaw/lib-runtime"
+import {AudioData, SampleLoader, SampleLoaderState, SampleMetaData} from "@opendaw/studio-adapters"
 import JSZip from "jszip"
+import {MainThreadSampleManager} from "./MainThreadSampleManager"
+import {WorkerAgents} from "../WorkerAgents"
+import {SampleStorage} from "./SampleStorage"
+import {SamplePeaks} from "./SamplePeaks"
 
-export class UIAudioLoader implements AudioLoader {
-    readonly #manager: UIAudioManager
+export class MainThreadSampleLoader implements SampleLoader {
+    readonly #manager: MainThreadSampleManager
 
     readonly #uuid: UUID.Format
-    readonly #notifier: Notifier<AudioLoaderState>
+    readonly #notifier: Notifier<SampleLoaderState>
 
-    #meta: Option<AudioMetaData> = Option.None
+    #meta: Option<SampleMetaData> = Option.None
     #data: Option<AudioData> = Option.None
     #peaks: Option<Peaks> = Option.None
-    #state: AudioLoaderState = {type: "progress", progress: 0.0}
+    #state: SampleLoaderState = {type: "progress", progress: 0.0}
     #version: int = 0
 
-    constructor(manager: UIAudioManager, uuid: UUID.Format) {
+    constructor(manager: MainThreadSampleManager, uuid: UUID.Format) {
         this.#manager = manager
         this.#uuid = uuid
 
-        this.#notifier = new Notifier<AudioLoaderState>()
+        this.#notifier = new Notifier<SampleLoaderState>()
         this.#get()
     }
 
@@ -49,7 +48,7 @@ export class UIAudioLoader implements AudioLoader {
         this.#get()
     }
 
-    subscribe(observer: Observer<AudioLoaderState>): Subscription {
+    subscribe(observer: Observer<SampleLoaderState>): Subscription {
         if (this.#state.type === "loaded") {
             observer(this.#state)
             return Terminable.Empty
@@ -59,13 +58,13 @@ export class UIAudioLoader implements AudioLoader {
 
     get uuid(): UUID.Format {return this.#uuid}
     get data(): Option<AudioData> {return this.#data}
-    get meta(): Option<AudioMetaData> {return this.#meta}
+    get meta(): Option<SampleMetaData> {return this.#meta}
     get peaks(): Option<Peaks> {return this.#peaks}
-    get state(): AudioLoaderState {return this.#state}
+    get state(): SampleLoaderState {return this.#state}
 
     async pipeFilesInto(zip: JSZip): Promise<void> {
         const exec: Exec = async () => {
-            const path = `${AudioStorage.Folder}/${UUID.toString(this.#uuid)}`
+            const path = `${SampleStorage.Folder}/${UUID.toString(this.#uuid)}`
             zip.file("audio.wav", await WorkerAgents.Opfs.read(`${path}/audio.wav`), {binary: true})
             zip.file("peaks.bin", await WorkerAgents.Opfs.read(`${path}/peaks.bin`), {binary: true})
             zip.file("meta.json", await WorkerAgents.Opfs.read(`${path}/meta.json`))
@@ -87,14 +86,14 @@ export class UIAudioLoader implements AudioLoader {
         }
     }
 
-    #setState(value: AudioLoaderState): void {
+    #setState(value: SampleLoaderState): void {
         this.#state = value
         this.#notifier.notify(this.#state)
     }
 
     #get(): void {
         let version = this.#version
-        AudioStorage.load(this.#uuid, this.#manager.context)
+        SampleStorage.load(this.#uuid, this.#manager.context)
             .then(
                 ([data, peaks, meta]) => {
                     if (this.#version !== version) {
@@ -127,8 +126,8 @@ export class UIAudioLoader implements AudioLoader {
             return
         }
         const [audio, meta] = fetchResult.value
-        const peaks = await AudioPeaks.generate(audio, split[1])
-        const storeResult = await Promises.tryCatch(AudioStorage.store(this.#uuid, audio, peaks, meta))
+        const peaks = await SamplePeaks.generate(audio, split[1])
+        const storeResult = await Promises.tryCatch(SampleStorage.store(this.#uuid, audio, peaks, meta))
         if (this.#version !== version) {return}
         if (storeResult.status === "resolved") {
             this.#data = Option.wrap(audio)

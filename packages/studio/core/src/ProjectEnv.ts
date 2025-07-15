@@ -1,5 +1,5 @@
-import {AudioLoaderManager} from "@opendaw/studio-adapters"
+import {SampleManager} from "@opendaw/studio-adapters"
 
 export interface ProjectEnv {
-    audioManager: AudioLoaderManager
+    sampleManager: SampleManager
 }

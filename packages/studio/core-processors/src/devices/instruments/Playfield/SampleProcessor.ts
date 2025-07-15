@@ -70,7 +70,7 @@ export class SampleProcessor extends AudioProcessor implements DeviceProcessor, 
 
     handleEvent(event: Event) {
         if (NoteLifecycleEvent.isStart(event)) {
-            const optData = this.#adapter.file().flatMap(file => file.getOrCreateAudioLoader().data)
+            const optData = this.#adapter.file().flatMap(file => file.getOrCreateLoader().data)
             if (optData.isEmpty()) {return}
             const {mute, solo, polyphone, exclude} = this.#adapter.namedParameter
             const isMute = mute.getValue()

@@ -1,4 +1,4 @@
-export type AudioMetaData = {
+export type SampleMetaData = {
     name: string
     bpm: number
     duration: number

@@ -20,7 +20,6 @@ import {
 } from "@opendaw/lib-std"
 import {TimelineRange} from "@/ui/timeline/TimelineRange.ts"
 import {initAppMenu} from "@/service/app-menu"
-import {UIAudioManager} from "@/project/UIAudioManager"
 import {Snapping} from "@/ui/timeline/Snapping.ts"
 import {PanelContents} from "@/ui/workspace/PanelContents.tsx"
 import {createPanelFactory} from "@/ui/workspace/PanelFactory.tsx"
@@ -36,7 +35,6 @@ import {ProjectMeta} from "@/project/ProjectMeta"
 import {ProjectSession} from "@/project/ProjectSession"
 import {SessionService} from "./SessionService"
 import {StudioSignal} from "./StudioSignal"
-import {AudioSample} from "@/audio/AudioSample"
 import {Projects} from "@/project/Projects"
 import {SampleDialogs} from "@/ui/browse/SampleDialogs"
 import {TextTooltip} from "@/ui/surface/TextTooltip"
@@ -46,13 +44,13 @@ import {RouteLocation} from "@opendaw/lib-jsx"
 import {PPQN} from "@opendaw/lib-dsp"
 import {Browser, ConsoleCommands, Errors} from "@opendaw/lib-dom"
 import {Promises} from "@opendaw/lib-runtime"
-import {ExportStemsConfiguration} from "@opendaw/studio-adapters"
+import {ExportStemsConfiguration, Sample} from "@opendaw/studio-adapters"
 import {ProjectDialogs} from "@/project/ProjectDialogs"
 import {AudioImporter} from "@/audio/AudioImport"
 import {Address} from "@opendaw/lib-box"
 import {Recovery} from "@/Recovery.ts"
 import {MIDILearning} from "@/midi/devices/MIDILearning"
-import {EngineFacade, EngineWorklet, Project, ProjectEnv, Worklets} from "@opendaw/studio-core"
+import {EngineFacade, EngineWorklet, MainThreadSampleManager, Project, ProjectEnv, Worklets} from "@opendaw/studio-core"
 import {AudioOfflineRenderer} from "@/audio/AudioOfflineRenderer"
 
 /**
@@ -110,7 +108,7 @@ export class StudioService implements ProjectEnv {
     constructor(readonly context: AudioContext,
                 readonly worklets: Worklets,
                 readonly audioDevices: AudioOutputDevice,
-                readonly audioManager: UIAudioManager,
+                readonly sampleManager: MainThreadSampleManager,
                 readonly buildInfo: BuildInfo) {
         this.samplePlayback = new SamplePlayback(context)
         const lifeTime = new Terminator()
@@ -332,7 +330,7 @@ export class StudioService implements ProjectEnv {
         name: string,
         arrayBuffer: ArrayBuffer,
         progressHandler?: ProgressHandler
-    }): Promise<AudioSample> {
+    }): Promise<Sample> {
         console.debug(`Importing '${name}' (${arrayBuffer.byteLength >> 10}kb)`)
         return AudioImporter.run(this.context, {uuid, name, arrayBuffer, progressHandler})
             .then(sample => {

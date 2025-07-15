@@ -1,6 +1,6 @@
 import {Id, int, Option, Terminable, UUID} from "@opendaw/lib-std"
 import {dbToGain, Event, NoteEvent} from "@opendaw/lib-dsp"
-import {AudioData, AudioLoader, NanoDeviceBoxAdapter} from "@opendaw/studio-adapters"
+import {AudioData, SampleLoader, NanoDeviceBoxAdapter} from "@opendaw/studio-adapters"
 import {EngineContext} from "../../EngineContext"
 import {DeviceProcessor, InstrumentDeviceProcessor} from "../../processors"
 import {AudioProcessor} from "../../AudioProcessor"
@@ -23,7 +23,7 @@ export class NanoDeviceProcessor extends AudioProcessor implements InstrumentDev
 
     gain: number = 1.0
     release: number = 1.0
-    loader: Option<AudioLoader> = Option.None
+    loader: Option<SampleLoader> = Option.None
 
     constructor(context: EngineContext, adapter: NanoDeviceBoxAdapter) {
         super(context)

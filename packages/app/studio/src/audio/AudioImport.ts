@@ -1,11 +1,8 @@
-import {AudioSample} from "@/audio/AudioSample"
-import {AudioData} from "@opendaw/studio-adapters"
-import {AudioPeaks} from "@/audio/AudioPeaks"
-import {AudioMetaData} from "@/audio/AudioMetaData"
-import {AudioStorage} from "@/audio/AudioStorage"
 import {Arrays, ProgressHandler, UUID} from "@opendaw/lib-std"
-import {Promises} from "@opendaw/lib-runtime"
 import {estimateBpm} from "@opendaw/lib-dsp"
+import {Promises} from "@opendaw/lib-runtime"
+import {AudioData, Sample, SampleMetaData} from "@opendaw/studio-adapters"
+import {SamplePeaks, SampleStorage} from "@opendaw/studio-core"
 
 export namespace AudioImporter {
     export type Creation = {
@@ -16,7 +13,7 @@ export namespace AudioImporter {
     }
 
     export const run = async (context: AudioContext,
-                              {uuid, name, arrayBuffer, progressHandler}: Creation): Promise<AudioSample> => {
+                              {uuid, name, arrayBuffer, progressHandler}: Creation): Promise<Sample> => {
         uuid ??= await UUID.sha256(arrayBuffer) // Must run before decodeAudioData, because it will detach the ArrayBuffer
         const audioResult = await Promises.tryCatch(context.decodeAudioData(arrayBuffer))
         if (audioResult.status === "rejected") {return Promise.reject(name)}
@@ -27,14 +24,14 @@ export namespace AudioImporter {
             numberOfChannels: audioBuffer.numberOfChannels,
             frames: Arrays.create(index => audioBuffer.getChannelData(index), audioBuffer.numberOfChannels)
         }
-        const peaks = await AudioPeaks.generate(audioData, progressHandler)
-        const meta: AudioMetaData = {
+        const peaks = await SamplePeaks.generate(audioData, progressHandler)
+        const meta: SampleMetaData = {
             bpm: estimateBpm(audioBuffer.duration),
             name: name.substring(0, name.lastIndexOf(".")),
             duration: audioBuffer.duration,
             sample_rate: audioBuffer.sampleRate
         }
-        await AudioStorage.store(uuid, audioData, peaks, meta)
+        await SampleStorage.store(uuid, audioData, peaks, meta)
         return {uuid: UUID.toString(uuid), ...meta}
     }
 }

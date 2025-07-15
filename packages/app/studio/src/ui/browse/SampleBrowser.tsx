@@ -1,21 +1,21 @@
 import css from "./SampleBrowser.sass?inline"
 import {clamp, DefaultObservableValue, Lifecycle, StringComparator, Terminator} from "@opendaw/lib-std"
-import {StudioService} from "@/service/StudioService.ts"
 import {Await, createElement, Frag, Hotspot, HotspotUpdater, Inject, replaceChildren} from "@opendaw/lib-jsx"
+import {Events, Html, Keyboard} from "@opendaw/lib-dom"
+import {Runtime} from "@opendaw/lib-runtime"
+import {IconSymbol} from "@opendaw/studio-adapters"
+import {SampleStorage} from "@opendaw/studio-core"
+import {StudioService} from "@/service/StudioService.ts"
 import {ThreeDots} from "@/ui/spinner/ThreeDots.tsx"
 import {Button} from "@/ui/components/Button.tsx"
 import {SampleApi} from "@/service/SampleApi.ts"
 import {SearchInput} from "@/ui/components/SearchInput"
 import {SampleView} from "@/ui/browse/SampleView"
-import {AudioStorage} from "@/audio/AudioStorage"
 import {RadioGroup} from "../components/RadioGroup"
 import {Icon} from "../components/Icon"
-import {IconSymbol} from "@opendaw/studio-adapters"
 import {SampleLocation} from "@/ui/browse/SampleLocation"
 import {HTMLSelection} from "@/ui/HTMLSelection"
 import {SampleService} from "@/ui/browse/SampleService"
-import {Events, Html, Keyboard} from "@opendaw/lib-dom"
-import {Runtime} from "@opendaw/lib-runtime"
 
 const className = Html.adoptStyleSheet(css, "Samples")
 
@@ -63,7 +63,7 @@ export const SampleBrowser = ({lifecycle, service}: Construct) => {
                         <Await factory={async () => {
                             switch (location.getValue()) {
                                 case SampleLocation.Local:
-                                    return AudioStorage.list()
+                                    return SampleStorage.list()
                                 case SampleLocation.Cloud:
                                     return SampleApi.all()
                             }

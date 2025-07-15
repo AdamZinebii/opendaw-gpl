@@ -15,7 +15,7 @@ export namespace SlotUtils {
         none: () => context.clearRect(0, 0, width, height),
         some: file => {
             context.clearRect(0, 0, width, height)
-            file.getOrCreateAudioLoader().peaks.ifSome(peaks => {
+            file.getOrCreateLoader().peaks.ifSome(peaks => {
                 const {numFrames, numChannels} = peaks
                 const {sampleStart, sampleEnd} = sample.namedParameter
                 const wd = (width - 1) * devicePixelRatio

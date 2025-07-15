@@ -18,7 +18,7 @@ import {ClipBoxAdapter, ClipBoxAdapterVisitor} from "../ClipBoxAdapter"
 import {Pointers} from "@opendaw/studio-enums"
 import {TrackBoxAdapter} from "../TrackBoxAdapter"
 import {BoxAdaptersContext} from "../../BoxAdaptersContext"
-import {AudioFileBoxAdapter} from "../../AudioFileBoxAdapter"
+import {AudioFileBoxAdapter} from "../../audio/AudioFileBoxAdapter"
 
 export class AudioClipBoxAdapter implements ClipBoxAdapter<never> {
     readonly type = "audio-clip"
@@ -54,7 +54,7 @@ export class AudioClipBoxAdapter implements ClipBoxAdapter<never> {
                     .map(vertex => this.#context.boxAdapters.adapterFor(vertex.box, AudioFileBoxAdapter))
                 this.#fileSubscription.ifSome(subscription => subscription.terminate())
                 this.#fileSubscription = this.#fileAdapter.map(adapter =>
-                    adapter.getOrCreateAudioLoader().subscribe(() => this.#dispatchChange()))
+                    adapter.getOrCreateLoader().subscribe(() => this.#dispatchChange()))
             }),
             this.#box.subscribe(Propagation.Children, (_update: Update) => this.#dispatchChange()),
             {

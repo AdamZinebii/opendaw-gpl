@@ -1,8 +1,6 @@
 import {Arrays, asDefined, DefaultObservableValue, panic, Procedure, tryCatch, unitValue, UUID} from "@opendaw/lib-std"
-import {AudioData} from "@opendaw/studio-adapters"
+import {AudioData, Sample, SampleMetaData} from "@opendaw/studio-adapters"
 import {showInfoDialog, showProcessDialog} from "@/ui/components/dialogs.tsx"
-import {AudioMetaData} from "@/audio/AudioMetaData"
-import {AudioSample} from "@/audio/AudioSample"
 import {network, Promises} from "@opendaw/lib-runtime"
 
 const username = "openDAW"
@@ -18,13 +16,13 @@ export namespace SampleApi {
     export const ApiRoot = "https://api.opendaw.studio/samples"
     export const FileRoot = "https://assets.opendaw.studio/samples"
 
-    export const all = async (): Promise<ReadonlyArray<AudioSample>> => {
+    export const all = async (): Promise<ReadonlyArray<Sample>> => {
         return await Promises.retry(() => fetch(`${ApiRoot}/list.php`, headers).then(x => x.json(), () => []))
     }
 
-    export const get = async (uuid: UUID.Format): Promise<AudioSample> => {
+    export const get = async (uuid: UUID.Format): Promise<Sample> => {
         const url = `${ApiRoot}/get.php?uuid=${UUID.toString(uuid)}`
-        const sample: AudioSample = await Promises.retry(() => network.limitFetch(url, headers)
+        const sample: Sample = await Promises.retry(() => network.limitFetch(url, headers)
             .then(x => x.json()))
             .then(x => {if ("error" in x) {return panic(x.error)} else {return x}})
         return Object.freeze({...sample, cloud: true})
@@ -32,7 +30,7 @@ export namespace SampleApi {
 
     export const load = async (context: AudioContext,
                                uuid: UUID.Format,
-                               progress: Procedure<unitValue>): Promise<[AudioData, AudioMetaData]> => {
+                               progress: Procedure<unitValue>): Promise<[AudioData, SampleMetaData]> => {
         console.debug(`fetch ${UUID.toString(uuid)}`)
         return get(uuid)
             .then(({uuid, name, bpm}) => Promises.retry(() => network.limitFetch(`${FileRoot}/${uuid}`, headers))
@@ -71,7 +69,7 @@ export namespace SampleApi {
         numberOfChannels: buffer.numberOfChannels
     })
 
-    export const upload = async (arrayBuffer: ArrayBuffer, metaData: AudioMetaData) => {
+    export const upload = async (arrayBuffer: ArrayBuffer, metaData: SampleMetaData) => {
         const progress = new DefaultObservableValue(0.0)
         const dialogHandler = showProcessDialog("Uploading", progress)
         const formData = new FormData()

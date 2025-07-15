@@ -40,7 +40,7 @@ import {MainThreadAudioLoaderManager} from "./MainThreadAudioLoaderManager"
     }
     {
         const audioManager = new MainThreadAudioLoaderManager(context)
-        const project = Project.load({audioManager}, await fetch("subset.od").then(x => x.arrayBuffer()))
+        const project = Project.load({sampleManager: audioManager}, await fetch("subset.od").then(x => x.arrayBuffer()))
         const worklet = Worklets.get(context).createEngine(project)
         await worklet.isReady()
         while (!await worklet.queryLoadingComplete()) {}
