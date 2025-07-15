@@ -7,12 +7,11 @@ import {
     TrackBox,
     VaporisateurDeviceBox
 } from "@opendaw/studio-boxes"
-import {UUID} from "@opendaw/lib-std"
-import {Utils} from "@/utils"
-import {BoxGraph} from "@opendaw/lib-box"
-import {AudioUnitBoxAdapter, DeviceHost, IconSymbol, TrackType} from "@opendaw/studio-adapters"
+import {Strings, UUID} from "@opendaw/lib-std"
 import {Waveform} from "@opendaw/lib-dsp"
+import {BoxGraph} from "@opendaw/lib-box"
 import {AudioUnitType} from "@opendaw/studio-enums"
+import {AudioUnitBoxAdapter, DeviceHost, IconSymbol, TrackType} from "@opendaw/studio-adapters"
 import {Modifier, Project} from "@opendaw/studio-core"
 
 export namespace Instruments {
@@ -163,7 +162,7 @@ export namespace Instruments {
             }))
         const audioUnitBox = Modifier.createAudioUnit(project, AudioUnitType.Instrument)
         const audioUnitBoxAdapter = boxAdapters.adapterFor(audioUnitBox, AudioUnitBoxAdapter)
-        const uniqueName = Utils.getUniqueName(existingNames, name ?? factory.defaultName)
+        const uniqueName = Strings.getUniqueName(existingNames, name ?? factory.defaultName)
         const iconSymbol = icon ?? factory.icon
         const device = factory.createDevice(boxGraph, audioUnitBoxAdapter, uniqueName, iconSymbol)
         const track = factory.createTrack(boxGraph, audioUnitBoxAdapter)
