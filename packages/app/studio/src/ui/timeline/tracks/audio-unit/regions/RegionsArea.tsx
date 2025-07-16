@@ -118,7 +118,7 @@ export const RegionsArea = ({lifecycle, service, manager, scrollModel, scrollCon
                 const position = snapping.xToUnitFloor(event.clientX - element.getBoundingClientRect().left)
                 const duration = Math.min(PPQN.Bar,
                     (trackBoxAdapter.regions.collection.greaterEqual(position + 1)?.position ?? Number.POSITIVE_INFINITY) - position)
-                editing.modify(() => project.api.createRegion(trackBoxAdapter.regions, position, duration, {name}))
+                editing.modify(() => project.api.createRegion(trackBoxAdapter.box, position, duration, {name}))
             }
         }),
         Dragging.attach(element, (event: PointerEvent) => {

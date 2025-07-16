@@ -20,8 +20,6 @@ import {
     EffectPointerType,
     IconSymbol,
     RootBoxAdapter,
-    TrackClips,
-    TrackRegions,
     TrackType
 } from "@opendaw/studio-adapters"
 import {Project} from "./Project"
@@ -95,15 +93,9 @@ export class ProjectApi {
         })
     }
 
-    createClip({collection, trackBoxAdapter}: TrackClips, clipIndex: int, {name}: {
-        name?: string
-    } = {}): Option<AnyClipBox> {
-        if (collection.getAdapterByIndex(clipIndex).nonEmpty()) {
-            console.warn("Cannot create Clip on occupied cell.")
-            return Option.None
-        }
+    createClip(trackBox: TrackBox, clipIndex: int, {name}: { name?: string } = {}): Option<AnyClipBox> {
         const {boxGraph} = this.#project
-        const type = trackBoxAdapter.type
+        const type = trackBox.type.getValue()
         switch (type) {
             case TrackType.Notes: {
                 const events = NoteEventCollectionBox.create(boxGraph, UUID.generate())
@@ -113,7 +105,7 @@ export class ProjectApi {
                     box.hue.setValue(ColorCodes.forTrackType(type))
                     box.mute.setValue(false)
                     box.duration.setValue(PPQN.Bar)
-                    box.clips.refer(trackBoxAdapter.box.clips)
+                    box.clips.refer(trackBox.clips)
                     box.events.refer(events.owners)
                 }))
             }
@@ -126,16 +118,16 @@ export class ProjectApi {
                     box.mute.setValue(false)
                     box.duration.setValue(PPQN.Bar)
                     box.events.refer(events.owners)
-                    box.clips.refer(trackBoxAdapter.box.clips)
+                    box.clips.refer(trackBox.clips)
                 }))
             }
         }
         return Option.None
     }
 
-    createRegion({trackBoxAdapter}: TrackRegions, position: ppqn, duration: ppqn, {name}: { name?: string } = {}) {
+    createRegion(trackBox: TrackBox, position: ppqn, duration: ppqn, {name}: { name?: string } = {}) {
         const {boxGraph} = this.#project
-        const type = trackBoxAdapter.type
+        const type = trackBox.type.getValue()
         switch (type) {
             case TrackType.Notes: {
                 const events = NoteEventCollectionBox.create(boxGraph, UUID.generate())
@@ -147,7 +139,7 @@ export class ProjectApi {
                     box.duration.setValue(duration)
                     box.loopDuration.setValue(PPQN.Bar)
                     box.events.refer(events.owners)
-                    box.regions.refer(trackBoxAdapter.box.regions)
+                    box.regions.refer(trackBox.regions)
                 }))
             }
             case TrackType.Value: {
@@ -160,7 +152,7 @@ export class ProjectApi {
                     box.duration.setValue(duration)
                     box.loopDuration.setValue(PPQN.Bar)
                     box.events.refer(events.owners)
-                    box.regions.refer(trackBoxAdapter.box.regions)
+                    box.regions.refer(trackBox.regions)
                 }))
             }
         }

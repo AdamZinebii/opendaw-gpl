@@ -92,7 +92,7 @@ export const ClipsArea = ({lifecycle, service, manager, scrollModel, scrollConta
                 service.panelLayout.showIfAvailable(PanelType.ContentEditor)
             } else if (target.type === "track") {
                 const name = target.track.audioUnitBoxAdapter.input.label.unwrapOrElse("")
-                editing.modify(() => project.api.createClip(target.track.trackBoxAdapter.clips, target.clipIndex, {name}))
+                editing.modify(() => project.api.createClip(target.track.trackBoxAdapter.box, target.clipIndex, {name}))
             }
         }),
         Events.subscribe(element, "keydown", (event: KeyboardEvent) => {
