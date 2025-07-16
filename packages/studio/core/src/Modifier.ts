@@ -94,7 +94,7 @@ export namespace Modifier {
             box.icon.setValue(IconSymbol.toName(icon))
             box.color.setValue(color)
         })
-        const audioUnitBox = Modifier.createAudioUnit(project, type)
+        const audioUnitBox = createAudioUnit(project, type)
         TrackBox.create(boxGraph, UUID.generate(), box => {
             box.tracks.refer(audioUnitBox.tracks)
             box.target.refer(audioUnitBox)

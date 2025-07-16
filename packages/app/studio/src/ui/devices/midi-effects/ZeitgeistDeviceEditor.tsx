@@ -52,6 +52,6 @@ export const ZeitgeistDeviceEditor = ({lifecycle, service, adapter, deviceHost}:
                                            receiver={project.liveStreamReceiver}
                                            address={adapter.address}/>
                       )}
-                      icon={Effects.MidiNamed.Zeitgeist.icon}/>
+                      icon={Effects.MidiNamed.Zeitgeist.defaultIcon}/>
     )
 }

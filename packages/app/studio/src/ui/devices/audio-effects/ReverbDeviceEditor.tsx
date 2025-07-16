@@ -64,6 +64,6 @@ export const ReverbDeviceEditor = ({lifecycle, service, adapter, deviceHost}: Co
                                            receiver={project.liveStreamReceiver}
                                            address={adapter.address}/>
                       )}
-                      icon={Effects.AudioNamed.Reverb.icon}/>
+                      icon={Effects.AudioNamed.Reverb.defaultIcon}/>
     )
 }

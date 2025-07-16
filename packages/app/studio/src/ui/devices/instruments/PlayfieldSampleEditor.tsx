@@ -9,7 +9,7 @@ import {Events} from "@opendaw/lib-dom"
 import {Icon} from "@/ui/components/Icon"
 import {TextTooltip} from "@/ui/surface/TextTooltip"
 import {StudioService} from "@/service/StudioService"
-import {Colors, Instruments} from "@opendaw/studio-core"
+import {Colors, InstrumentFactories} from "@opendaw/studio-core"
 
 type Construct = {
     lifecycle: Lifecycle
@@ -84,6 +84,6 @@ export const PlayfieldSampleEditor = ({lifecycle, service, adapter, deviceHost}:
                               </h1>
                           )
                       }}
-                      icon={Instruments.Playfield.icon}/>
+                      icon={InstrumentFactories.Playfield.defaultIcon}/>
     )
 }

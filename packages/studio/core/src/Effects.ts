@@ -20,9 +20,9 @@ import {Project} from "./Project"
 
 export namespace Effects {
     export interface Entry {
-        get name(): string
+        get defaultName(): string
+        get defaultIcon(): IconSymbol
         get description(): string
-        get icon(): IconSymbol
         get separatorBefore(): boolean
         get type(): "audio" | "midi"
 
@@ -31,9 +31,9 @@ export namespace Effects {
 
     export const MidiNamed = {
         arpeggio: {
-            name: "Arpeggio",
+            defaultName: "Arpeggio",
             description: "Generates rhythmic note sequences from chords",
-            icon: IconSymbol.Stack,
+            defaultIcon: IconSymbol.Stack,
             separatorBefore: false,
             type: "midi",
             create: ({boxGraph}, unit, index) => ArpeggioDeviceBox.create(boxGraph, UUID.generate(), box => {
@@ -43,9 +43,9 @@ export namespace Effects {
             })
         } satisfies Entry,
         pitch: {
-            name: "Pitch",
+            defaultName: "Pitch",
             description: "Shifts the pitch of incoming notes",
-            icon: IconSymbol.Note,
+            defaultIcon: IconSymbol.Note,
             separatorBefore: false,
             type: "midi",
             create: ({boxGraph}, unit, index) => PitchDeviceBox.create(boxGraph, UUID.generate(), box => {
@@ -55,9 +55,9 @@ export namespace Effects {
             })
         } satisfies Entry,
         Zeitgeist: {
-            name: "Zeitgeist",
+            defaultName: "Zeitgeist",
             description: "Distorts space and time",
-            icon: IconSymbol.Zeitgeist,
+            defaultIcon: IconSymbol.Zeitgeist,
             separatorBefore: false,
             type: "midi",
             create: ({boxGraph, rootBoxAdapter}, unit, index) => {
@@ -80,9 +80,9 @@ export namespace Effects {
 
     export const AudioNamed = {
         StereoTool: {
-            name: "Stereo Tool",
+            defaultName: "Stereo Tool",
             description: "Computes a stereo transformation matrix with volume, panning, phase inversion and stereo width.",
-            icon: IconSymbol.Stereo,
+            defaultIcon: IconSymbol.Stereo,
             separatorBefore: false,
             type: "audio",
             create: ({boxGraph}, unit, index) => StereoToolDeviceBox.create(boxGraph, UUID.generate(), box => {
@@ -92,9 +92,9 @@ export namespace Effects {
             })
         } satisfies Entry,
         Delay: {
-            name: "Delay",
+            defaultName: "Delay",
             description: "Echoes the input signal with time-based repeats",
-            icon: IconSymbol.Time,
+            defaultIcon: IconSymbol.Time,
             separatorBefore: false,
             type: "audio",
             create: ({boxGraph}, unit, index) => DelayDeviceBox.create(boxGraph, UUID.generate(), box => {
@@ -104,9 +104,9 @@ export namespace Effects {
             })
         } satisfies Entry,
         Reverb: {
-            name: "Reverb",
+            defaultName: "Reverb",
             description: "Simulates space and depth with reflections",
-            icon: IconSymbol.Cube,
+            defaultIcon: IconSymbol.Cube,
             separatorBefore: false,
             type: "audio",
             create: ({boxGraph}, unit, index) => ReverbDeviceBox.create(boxGraph, UUID.generate(), box => {
@@ -117,9 +117,9 @@ export namespace Effects {
             })
         } satisfies Entry,
         Revamp: {
-            name: "Revamp",
+            defaultName: "Revamp",
             description: "Shapes the frequency balance of the sound",
-            icon: IconSymbol.EQ,
+            defaultIcon: IconSymbol.EQ,
             separatorBefore: false,
             type: "audio",
             create: ({boxGraph}, unit, index) => RevampDeviceBox.create(boxGraph, UUID.generate(), box => {
@@ -149,9 +149,9 @@ export namespace Effects {
             })
         } satisfies Entry,
         Modular: {
-            name: "🔇 Create New Modular Audio Effect (inaudible yet)",
+            defaultName: "🔇 Create New Modular Audio Effect (inaudible yet)",
             description: "",
-            icon: IconSymbol.Box,
+            defaultIcon: IconSymbol.Box,
             separatorBefore: true,
             type: "audio",
             create: (project, unit, index) => {

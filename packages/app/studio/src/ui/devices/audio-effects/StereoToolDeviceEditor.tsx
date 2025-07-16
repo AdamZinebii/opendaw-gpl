@@ -129,6 +129,6 @@ export const StereoToolDeviceEditor = ({lifecycle, service, adapter, deviceHost}
                                            receiver={project.liveStreamReceiver}
                                            address={adapter.address}/>
                       )}
-                      icon={Effects.AudioNamed.StereoTool.icon}/>
+                      icon={Effects.AudioNamed.StereoTool.defaultIcon}/>
     )
 }

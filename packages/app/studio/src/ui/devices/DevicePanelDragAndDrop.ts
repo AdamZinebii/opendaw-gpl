@@ -9,7 +9,7 @@ import {
 } from "@opendaw/studio-adapters"
 import {InsertMarker} from "@/ui/components/InsertMarker"
 import {Pointers} from "@opendaw/studio-enums"
-import {Effects, Instruments, Project} from "@opendaw/studio-core"
+import {Effects, InstrumentFactories, Project} from "@opendaw/studio-core"
 
 export namespace DevicePanelDragAndDrop {
     export const install = (project: Project,
@@ -60,12 +60,9 @@ export namespace DevicePanelDragAndDrop {
                 if (type === "instrument") {
                     editing.modify(() => {
                         deviceHost.inputField.pointerHub.incoming().forEach(pointer => pointer.box.delete())
-                        const {
-                            createDevice,
-                            icon,
-                            defaultName
-                        } = asDefined(Instruments.Named[dragData.device], `Unknown device: '${dragData.device}'`)
-                        createDevice(boxGraph, deviceHost, defaultName, icon)
+                        const {create, defaultIcon, defaultName} =
+                            asDefined(InstrumentFactories.Named[dragData.device], `Unknown: '${dragData.device}'`)
+                        create(boxGraph, deviceHost, defaultName, defaultIcon)
                     })
                     return
                 }

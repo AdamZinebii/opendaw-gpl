@@ -58,6 +58,6 @@ export const PitchDeviceEditor = ({lifecycle, service, adapter, deviceHost}: Con
                                            receiver={project.liveStreamReceiver}
                                            address={adapter.address}/>
                       )}
-                      icon={Effects.MidiNamed.pitch.icon}/>
+                      icon={Effects.MidiNamed.pitch.defaultIcon}/>
     )
 }

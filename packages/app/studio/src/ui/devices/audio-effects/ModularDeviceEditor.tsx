@@ -98,7 +98,7 @@ export const ModularDeviceEditor = ({lifecycle, service, adapter, deviceHost}: C
                                            receiver={project.liveStreamReceiver}
                                            address={adapter.address}/>
                       )}
-                      icon={Effects.AudioNamed.Modular.icon}>
+                      icon={Effects.AudioNamed.Modular.defaultIcon}>
         </DeviceEditor>
     )
 }

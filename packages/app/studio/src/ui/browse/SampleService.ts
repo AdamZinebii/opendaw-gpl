@@ -3,8 +3,8 @@ import {PPQN} from "@opendaw/lib-dsp"
 import {Promises} from "@opendaw/lib-runtime"
 import {AudioUnitType} from "@opendaw/studio-enums"
 import {AudioFileBox, AudioRegionBox} from "@opendaw/studio-boxes"
-import {AudioUnitBoxAdapter, IconSymbol, Sample} from "@opendaw/studio-adapters"
-import {ColorCodes, Instruments, Modifier, SampleStorage} from "@opendaw/studio-core"
+import {AudioUnitBoxAdapter, IconSymbol, Sample, TrackType} from "@opendaw/studio-adapters"
+import {ColorCodes, InstrumentFactories, Modifier, SampleStorage} from "@opendaw/studio-core"
 import {HTMLSelection} from "@/ui/HTMLSelection"
 import {StudioService} from "@/service/StudioService"
 import {showApproveDialog, showInfoDialog, showProcessDialog} from "../components/dialogs"
@@ -37,9 +37,8 @@ export class SampleService {
                         box.startInSeconds.setValue(0)
                         box.endInSeconds.setValue(durationInSeconds)
                     }))
-                const tape = Instruments.Tape
-                tape.createDevice(boxGraph, audioUnitBoxAdapter, name, IconSymbol.Tape)
-                const trackBox = tape.createTrack(boxGraph, audioUnitBoxAdapter)
+                InstrumentFactories.Tape.create(boxGraph, audioUnitBoxAdapter, name, IconSymbol.Tape)
+                const trackBox = project.api.createTrack(audioUnitBoxAdapter, TrackType.Audio)
                 const duration = Math.round(PPQN.secondsToPulses(durationInSeconds, bpm))
                 AudioRegionBox.create(boxGraph, UUID.generate(), box => {
                     box.position.setValue(0)

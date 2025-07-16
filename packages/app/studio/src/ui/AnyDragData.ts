@@ -1,6 +1,6 @@
 import {byte, int} from "@opendaw/lib-std"
 import {Sample} from "@opendaw/studio-adapters"
-import {Effects, Instruments} from "@opendaw/studio-core"
+import {Effects, InstrumentFactories} from "@opendaw/studio-core"
 
 export type DragCopyHint = { copy?: boolean }
 export type DragSample = { type: "sample", sample: Sample } & DragCopyHint
@@ -22,7 +22,7 @@ export type DragDevice = (
     } |
     {
         type: "instrument"
-        device: Instruments.Keys
+        device: InstrumentFactories.Keys
     } |
     {
         type: "playfield-slot"

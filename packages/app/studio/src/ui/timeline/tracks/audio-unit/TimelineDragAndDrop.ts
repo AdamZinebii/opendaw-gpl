@@ -7,7 +7,7 @@ import {isDefined, Nullable, Option, panic, UUID} from "@opendaw/lib-std"
 import {RegionCaptureTarget} from "./regions/RegionCapturing"
 import {Promises} from "@opendaw/lib-runtime"
 import {StudioService} from "@/service/StudioService"
-import {Instruments, Project} from "@opendaw/studio-core"
+import {InstrumentFactories, Project} from "@opendaw/studio-core"
 
 export type CreateParameters = {
     event: DragEvent
@@ -64,7 +64,7 @@ export abstract class TimelineDragAndDrop<T extends (ClipCaptureTarget | RegionC
             }
             sample = value
         } else if (data.type === "instrument") {
-            editing.modify(() => Instruments.create(this.project, Instruments[data.device]))
+            editing.modify(() => this.project.api.createInstrument(InstrumentFactories[data.device]))
             return
         } else {
             return
@@ -73,7 +73,7 @@ export abstract class TimelineDragAndDrop<T extends (ClipCaptureTarget | RegionC
             let trackBoxAdapter: TrackBoxAdapter
             if (drop === false) {
                 trackBoxAdapter = boxAdapters
-                    .adapterFor(Instruments.create(this.project, Instruments.Tape).track, TrackBoxAdapter)
+                    .adapterFor(this.project.api.createInstrument(InstrumentFactories.Tape).track, TrackBoxAdapter)
             } else if (drop?.type === "track") {
                 trackBoxAdapter = drop.track.trackBoxAdapter
             } else if (drop?.type === "clip") {

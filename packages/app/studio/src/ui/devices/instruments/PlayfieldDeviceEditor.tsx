@@ -7,7 +7,7 @@ import {DeviceHost, NoteSender, PlayfieldDeviceBoxAdapter} from "@opendaw/studio
 import {MenuItem} from "@/ui/model/menu-item"
 import {SlotGrid} from "@/ui/devices/instruments/PlayfieldDeviceEditor/SlotGrid"
 import {StudioService} from "@/service/StudioService"
-import {Instruments} from "@opendaw/studio-core"
+import {InstrumentFactories} from "@opendaw/studio-core"
 
 type Construct = {
     lifecycle: Lifecycle
@@ -46,6 +46,6 @@ export const PlayfieldDeviceEditor = ({lifecycle, service, adapter, deviceHost}:
                                            receiver={project.liveStreamReceiver}
                                            address={adapter.address}/>
                       )}
-                      icon={Instruments.Playfield.icon}/>
+                      icon={InstrumentFactories.Playfield.defaultIcon}/>
     )
 }

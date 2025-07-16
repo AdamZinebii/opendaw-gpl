@@ -9,7 +9,7 @@ import {MenuItems} from "@/ui/devices/menu-items.ts"
 import {DevicePeakMeter} from "@/ui/devices/panel/DevicePeakMeter.tsx"
 import {Html} from "@opendaw/lib-dom"
 import {StudioService} from "@/service/StudioService"
-import {Instruments} from "@opendaw/studio-core"
+import {InstrumentFactories} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "TapeDeviceEditor")
 
@@ -42,6 +42,6 @@ export const TapeDeviceEditor = ({lifecycle, service, adapter, deviceHost}: Cons
                                            receiver={project.liveStreamReceiver}
                                            address={adapter.address}/>
                       )}
-                      icon={Instruments.Tape.icon}/>
+                      icon={InstrumentFactories.Tape.defaultIcon}/>
     )
 }

@@ -7,7 +7,7 @@ import {DragAndDrop} from "@/ui/DragAndDrop"
 import {DragDevice} from "@/ui/AnyDragData"
 import {TextTooltip} from "@/ui/surface/TextTooltip"
 import {DeviceHost, Devices} from "@opendaw/studio-adapters"
-import {Effects, Instruments, Project} from "@opendaw/studio-core"
+import {Effects, InstrumentFactories, Project} from "@opendaw/studio-core"
 import {ModularBox} from "@opendaw/studio-boxes"
 import {Icon} from "../components/Icon"
 
@@ -59,22 +59,24 @@ export const DevicesBrowser = ({lifecycle, service}: Construct) => {
 
 const createInstrumentList = (lifecycle: Lifecycle, project: Project) => (
     <ul>{
-        Object.entries(Instruments.Named).map(([key, info]) => {
-            const element = <li onclick={() => project.editing.modify(() => Instruments.create(project, info))}>
-                <div className="icon">
-                    <Icon symbol={info.icon}/>
-                </div>
-                {info.defaultName}
-            </li>
+        Object.entries(InstrumentFactories.Named).map(([key, factory]) => {
+            const element = (
+                <li onclick={() => project.editing.modify(() => project.api.createInstrument(factory))}>
+                    <div className="icon">
+                        <Icon symbol={factory.defaultIcon}/>
+                    </div>
+                    {factory.defaultName}
+                </li>
+            )
             lifecycle.ownAll(
                 DragAndDrop.installSource(element, () => ({
                     type: "instrument",
-                    device: key as Instruments.Keys,
+                    device: key as InstrumentFactories.Keys,
                     copy: true
                 } satisfies DragDevice)),
                 TextTooltip.simple(element, () => {
                     const {bottom, left} = element.getBoundingClientRect()
-                    return {clientX: left, clientY: bottom + 12, text: info.description}
+                    return {clientX: left, clientY: bottom + 12, text: factory.description}
                 })
             )
             return element
@@ -109,9 +111,9 @@ const createEffectList = <
                     })
                 }}>
                     <div className="icon">
-                        <Icon symbol={entry.icon}/>
+                        <Icon symbol={entry.defaultIcon}/>
                     </div>
-                    {entry.name}
+                    {entry.defaultName}
                 </li>
             )
             lifecycle.ownAll(

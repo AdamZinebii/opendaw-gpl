@@ -26,14 +26,14 @@ export namespace MenuItems {
             MenuItem.default({label: "Add Midi-Effect", separatorBefore: true, selectable: canProcessMidi})
                 .setRuntimeChildrenProcedure(parent => parent.addMenuItem(...Effects.MidiList
                     .map(entry => MenuItem.default({
-                        label: entry.name,
+                        label: entry.defaultName,
                         separatorBefore: entry.separatorBefore
                     }).setTriggerProcedure(() => Modifier.createEffect(service.project, deviceHost, entry, 0)))
                 )),
             MenuItem.default({label: "Add Audio Effect"})
                 .setRuntimeChildrenProcedure(parent => parent.addMenuItem(...Effects.AudioList
                     .map(entry => MenuItem.default({
-                        label: entry.name,
+                        label: entry.defaultName,
                         separatorBefore: entry.separatorBefore
                     }).setTriggerProcedure(() => Modifier.createEffect(service.project, deviceHost, entry, 0)
                         .ifSome(box => {
@@ -96,7 +96,7 @@ export namespace MenuItems {
             ? MenuItem.default({label: "Add Audio Effect", separatorBefore: true})
                 .setRuntimeChildrenProcedure(parent => parent
                     .addMenuItem(...Effects.AudioList
-                        .map(entry => MenuItem.default({label: entry.name, separatorBefore: entry.separatorBefore})
+                        .map(entry => MenuItem.default({label: entry.defaultName, separatorBefore: entry.separatorBefore})
                             .setTriggerProcedure(() =>
                                 Modifier.createEffect(service.project, host, entry, adapter.indexField.getValue() + 1)
                                     .ifSome(box => {
@@ -107,7 +107,7 @@ export namespace MenuItems {
                 ? MenuItem.default({label: "Add Midi Effect", separatorBefore: true})
                     .setRuntimeChildrenProcedure(parent => parent
                         .addMenuItem(...Effects.MidiList
-                            .map(entry => MenuItem.default({label: entry.name, separatorBefore: entry.separatorBefore})
+                            .map(entry => MenuItem.default({label: entry.defaultName, separatorBefore: entry.separatorBefore})
                                 .setTriggerProcedure(() => Modifier.createEffect(service.project, host, entry, adapter.indexField.getValue() + 1)))
                         )) : panic(`Unknown accepts value: ${adapter.accepts}`)
 

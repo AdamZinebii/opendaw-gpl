@@ -8,7 +8,7 @@ import {ControlBuilder} from "@/ui/devices/ControlBuilder.tsx"
 import {DevicePeakMeter} from "@/ui/devices/panel/DevicePeakMeter.tsx"
 import {Html} from "@opendaw/lib-dom"
 import {StudioService} from "@/service/StudioService"
-import {Instruments} from "@opendaw/studio-core"
+import {InstrumentFactories} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "editor")
 
@@ -100,6 +100,6 @@ export const VaporisateurDeviceEditor = ({lifecycle, service, adapter, deviceHos
                                            receiver={project.liveStreamReceiver}
                                            address={adapter.address}/>
                       )}
-                      icon={Instruments.Vaporisateur.icon}/>
+                      icon={InstrumentFactories.Vaporisateur.defaultIcon}/>
     )
 }

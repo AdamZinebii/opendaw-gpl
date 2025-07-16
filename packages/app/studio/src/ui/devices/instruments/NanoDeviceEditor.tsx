@@ -11,7 +11,7 @@ import {AudioFileBox} from "@opendaw/studio-boxes"
 import {Icon} from "@/ui/components/Icon"
 import {SampleSelector, SampleSelectStrategy} from "@/ui/devices/SampleSelector"
 import {StudioService} from "@/service/StudioService"
-import {Instruments} from "@opendaw/studio-core"
+import {InstrumentFactories} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "NanoDeviceEditor")
 
@@ -70,6 +70,6 @@ export const NanoDeviceEditor = ({lifecycle, service, adapter, deviceHost}: Cons
                                            receiver={project.liveStreamReceiver}
                                            address={adapter.address}/>
                       )}
-                      icon={Instruments.Nano.icon}/>
+                      icon={InstrumentFactories.Nano.defaultIcon}/>
     )
 }

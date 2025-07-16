@@ -301,6 +301,6 @@ export const RevampDeviceEditor = ({adapter, service, lifecycle, deviceHost}: Co
                                            receiver={project.liveStreamReceiver}
                                            address={adapter.address}/>
                       )}
-                      icon={Effects.AudioNamed.Revamp.icon}/>
+                      icon={Effects.AudioNamed.Revamp.defaultIcon}/>
     )
 }

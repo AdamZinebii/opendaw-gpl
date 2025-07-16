@@ -83,6 +83,6 @@ export const DelayDeviceEditor = ({lifecycle, service, adapter, deviceHost}: Con
                                            receiver={project.liveStreamReceiver}
                                            address={adapter.address}/>
                       )}
-                      icon={Effects.AudioNamed.Delay.icon}/>
+                      icon={Effects.AudioNamed.Delay.defaultIcon}/>
     )
 }
