@@ -2,8 +2,10 @@ import {Address} from "./address"
 import {
     Arrays,
     asDefined,
+    asInstanceOf,
     ByteArrayOutput,
     ByteCounter,
+    Class,
     DataInput,
     DataOutput,
     Func,
@@ -84,14 +86,14 @@ export abstract class Box<P extends PointerTypes = PointerTypes, F extends Field
     }
 
     isBox(): this is Box {return true}
+    asBox<T extends Box>(type: Class<T>): T {return asInstanceOf(this, type)}
     isField(): this is Field {return false}
     isAttached(): boolean {return this.#graph.findBox(this.address.uuid).nonEmpty()}
-
     read(input: DataInput): void {Serializer.readFields(input, this.#fields)}
     write(output: DataOutput): void {Serializer.writeFields(output, this.#fields)}
     serialize(): ArrayBufferLike {
         const output = ByteArrayOutput.create()
-        output.writeInt(this.#creationIndex) // allows to re-load the boxes in same order as created
+        output.writeInt(this.#creationIndex) // allows to re-load the boxes in the same order as created
         output.writeString(this.name)
         output.writeBytes(new Int8Array(this.address.uuid.buffer))
         this.write(output)

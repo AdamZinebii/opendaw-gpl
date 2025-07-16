@@ -1,10 +1,11 @@
-import {assert, int, Option, panic, Strings, UUID} from "@opendaw/lib-std"
+import {assert, float, int, Option, panic, Strings, UUID} from "@opendaw/lib-std"
 import {Field} from "@opendaw/lib-box"
 import {AudioUnitType} from "@opendaw/studio-enums"
 import {
     AudioBusBox,
     AudioUnitBox,
     NoteClipBox,
+    NoteEventBox,
     NoteEventCollectionBox,
     NoteRegionBox,
     TrackBox,
@@ -19,6 +20,7 @@ import {
     EffectDeviceBoxAdapter,
     EffectPointerType,
     IconSymbol,
+    NoteEventBoxAdapter,
     RootBoxAdapter,
     TrackType
 } from "@opendaw/studio-adapters"
@@ -29,6 +31,21 @@ import {InstrumentOptions} from "./InstrumentOptions"
 import {EffectFactory} from "./EffectFactory"
 import {ColorCodes} from "./ColorCodes"
 import {ppqn, PPQN} from "@opendaw/lib-dsp"
+
+export type ClipRegionOptions = {
+    name?: string
+    hue?: number
+}
+
+export type NoteEventParams = {
+    owner: NoteRegionBox | NoteClipBox
+    position: ppqn
+    duration: ppqn
+    pitch: int
+    cent?: number
+    velocity?: float
+    chance?: int
+}
 
 export class ProjectApi {
     static readonly AudioUnitOrdering = {
@@ -84,81 +101,6 @@ export class ProjectApi {
         return box
     }
 
-    createTrack(adapter: AudioUnitBoxAdapter, trackType: TrackType, index: int = 0): TrackBox {
-        return TrackBox.create(this.#project.boxGraph, UUID.generate(), box => {
-            box.index.setValue(index)
-            box.type.setValue(trackType)
-            box.tracks.refer(adapter.tracksField)
-            box.target.refer(adapter.audioUnitBoxAdapter().box)
-        })
-    }
-
-    createClip(trackBox: TrackBox, clipIndex: int, {name}: { name?: string } = {}): Option<AnyClipBox> {
-        const {boxGraph} = this.#project
-        const type = trackBox.type.getValue()
-        switch (type) {
-            case TrackType.Notes: {
-                const events = NoteEventCollectionBox.create(boxGraph, UUID.generate())
-                return Option.wrap(NoteClipBox.create(boxGraph, UUID.generate(), box => {
-                    box.index.setValue(clipIndex)
-                    box.label.setValue(name ?? "Notes")
-                    box.hue.setValue(ColorCodes.forTrackType(type))
-                    box.mute.setValue(false)
-                    box.duration.setValue(PPQN.Bar)
-                    box.clips.refer(trackBox.clips)
-                    box.events.refer(events.owners)
-                }))
-            }
-            case TrackType.Value: {
-                const events = ValueEventCollectionBox.create(boxGraph, UUID.generate())
-                return Option.wrap(ValueClipBox.create(boxGraph, UUID.generate(), box => {
-                    box.index.setValue(clipIndex)
-                    box.label.setValue(name ?? "CV")
-                    box.hue.setValue(ColorCodes.forTrackType(type))
-                    box.mute.setValue(false)
-                    box.duration.setValue(PPQN.Bar)
-                    box.events.refer(events.owners)
-                    box.clips.refer(trackBox.clips)
-                }))
-            }
-        }
-        return Option.None
-    }
-
-    createRegion(trackBox: TrackBox, position: ppqn, duration: ppqn, {name}: { name?: string } = {}) {
-        const {boxGraph} = this.#project
-        const type = trackBox.type.getValue()
-        switch (type) {
-            case TrackType.Notes: {
-                const events = NoteEventCollectionBox.create(boxGraph, UUID.generate())
-                return Option.wrap(NoteRegionBox.create(boxGraph, UUID.generate(), box => {
-                    box.position.setValue(Math.max(position, 0))
-                    box.label.setValue(name ?? "Notes")
-                    box.hue.setValue(ColorCodes.forTrackType(type))
-                    box.mute.setValue(false)
-                    box.duration.setValue(duration)
-                    box.loopDuration.setValue(PPQN.Bar)
-                    box.events.refer(events.owners)
-                    box.regions.refer(trackBox.regions)
-                }))
-            }
-            case TrackType.Value: {
-                const events = ValueEventCollectionBox.create(boxGraph, UUID.generate())
-                return Option.wrap(ValueRegionBox.create(boxGraph, UUID.generate(), box => {
-                    box.position.setValue(Math.max(position, 0))
-                    box.label.setValue(name ?? "Automation")
-                    box.hue.setValue(ColorCodes.forTrackType(type))
-                    box.mute.setValue(false)
-                    box.duration.setValue(duration)
-                    box.loopDuration.setValue(PPQN.Bar)
-                    box.events.refer(events.owners)
-                    box.regions.refer(trackBox.regions)
-                }))
-            }
-        }
-        return Option.None
-    }
-
     createAudioBus(name: string,
                    icon: IconSymbol,
                    type: AudioUnitType,
@@ -182,6 +124,99 @@ export class ProjectApi {
         })
         audioBusBox.output.refer(audioUnitBox.input)
         return audioBusBox
+    }
+
+    createNoteTrack(adapter: AudioUnitBoxAdapter, index: int = 0): TrackBox {
+        return this.#createTrack(adapter, TrackType.Notes, index)
+    }
+
+    createAudioTrack(adapter: AudioUnitBoxAdapter, index: int = 0): TrackBox {
+        return this.#createTrack(adapter, TrackType.Audio, index)
+    }
+
+    createAutomationTrack(adapter: AudioUnitBoxAdapter, index: int = 0): TrackBox {
+        return this.#createTrack(adapter, TrackType.Value, index)
+    }
+
+    createClip(trackBox: TrackBox, clipIndex: int, {name, hue}: ClipRegionOptions = {}): Option<AnyClipBox> {
+        const {boxGraph} = this.#project
+        const type = trackBox.type.getValue()
+        switch (type) {
+            case TrackType.Notes: {
+                const events = NoteEventCollectionBox.create(boxGraph, UUID.generate())
+                return Option.wrap(NoteClipBox.create(boxGraph, UUID.generate(), box => {
+                    box.index.setValue(clipIndex)
+                    box.label.setValue(name ?? "Notes")
+                    box.hue.setValue(hue ?? ColorCodes.forTrackType(type))
+                    box.mute.setValue(false)
+                    box.duration.setValue(PPQN.Bar)
+                    box.clips.refer(trackBox.clips)
+                    box.events.refer(events.owners)
+                }))
+            }
+            case TrackType.Value: {
+                const events = ValueEventCollectionBox.create(boxGraph, UUID.generate())
+                return Option.wrap(ValueClipBox.create(boxGraph, UUID.generate(), box => {
+                    box.index.setValue(clipIndex)
+                    box.label.setValue(name ?? "CV")
+                    box.hue.setValue(hue ?? ColorCodes.forTrackType(type))
+                    box.mute.setValue(false)
+                    box.duration.setValue(PPQN.Bar)
+                    box.events.refer(events.owners)
+                    box.clips.refer(trackBox.clips)
+                }))
+            }
+        }
+        return Option.None
+    }
+
+    createRegion(trackBox: TrackBox, position: ppqn, duration: ppqn, {name, hue}: ClipRegionOptions = {}) {
+        const {boxGraph} = this.#project
+        const type = trackBox.type.getValue()
+        switch (type) {
+            case TrackType.Notes: {
+                const events = NoteEventCollectionBox.create(boxGraph, UUID.generate())
+                return Option.wrap(NoteRegionBox.create(boxGraph, UUID.generate(), box => {
+                    box.position.setValue(Math.max(position, 0))
+                    box.label.setValue(name ?? "Notes")
+                    box.hue.setValue(hue ?? ColorCodes.forTrackType(type))
+                    box.mute.setValue(false)
+                    box.duration.setValue(duration)
+                    box.loopDuration.setValue(PPQN.Bar)
+                    box.events.refer(events.owners)
+                    box.regions.refer(trackBox.regions)
+                }))
+            }
+            case TrackType.Value: {
+                const events = ValueEventCollectionBox.create(boxGraph, UUID.generate())
+                return Option.wrap(ValueRegionBox.create(boxGraph, UUID.generate(), box => {
+                    box.position.setValue(Math.max(position, 0))
+                    box.label.setValue(name ?? "Automation")
+                    box.hue.setValue(hue ?? ColorCodes.forTrackType(type))
+                    box.mute.setValue(false)
+                    box.duration.setValue(duration)
+                    box.loopDuration.setValue(PPQN.Bar)
+                    box.events.refer(events.owners)
+                    box.regions.refer(trackBox.regions)
+                }))
+            }
+        }
+        return Option.None
+    }
+
+    createNoteEvent({owner, position, duration, velocity, pitch, chance, cent}: NoteEventParams): NoteEventBoxAdapter {
+        const {boxAdapters, boxGraph} = this.#project
+        return boxAdapters.adapterFor(NoteEventBox.create(boxGraph, UUID.generate(), box => {
+            box.position.setValue(position)
+            box.duration.setValue(duration)
+            box.velocity.setValue(velocity ?? 1.0)
+            box.pitch.setValue(pitch)
+            box.chance.setValue(chance ?? 100.0)
+            box.cent.setValue(cent ?? 0.0)
+            box.events.refer(owner.events.targetVertex
+                .unwrap("Owner has no event-collection").box
+                .asBox(NoteEventCollectionBox).events)
+        }), NoteEventBoxAdapter)
     }
 
     deleteAudioUnit(adapter: AudioUnitBoxAdapter): void {
@@ -210,6 +245,15 @@ export class ProjectApi {
             box.output.refer(masterBusBox.input)
             box.index.setValue(insertIndex)
             box.type.setValue(type)
+        })
+    }
+
+    #createTrack(adapter: AudioUnitBoxAdapter, trackType: TrackType, index: int = 0): TrackBox {
+        return TrackBox.create(this.#project.boxGraph, UUID.generate(), box => {
+            box.index.setValue(index)
+            box.type.setValue(trackType)
+            box.tracks.refer(adapter.tracksField)
+            box.target.refer(adapter.audioUnitBoxAdapter().box)
         })
     }
 
