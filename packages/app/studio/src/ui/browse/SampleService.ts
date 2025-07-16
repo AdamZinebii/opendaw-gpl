@@ -1,10 +1,9 @@
 import {asDefined, DefaultObservableValue, UUID} from "@opendaw/lib-std"
 import {PPQN} from "@opendaw/lib-dsp"
 import {Promises} from "@opendaw/lib-runtime"
-import {AudioUnitType} from "@opendaw/studio-enums"
 import {AudioFileBox, AudioRegionBox} from "@opendaw/studio-boxes"
 import {Sample} from "@opendaw/studio-adapters"
-import {ColorCodes, InstrumentFactories, Modifier, SampleStorage} from "@opendaw/studio-core"
+import {ColorCodes, InstrumentFactories, SampleStorage} from "@opendaw/studio-core"
 import {HTMLSelection} from "@/ui/HTMLSelection"
 import {StudioService} from "@/service/StudioService"
 import {showApproveDialog, showInfoDialog, showProcessDialog} from "../components/dialogs"
@@ -26,7 +25,7 @@ export class SampleService {
         const {editing, boxGraph, rootBoxAdapter} = project
         editing.modify(() => {
             const samples = this.#samples()
-            const startIndex = Modifier.pushAudioUnitsIndices(rootBoxAdapter, AudioUnitType.Instrument, samples.length)
+            const startIndex = rootBoxAdapter.audioUnits.adapters().length
             samples.forEach(({uuid: uuidAsString, name, bpm, duration: durationInSeconds}, index) => {
                 const uuid = UUID.parse(uuidAsString)
                 const {trackBox} = project.api.createInstrument(InstrumentFactories.Tape, {index: startIndex + index})

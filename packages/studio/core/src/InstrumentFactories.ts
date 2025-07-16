@@ -34,7 +34,7 @@ export namespace InstrumentFactories {
     export const Nano: InstrumentFactory = {
         defaultName: "Nano",
         defaultIcon: IconSymbol.NanoWave,
-        description: "Simple Sampler",
+        description: "Simple sampler",
         trackType: TrackType.Notes,
         create: (boxGraph: BoxGraph, deviceHost: DeviceHost, name: string, icon: IconSymbol): NanoDeviceBox => {
             const fileUUID = UUID.parse("c1678daa-4a47-4cba-b88f-4f4e384663c3")
@@ -54,7 +54,7 @@ export namespace InstrumentFactories {
     export const Playfield: InstrumentFactory = {
         defaultName: "Playfield",
         defaultIcon: IconSymbol.Playfield,
-        description: "Drumcomputer",
+        description: "Drum computer",
         trackType: TrackType.Notes,
         create: (boxGraph: BoxGraph, deviceHost: DeviceHost, name: string, icon: IconSymbol): PlayfieldDeviceBox => {
             const deviceBox = PlayfieldDeviceBox.create(boxGraph, UUID.generate(), box => {

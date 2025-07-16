@@ -1,5 +1,14 @@
 import css from "./RegionsArea.sass?inline"
-import {clamp, DefaultObservableValue, EmptyExec, Lifecycle, Nullable, Option, Selection, Unhandled} from "@opendaw/lib-std"
+import {
+    clamp,
+    DefaultObservableValue,
+    EmptyExec,
+    Lifecycle,
+    Nullable,
+    Option,
+    Selection,
+    Unhandled
+} from "@opendaw/lib-std"
 import {createElement} from "@opendaw/lib-jsx"
 import {CutCursor} from "@/ui/timeline/CutCursor.tsx"
 import {TimelineRange} from "@/ui/timeline/TimelineRange.ts"
@@ -7,7 +16,13 @@ import {PPQN, ppqn} from "@opendaw/lib-dsp"
 import {installAutoScroll} from "@/ui/AutoScroll.ts"
 import {Config} from "@/ui/timeline/Config.ts"
 import {TracksManager} from "@/ui/timeline/tracks/audio-unit/TracksManager.ts"
-import {AnyRegionBoxAdapter, isVertexOfBox, RegionAdapters, RegionEditing, UnionBoxTypes} from "@opendaw/studio-adapters"
+import {
+    AnyRegionBoxAdapter,
+    isVertexOfBox,
+    RegionAdapters,
+    RegionEditing,
+    UnionBoxTypes
+} from "@opendaw/studio-adapters"
 import {createRegionLocator} from "@/ui/timeline/tracks/audio-unit/regions/RegionSelectionLocator.ts"
 import {installRegionContextMenu} from "@/ui/timeline/tracks/audio-unit/regions/RegionContextMenu.ts"
 import {ElementCapturing} from "@/ui/canvas/capturing.ts"
@@ -27,7 +42,6 @@ import {CssUtils, Dragging, Events, Html, Keyboard} from "@opendaw/lib-dom"
 import {DragAndDrop} from "@/ui/DragAndDrop"
 import {AnyDragData} from "@/ui/AnyDragData"
 import {showProcessMonolog} from "@/ui/components/dialogs"
-import {Modifier} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "RegionsArea")
 
@@ -104,7 +118,7 @@ export const RegionsArea = ({lifecycle, service, manager, scrollModel, scrollCon
                 const position = snapping.xToUnitFloor(event.clientX - element.getBoundingClientRect().left)
                 const duration = Math.min(PPQN.Bar,
                     (trackBoxAdapter.regions.collection.greaterEqual(position + 1)?.position ?? Number.POSITIVE_INFINITY) - position)
-                editing.modify(() => Modifier.createRegion(trackBoxAdapter.regions, position, duration, {name}))
+                editing.modify(() => project.api.createRegion(trackBoxAdapter.regions, position, duration, {name}))
             }
         }),
         Dragging.attach(element, (event: PointerEvent) => {

@@ -10,7 +10,7 @@ import {Icon} from "../components/Icon"
 import {showNewAudioBusOrAuxDialog} from "@/ui/dialogs.tsx"
 import {AudioUnitType} from "@opendaw/studio-enums"
 import {Html} from "@opendaw/lib-dom"
-import {Colors, Modifier, Project} from "@opendaw/studio-core"
+import {Colors, Project} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "AuxSendGroup")
 
@@ -62,7 +62,7 @@ export const AuxSendGroup = ({lifecycle, project, audioUnitAdapter}: Construct) 
                     .setTriggerProcedure(() => showNewAudioBusOrAuxDialog("FX", ({name, icon}) => {
                         const currentAuxSends = audioUnitAdapter.auxSends.adapters()
                         project.editing.modify(() => {
-                            const audioBusBox = Modifier.createAudioBus(project, name, icon, AudioUnitType.Aux, Colors.green)
+                            const audioBusBox = project.api.createAudioBus(name, icon, AudioUnitType.Aux, Colors.green)
                             AuxSendBox.create(project.boxGraph, UUID.generate(), box => {
                                 box.audioUnit.refer(audioUnitAdapter.box.auxSends)
                                 box.targetBus.refer(audioBusBox.input)

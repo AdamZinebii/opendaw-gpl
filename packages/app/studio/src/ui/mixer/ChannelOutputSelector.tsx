@@ -8,7 +8,7 @@ import {MenuItem} from "@/ui/model/menu-item"
 import {showNewAudioBusOrAuxDialog} from "@/ui/dialogs"
 import {AudioUnitType} from "@opendaw/studio-enums"
 import {MenuButton} from "@/ui/components/MenuButton"
-import {Colors, Modifier, Project} from "@opendaw/studio-core"
+import {Colors, Project} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "OutputSelector")
 
@@ -66,7 +66,7 @@ export const ChannelOutputSelector = ({lifecycle, project, adapter}: Construct) 
                                     project.boxGraph.verifyPointers()
                                     project.editing.modify(() => {
                                         assert(project.masterBusBox.isAttached(), "master not attached")
-                                        const audioBusBox = Modifier.createAudioBus(project, name, icon, AudioUnitType.Bus, Colors.orange)
+                                        const audioBusBox = project.api.createAudioBus(name, icon, AudioUnitType.Bus, Colors.orange)
                                         adapter.box.output.refer(audioBusBox.input)
                                     })
                                 }, IconSymbol.AudioBus)),
