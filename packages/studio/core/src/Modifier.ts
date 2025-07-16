@@ -1,6 +1,5 @@
-import {assert, int, Option, panic, UUID} from "@opendaw/lib-std"
+import {assert, int, Option, UUID} from "@opendaw/lib-std"
 import {ppqn, PPQN} from "@opendaw/lib-dsp"
-import {Field} from "@opendaw/lib-box"
 import {AudioUnitType} from "@opendaw/studio-enums"
 import {
     AudioBusBox,
@@ -13,21 +12,9 @@ import {
     ValueEventCollectionBox,
     ValueRegionBox
 } from "@opendaw/studio-boxes"
-import {
-    AnyClipBox,
-    AudioUnitBoxAdapter,
-    DeviceHost,
-    EffectDeviceBoxAdapter,
-    EffectPointerType,
-    IconSymbol,
-    RootBoxAdapter,
-    TrackClips,
-    TrackRegions,
-    TrackType
-} from "@opendaw/studio-adapters"
+import {AnyClipBox, IconSymbol, RootBoxAdapter, TrackClips, TrackRegions, TrackType} from "@opendaw/studio-adapters"
 import {Project} from "./Project"
 import {ColorCodes} from "./ColorCodes"
-import {Effects} from "./Effects"
 
 export namespace Modifier {
     const AudioUnitOrdering = {
@@ -63,22 +50,6 @@ export namespace Modifier {
         return insertIndex
     }
 
-    export const deleteAudioUnit = ({rootBoxAdapter}: Project, adapter: AudioUnitBoxAdapter): void => {
-        const adapters = rootBoxAdapter.audioUnits.adapters()
-        const boxIndex = adapter.indexField.getValue()
-        const deleteIndex = adapters.indexOf(adapter)
-        console.debug(`deleteAudioUnit adapter: ${adapter.toString()}, deleteIndex: ${deleteIndex}, indexField: ${boxIndex}`)
-        if (deleteIndex === -1) {return panic(`Cannot delete ${adapter}. Does not exist.`)}
-        if (deleteIndex !== boxIndex) {
-            console.debug("indices", adapters.map(x => x.box.index.getValue()).join(", "))
-            return panic(`Cannot delete ${adapter}. Wrong index.`)
-        }
-        for (let index = deleteIndex + 1; index < adapters.length; index++) {
-            adapters[index].indexField.setValue(index - 1)
-        }
-        adapter.box.delete()
-    }
-
     export const createAudioBus = (project: Project,
                                    name: string,
                                    icon: IconSymbol,
@@ -103,27 +74,6 @@ export namespace Modifier {
         })
         audioBusBox.output.refer(audioUnitBox.input)
         return audioBusBox
-    }
-
-    export const createEffect = (project: Project, host: DeviceHost, entry: Effects.Entry, newIndex: int) => {
-        let chain: ReadonlyArray<EffectDeviceBoxAdapter>
-        let field: Field<EffectPointerType>
-        if (entry.type === "audio") {
-            chain = host.audioEffects.adapters()
-            field = host.audioEffects.field()
-        } else if (entry.type === "midi") {
-            chain = host.midiEffects.adapters()
-            field = host.midiEffects.field()
-        } else {
-            return panic(`Unknown factory type: ${entry.type}`)
-        }
-        return project.editing.modify(() => {
-            const box = entry.create(project, field, newIndex)
-            for (let index = newIndex; index < chain.length; index++) {
-                chain[index].indexField.setValue(index + 1)
-            }
-            return box
-        })
     }
 
     export const createClip = (clips: TrackClips, clipIndex: int, {name}: {

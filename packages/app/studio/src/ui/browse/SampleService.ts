@@ -3,7 +3,7 @@ import {PPQN} from "@opendaw/lib-dsp"
 import {Promises} from "@opendaw/lib-runtime"
 import {AudioUnitType} from "@opendaw/studio-enums"
 import {AudioFileBox, AudioRegionBox} from "@opendaw/studio-boxes"
-import {AudioUnitBoxAdapter, IconSymbol, Sample, TrackType} from "@opendaw/studio-adapters"
+import {Sample} from "@opendaw/studio-adapters"
 import {ColorCodes, InstrumentFactories, Modifier, SampleStorage} from "@opendaw/studio-core"
 import {HTMLSelection} from "@/ui/HTMLSelection"
 import {StudioService} from "@/service/StudioService"
@@ -23,22 +23,19 @@ export class SampleService {
     requestTapes(): void {
         if (!this.#service.hasProjectSession) {return}
         const project = this.#service.project
-        const {editing, boxGraph, boxAdapters, rootBoxAdapter} = project
+        const {editing, boxGraph, rootBoxAdapter} = project
         editing.modify(() => {
             const samples = this.#samples()
             const startIndex = Modifier.pushAudioUnitsIndices(rootBoxAdapter, AudioUnitType.Instrument, samples.length)
             samples.forEach(({uuid: uuidAsString, name, bpm, duration: durationInSeconds}, index) => {
                 const uuid = UUID.parse(uuidAsString)
-                const audioUnitBox = Modifier.createAudioUnit(project, AudioUnitType.Instrument, startIndex + index)
-                const audioUnitBoxAdapter = boxAdapters.adapterFor(audioUnitBox, AudioUnitBoxAdapter)
+                const {trackBox} = project.api.createInstrument(InstrumentFactories.Tape, {index: startIndex + index})
                 const audioFileBox = boxGraph.findBox<AudioFileBox>(uuid)
                     .unwrapOrElse(() => AudioFileBox.create(boxGraph, uuid, box => {
                         box.fileName.setValue(name)
                         box.startInSeconds.setValue(0)
                         box.endInSeconds.setValue(durationInSeconds)
                     }))
-                InstrumentFactories.Tape.create(boxGraph, audioUnitBoxAdapter, name, IconSymbol.Tape)
-                const trackBox = project.api.createTrack(audioUnitBoxAdapter, TrackType.Audio)
                 const duration = Math.round(PPQN.secondsToPulses(durationInSeconds, bpm))
                 AudioRegionBox.create(boxGraph, UUID.generate(), box => {
                     box.position.setValue(0)

@@ -73,7 +73,7 @@ export abstract class TimelineDragAndDrop<T extends (ClipCaptureTarget | RegionC
             let trackBoxAdapter: TrackBoxAdapter
             if (drop === false) {
                 trackBoxAdapter = boxAdapters
-                    .adapterFor(this.project.api.createInstrument(InstrumentFactories.Tape).track, TrackBoxAdapter)
+                    .adapterFor(this.project.api.createInstrument(InstrumentFactories.Tape).trackBox, TrackBoxAdapter)
             } else if (drop?.type === "track") {
                 trackBoxAdapter = drop.track.trackBoxAdapter
             } else if (drop?.type === "clip") {

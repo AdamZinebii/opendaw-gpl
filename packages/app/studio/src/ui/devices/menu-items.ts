@@ -5,37 +5,39 @@ import {EmptyExec, isInstanceOf, panic} from "@opendaw/lib-std"
 import {Surface} from "@/ui/surface/Surface"
 import {FloatingTextInput} from "@/ui/components/FloatingTextInput"
 import {StudioService} from "@/service/StudioService"
-import {Effects, Modifier, Project} from "@opendaw/studio-core"
+import {Effects, Project} from "@opendaw/studio-core"
 import {ModularDeviceBox} from "@opendaw/studio-boxes"
 
 export namespace MenuItems {
     export const forAudioUnitInput = (parent: MenuItem, service: StudioService, deviceHost: DeviceHost): void => {
         const {project} = service
+        const {editing, api} = project
         const audioUnit = deviceHost.audioUnitBoxAdapter()
         const canProcessMidi = deviceHost.inputAdapter.mapOr(input => input.accepts === "midi", false)
         parent.addMenuItem(
             MenuItem.default({
                 label: `Delete '${deviceHost.label}'`,
                 hidden: audioUnit.isOutput
-            }).setTriggerProcedure(() => project.editing.modify(() => deviceHost.box.delete())),
+            }).setTriggerProcedure(() => editing.modify(() => deviceHost.box.delete())
+            ),
             MenuItem.default({
                 label: "Minimized",
                 checked: deviceHost.minimizedField.getValue()
-            }).setTriggerProcedure(() => project.editing.modify(() => deviceHost.minimizedField.toggle())),
-            createMenuItemToRenameDevice(project.editing, audioUnit.inputAdapter.unwrap().labelField),
+            }).setTriggerProcedure(() => editing.modify(() => deviceHost.minimizedField.toggle())),
+            createMenuItemToRenameDevice(editing, audioUnit.inputAdapter.unwrap().labelField),
             MenuItem.default({label: "Add Midi-Effect", separatorBefore: true, selectable: canProcessMidi})
                 .setRuntimeChildrenProcedure(parent => parent.addMenuItem(...Effects.MidiList
                     .map(entry => MenuItem.default({
                         label: entry.defaultName,
                         separatorBefore: entry.separatorBefore
-                    }).setTriggerProcedure(() => Modifier.createEffect(service.project, deviceHost, entry, 0)))
+                    }).setTriggerProcedure(() => editing.modify(() => api.createEffect(deviceHost, entry, 0))))
                 )),
             MenuItem.default({label: "Add Audio Effect"})
                 .setRuntimeChildrenProcedure(parent => parent.addMenuItem(...Effects.AudioList
                     .map(entry => MenuItem.default({
                         label: entry.defaultName,
                         separatorBefore: entry.separatorBefore
-                    }).setTriggerProcedure(() => Modifier.createEffect(service.project, deviceHost, entry, 0)
+                    }).setTriggerProcedure(() => editing.modify(() => api.createEffect(deviceHost, entry, 0))
                         .ifSome(box => {
                             if (isInstanceOf(box, ModularDeviceBox)) {service.switchScreen("modular")}
                         })))
@@ -52,11 +54,12 @@ export namespace MenuItems {
 
     export const forEffectDevice = (parent: MenuItem, service: StudioService, host: DeviceHost, device: EffectDeviceBoxAdapter): void => {
         const {project} = service
+        const {editing} = project
         parent.addMenuItem(
-            createMenuItemToToggleEnabled(project.editing, device),
-            createMenuItemToToggleMinimized(project.editing, device),
-            createMenuItemToDeleteDevice(project.editing, device),
-            createMenuItemToRenameDevice(project.editing, device.labelField),
+            createMenuItemToToggleEnabled(editing, device),
+            createMenuItemToToggleMinimized(editing, device),
+            createMenuItemToDeleteDevice(editing, device),
+            createMenuItemToRenameDevice(editing, device.labelField),
             createMenuItemToCreateEffect(service, host, device),
             createMenuItemToMoveEffect(project, host, device)
         )
@@ -91,27 +94,35 @@ export namespace MenuItems {
             .setTriggerProcedure(() => editing.modify(() => Devices.deleteEffectDevices(devices)))
     }
 
-    const createMenuItemToCreateEffect = (service: StudioService, host: DeviceHost, adapter: EffectDeviceBoxAdapter) =>
-        adapter.accepts === "audio"
+    const createMenuItemToCreateEffect = (service: StudioService, host: DeviceHost, adapter: EffectDeviceBoxAdapter) => {
+        const {project} = service
+        const {editing, api} = project
+        return adapter.accepts === "audio"
             ? MenuItem.default({label: "Add Audio Effect", separatorBefore: true})
                 .setRuntimeChildrenProcedure(parent => parent
                     .addMenuItem(...Effects.AudioList
-                        .map(entry => MenuItem.default({label: entry.defaultName, separatorBefore: entry.separatorBefore})
-                            .setTriggerProcedure(() =>
-                                Modifier.createEffect(service.project, host, entry, adapter.indexField.getValue() + 1)
-                                    .ifSome(box => {
-                                        if (isInstanceOf(box, ModularDeviceBox)) {service.switchScreen("modular")}
-                                    })))
+                        .map(factory => MenuItem.default({
+                            label: factory.defaultName,
+                            separatorBefore: factory.separatorBefore
+                        }).setTriggerProcedure(() =>
+                            editing.modify(() => api.createEffect(host, factory, adapter.indexField.getValue() + 1))
+                                .ifSome(box => {
+                                    if (isInstanceOf(box, ModularDeviceBox)) {service.switchScreen("modular")}
+                                })))
                     ))
             : adapter.accepts === "midi"
                 ? MenuItem.default({label: "Add Midi Effect", separatorBefore: true})
                     .setRuntimeChildrenProcedure(parent => parent
                         .addMenuItem(...Effects.MidiList
-                            .map(entry => MenuItem.default({label: entry.defaultName, separatorBefore: entry.separatorBefore})
-                                .setTriggerProcedure(() => Modifier.createEffect(service.project, host, entry, adapter.indexField.getValue() + 1)))
+                            .map(factory => MenuItem.default({
+                                label: factory.defaultName,
+                                separatorBefore: factory.separatorBefore
+                            }).setTriggerProcedure(() => editing.modify(() => api
+                                .createEffect(host, factory, adapter.indexField.getValue() + 1))))
                         )) : panic(`Unknown accepts value: ${adapter.accepts}`)
+    }
 
-    const createMenuItemToMoveEffect = (project: Project, host: DeviceHost, adapter: EffectDeviceBoxAdapter) =>
+    const createMenuItemToMoveEffect = ({editing}: Project, host: DeviceHost, adapter: EffectDeviceBoxAdapter) =>
         MenuItem.default({label: "Move Effect"})
             .setRuntimeChildrenProcedure(parent => {
                     const adapters: ReadonlyArray<EffectDeviceBoxAdapter> =
@@ -125,14 +136,14 @@ export namespace MenuItems {
                         MenuItem.default({
                             label: "Left",
                             selectable: index > 0
-                        }).setTriggerProcedure(() => project.editing.modify(() => {
+                        }).setTriggerProcedure(() => editing.modify(() => {
                             adapter.indexField.setValue(index - 1)
                             adapters[index - 1].indexField.setValue(index)
                         })),
                         MenuItem.default({
                             label: "Right",
                             selectable: index < adapters.length - 1
-                        }).setTriggerProcedure(() => project.editing.modify(() => {
+                        }).setTriggerProcedure(() => editing.modify(() => {
                             adapter.indexField.setValue(index + 1)
                             adapters[index + 1].indexField.setValue(index)
                         }))

@@ -5,7 +5,6 @@ import {DebugMenus} from "@/ui/menu/debug"
 import {MidiImport} from "@/ui/timeline/MidiImport.ts"
 import {TrackBox} from "@opendaw/studio-boxes"
 import {StudioService} from "@/service/StudioService"
-import {Modifier} from "@opendaw/studio-core"
 
 export const installTrackHeaderMenu = (service: StudioService,
                                        audioUnitBoxAdapter: AudioUnitBoxAdapter,
@@ -76,7 +75,7 @@ export const installTrackHeaderMenu = (service: StudioService,
                 separatorBefore: true
             }).setTriggerProcedure(() => editing.modify(() => {
                 if (audioUnitBoxAdapter.tracks.collection.size() === 1) {
-                    Modifier.deleteAudioUnit(project, audioUnitBoxAdapter)
+                    project.api.deleteAudioUnit(audioUnitBoxAdapter)
                 } else {
                     audioUnitBoxAdapter.deleteTrack(trackBoxAdapter)
                 }
@@ -85,7 +84,7 @@ export const installTrackHeaderMenu = (service: StudioService,
                 label: `Delete '${audioUnitBoxAdapter.input.label.unwrapOrElse("No Input")}'`,
                 selectable: !audioUnitBoxAdapter.isOutput
             }).setTriggerProcedure(() => editing.modify(() =>
-                Modifier.deleteAudioUnit(project, audioUnitBoxAdapter))),
+                project.api.deleteAudioUnit(audioUnitBoxAdapter))),
             DebugMenus.debugBox(audioUnitBoxAdapter.box)
         )
     }

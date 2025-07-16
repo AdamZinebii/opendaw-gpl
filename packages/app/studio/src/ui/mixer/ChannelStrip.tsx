@@ -25,7 +25,7 @@ import {DragAndDrop} from "../DragAndDrop"
 import {Events, Html} from "@opendaw/lib-dom"
 import {TextTooltip} from "@/ui/surface/TextTooltip"
 import {AudioOutputSelector} from "./AudioOutputSelector"
-import {ChannelStripView, ColorCodes, Colors, Modifier} from "@opendaw/studio-core"
+import {ChannelStripView, ColorCodes, Colors} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "ChannelStrip")
 
@@ -161,7 +161,7 @@ export const ChannelStrip = ({lifecycle, service, adapter, compact}: Construct) 
             if (!isOutput) {
                 collector.addItems(
                     MenuItem.default({label: `Delete '${adapter.input.label.unwrapOrElse("Untitled")}'`})
-                        .setTriggerProcedure(() => editing.modify(() => Modifier.deleteAudioUnit(project, adapter))))
+                        .setTriggerProcedure(() => editing.modify(() => project.api.deleteAudioUnit(adapter))))
             }
             collector.addItems(
                 MenuItem.default({

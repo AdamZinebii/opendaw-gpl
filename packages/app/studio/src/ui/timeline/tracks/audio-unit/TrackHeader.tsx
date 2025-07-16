@@ -9,7 +9,7 @@ import {AudioUnitChannelControls} from "@/ui/timeline/tracks/audio-unit/AudioUni
 import {installTrackHeaderMenu} from "@/ui/timeline/tracks/audio-unit/TrackHeaderMenu.ts"
 import {Events, Html, Keyboard} from "@opendaw/lib-dom"
 import {StudioService} from "@/service/StudioService"
-import {ColorCodes, Colors, Modifier} from "@opendaw/studio-core"
+import {ColorCodes, Colors} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "TrackHeader")
 
@@ -70,7 +70,7 @@ export const TrackHeader = ({lifecycle, service, trackBoxAdapter, audioUnitBoxAd
             if (!Keyboard.GlobalShortcut.isDelete(event)) {return}
             project.editing.modify(() => {
                 if (audioUnitBoxAdapter.tracks.collection.size() === 1) {
-                    Modifier.deleteAudioUnit(project, audioUnitBoxAdapter)
+                    project.api.deleteAudioUnit(audioUnitBoxAdapter)
                 } else {
                     audioUnitBoxAdapter.deleteTrack(trackBoxAdapter)
                 }

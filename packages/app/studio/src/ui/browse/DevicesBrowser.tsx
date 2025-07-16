@@ -7,7 +7,7 @@ import {DragAndDrop} from "@/ui/DragAndDrop"
 import {DragDevice} from "@/ui/AnyDragData"
 import {TextTooltip} from "@/ui/surface/TextTooltip"
 import {DeviceHost, Devices} from "@opendaw/studio-adapters"
-import {Effects, InstrumentFactories, Project} from "@opendaw/studio-core"
+import {EffectFactory, Effects, InstrumentFactories, Project} from "@opendaw/studio-core"
 import {ModularBox} from "@opendaw/studio-boxes"
 import {Icon} from "../components/Icon"
 
@@ -85,7 +85,7 @@ const createInstrumentList = (lifecycle: Lifecycle, project: Project) => (
 )
 
 const createEffectList = <
-    R extends Record<string, Effects.Entry>,
+    R extends Record<string, EffectFactory>,
     T extends DragDevice["type"]>(lifecycle: Lifecycle, service: StudioService, project: Project, records: R, type: T): HTMLUListElement => (
     <ul>{
         Object.entries(records).map(([key, entry]) => {
