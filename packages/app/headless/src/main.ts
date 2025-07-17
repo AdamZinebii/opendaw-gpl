@@ -58,7 +58,7 @@ import {createExampleProject} from "./ExampleProject"
                 const {bars, beats} = PPQN.toParts(ppqn)
                 document.body.textContent = `${bars + 1}:${beats + 1}`
             })
-        })
+        }, {once: true})
     }
     if (context.state === "suspended") {
         window.addEventListener("click",

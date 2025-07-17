@@ -1,7 +1,7 @@
 // noinspection PointlessArithmeticExpressionJS
 
-import {EffectFactories, InstrumentFactories, Project, ProjectEnv} from "@opendaw/studio-core"
 import {PPQN} from "@opendaw/lib-dsp"
+import {EffectFactories, InstrumentFactories, Project, ProjectEnv} from "@opendaw/studio-core"
 import {AudioUnitBoxAdapter} from "@opendaw/studio-adapters"
 
 const {Bar, Quarter} = PPQN

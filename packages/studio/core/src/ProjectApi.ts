@@ -1,4 +1,5 @@
-import {assert, float, int, Observer, Option, panic, Strings, Subscription, UUID} from "@opendaw/lib-std"
+import {assert, clamp, float, int, Observer, Option, panic, Strings, Subscription, UUID} from "@opendaw/lib-std"
+import {ppqn, PPQN} from "@opendaw/lib-dsp"
 import {Box, Field, PointerField} from "@opendaw/lib-box"
 import {AudioUnitType, Pointers} from "@opendaw/studio-enums"
 import {
@@ -30,7 +31,6 @@ import {InstrumentProduct} from "./InstrumentProduct"
 import {InstrumentOptions} from "./InstrumentOptions"
 import {EffectFactory} from "./EffectFactory"
 import {ColorCodes} from "./ColorCodes"
-import {ppqn, PPQN} from "@opendaw/lib-dsp"
 
 export type ClipRegionOptions = {
     name?: string
@@ -73,7 +73,8 @@ export class ProjectApi {
     constructor(project: Project) {this.#project = project}
 
     setBpm(value: number): void {
-        this.#project.timelineBoxAdapter.box.bpm.setValue(value)
+        if (isNaN(value)) {return}
+        this.#project.timelineBoxAdapter.box.bpm.setValue(clamp(value, 30, 1000))
     }
 
     catchupAndSubscribeBpm(observer: Observer<number>): Subscription {
@@ -132,6 +133,7 @@ export class ProjectApi {
         return audioBusBox
     }
 
+    // TODO If the newIndex is occupied, move to next index
     createEffect(host: DeviceHost, factory: EffectFactory, newIndex: int): Box {
         let chain: ReadonlyArray<EffectDeviceBoxAdapter>
         let field: Field<EffectPointerType>
