@@ -101,8 +101,10 @@ export class GraphEdges {
     }
 
     verifyPointers(): void {
-        this.#requiresTarget.forEach(pointer => assert(pointer.isAttached(), `${pointer.address.toString()} is not attached`))
-        this.#requiresPointer.forEach(pointer => assert(pointer.isAttached(), `${pointer.address.toString()} is not attached`))
+        this.#requiresTarget.forEach(pointer => assert(pointer.isAttached(),
+            `${pointer.address.toString()} is not attached`))
+        this.#requiresPointer.forEach(vertex => assert(vertex.isAttached(),
+            `${vertex.address.toString()} is not attached`))
     }
 
     #collectSameBox<T>(set: SortedSet<Address, T>, id: UUID.Format, map: Func<T, UUID.Format>): ReadonlyArray<T> {
