@@ -5,7 +5,7 @@ import {EmptyExec, isInstanceOf, panic} from "@opendaw/lib-std"
 import {Surface} from "@/ui/surface/Surface"
 import {FloatingTextInput} from "@/ui/components/FloatingTextInput"
 import {StudioService} from "@/service/StudioService"
-import {Effects, Project} from "@opendaw/studio-core"
+import {EffectFactories, Project} from "@opendaw/studio-core"
 import {ModularDeviceBox} from "@opendaw/studio-boxes"
 
 export namespace MenuItems {
@@ -26,14 +26,14 @@ export namespace MenuItems {
             }).setTriggerProcedure(() => editing.modify(() => deviceHost.minimizedField.toggle())),
             createMenuItemToRenameDevice(editing, audioUnit.inputAdapter.unwrap().labelField),
             MenuItem.default({label: "Add Midi-Effect", separatorBefore: true, selectable: canProcessMidi})
-                .setRuntimeChildrenProcedure(parent => parent.addMenuItem(...Effects.MidiList
+                .setRuntimeChildrenProcedure(parent => parent.addMenuItem(...EffectFactories.MidiList
                     .map(entry => MenuItem.default({
                         label: entry.defaultName,
                         separatorBefore: entry.separatorBefore
                     }).setTriggerProcedure(() => editing.modify(() => api.createEffect(deviceHost, entry, 0))))
                 )),
             MenuItem.default({label: "Add Audio Effect"})
-                .setRuntimeChildrenProcedure(parent => parent.addMenuItem(...Effects.AudioList
+                .setRuntimeChildrenProcedure(parent => parent.addMenuItem(...EffectFactories.AudioList
                     .map(entry => MenuItem.default({
                         label: entry.defaultName,
                         separatorBefore: entry.separatorBefore
@@ -100,7 +100,7 @@ export namespace MenuItems {
         return adapter.accepts === "audio"
             ? MenuItem.default({label: "Add Audio Effect", separatorBefore: true})
                 .setRuntimeChildrenProcedure(parent => parent
-                    .addMenuItem(...Effects.AudioList
+                    .addMenuItem(...EffectFactories.AudioList
                         .map(factory => MenuItem.default({
                             label: factory.defaultName,
                             separatorBefore: factory.separatorBefore
@@ -113,7 +113,7 @@ export namespace MenuItems {
             : adapter.accepts === "midi"
                 ? MenuItem.default({label: "Add Midi Effect", separatorBefore: true})
                     .setRuntimeChildrenProcedure(parent => parent
-                        .addMenuItem(...Effects.MidiList
+                        .addMenuItem(...EffectFactories.MidiList
                             .map(factory => MenuItem.default({
                                 label: factory.defaultName,
                                 separatorBefore: factory.separatorBefore

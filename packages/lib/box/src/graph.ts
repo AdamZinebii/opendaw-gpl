@@ -76,7 +76,11 @@ export class BoxGraph<BoxMap = any> {
     endTransaction(): void {
         assert(this.#inTransaction, "No transaction in progress")
         this.#inTransaction = false
-        this.resolvePointers()
+        if (this.#deferredPointerUpdates.length > 0) {
+            this.#deferredPointerUpdates.forEach(({pointerField, update}) =>
+                this.#processPointerValueUpdate(pointerField, update))
+            this.#deferredPointerUpdates.length = 0
+        }
         // it is possible that new observers will be added while executing
         while (this.#finalizeTransactionObservers.length > 0) {
             this.#finalizeTransactionObservers.splice(0).forEach(observer => observer())
@@ -89,13 +93,6 @@ export class BoxGraph<BoxMap = any> {
 
     inTransaction(): boolean {return this.#inTransaction}
     constructingBox(): boolean {return this.#constructingBox}
-
-    resolvePointers(): void {
-        if (this.#deferredPointerUpdates.length === 0) {return}
-        this.#deferredPointerUpdates.forEach(({pointerField, update}) =>
-            this.#processPointerValueUpdate(pointerField, update))
-        this.#deferredPointerUpdates.length = 0
-    }
 
     createBox(name: keyof BoxMap, uuid: UUID.Format, constructor: Procedure<Box>): void {
         this.#boxFactory.unwrap("No box-factory installed")(name as keyof BoxMap, this, uuid, constructor)

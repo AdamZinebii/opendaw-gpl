@@ -9,7 +9,7 @@ import {SnapCommonDecibel} from "@/ui/configs.ts"
 import {DevicePeakMeter} from "@/ui/devices/panel/DevicePeakMeter.tsx"
 import {Html} from "@opendaw/lib-dom"
 import {StudioService} from "@/service/StudioService"
-import {Effects} from "@opendaw/studio-core"
+import {EffectFactories} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "ReverbDeviceEditor")
 
@@ -64,6 +64,6 @@ export const ReverbDeviceEditor = ({lifecycle, service, adapter, deviceHost}: Co
                                            receiver={project.liveStreamReceiver}
                                            address={adapter.address}/>
                       )}
-                      icon={Effects.AudioNamed.Reverb.defaultIcon}/>
+                      icon={EffectFactories.AudioNamed.Reverb.defaultIcon}/>
     )
 }

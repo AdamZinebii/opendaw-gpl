@@ -1,6 +1,6 @@
 import {byte, int} from "@opendaw/lib-std"
 import {Sample} from "@opendaw/studio-adapters"
-import {Effects, InstrumentFactories} from "@opendaw/studio-core"
+import {EffectFactories, InstrumentFactories} from "@opendaw/studio-core"
 
 export type DragCopyHint = { copy?: boolean }
 export type DragSample = { type: "sample", sample: Sample } & DragCopyHint
@@ -13,12 +13,12 @@ export type DragDevice = (
     {
         type: "midi-effect"
         start_index: null
-        device: Effects.MidiEffectKeys
+        device: EffectFactories.MidiEffectKeys
     } |
     {
         type: "audio-effect"
         start_index: null
-        device: Effects.AudioEffectKeys
+        device: EffectFactories.AudioEffectKeys
     } |
     {
         type: "instrument"

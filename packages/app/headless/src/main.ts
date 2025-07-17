@@ -51,11 +51,13 @@ import {createExampleProject} from "./ExampleProject"
         await worklet.isReady()
         while (!await worklet.queryLoadingComplete()) {}
         worklet.connect(context.destination)
-        worklet.isPlaying().setValue(true)
-        AnimationFrame.add(() => {
-            const ppqn = worklet.position().getValue()
-            const {bars, beats} = PPQN.toParts(ppqn)
-            document.body.textContent = `${bars + 1}:${beats + 1}`
+        window.addEventListener("click", () => {
+            worklet.isPlaying().setValue(true)
+            AnimationFrame.add(() => {
+                const ppqn = worklet.position().getValue()
+                const {bars, beats} = PPQN.toParts(ppqn)
+                document.body.textContent = `${bars + 1}:${beats + 1}`
+            })
         })
     }
     if (context.state === "suspended") {
@@ -65,4 +67,5 @@ import {createExampleProject} from "./ExampleProject"
     }
     AnimationFrame.start()
     document.querySelector("#preloader")?.remove()
+    document.body.textContent = "Ready."
 })()

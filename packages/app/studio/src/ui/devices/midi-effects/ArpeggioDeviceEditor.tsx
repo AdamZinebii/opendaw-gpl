@@ -8,7 +8,7 @@ import {ControlBuilder} from "@/ui/devices/ControlBuilder.tsx"
 import {DeviceMidiMeter} from "@/ui/devices/panel/DeviceMidiMeter.tsx"
 import {Html} from "@opendaw/lib-dom"
 import {StudioService} from "@/service/StudioService"
-import {Effects} from "@opendaw/studio-core"
+import {EffectFactories} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "ArpeggioDeviceEditor")
 
@@ -79,6 +79,6 @@ export const ArpeggioDeviceEditor = ({lifecycle, service, adapter, deviceHost}: 
                                            receiver={project.liveStreamReceiver}
                                            address={adapter.address}/>
                       )}
-                      icon={Effects.MidiNamed.Arpeggio.defaultIcon}/>
+                      icon={EffectFactories.MidiNamed.Arpeggio.defaultIcon}/>
     )
 }

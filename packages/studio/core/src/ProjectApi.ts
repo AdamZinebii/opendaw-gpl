@@ -1,5 +1,5 @@
-import {assert, float, int, Option, panic, Strings, UUID} from "@opendaw/lib-std"
-import {Field, PointerField} from "@opendaw/lib-box"
+import {assert, float, int, Observer, Option, panic, Strings, Subscription, UUID} from "@opendaw/lib-std"
+import {Box, Field, PointerField} from "@opendaw/lib-box"
 import {AudioUnitType, Pointers} from "@opendaw/studio-enums"
 import {
     AudioBusBox,
@@ -20,6 +20,7 @@ import {
     EffectDeviceBoxAdapter,
     EffectPointerType,
     IconSymbol,
+    IndexedAdapterCollectionListener,
     RootBoxAdapter,
     TrackType
 } from "@opendaw/studio-adapters"
@@ -71,6 +72,18 @@ export class ProjectApi {
 
     constructor(project: Project) {this.#project = project}
 
+    setBpm(value: number): void {
+        this.#project.timelineBoxAdapter.box.bpm.setValue(value)
+    }
+
+    catchupAndSubscribeBpm(observer: Observer<number>): Subscription {
+        return this.#project.timelineBoxAdapter.box.bpm.catchupAndSubscribe(owner => observer(owner.getValue()))
+    }
+
+    catchupAndSubscribeAudioUnits(listener: IndexedAdapterCollectionListener<AudioUnitBoxAdapter>): Subscription {
+        return this.#project.rootBoxAdapter.audioUnits.catchupAndSubscribe(listener)
+    }
+
     createInstrument({create, defaultIcon, defaultName, trackType}: InstrumentFactory,
                      {name, icon, index}: InstrumentOptions = {}): InstrumentProduct {
         const {boxGraph, boxAdapters, rootBoxAdapter, userEditingManager} = this.#project
@@ -92,25 +105,6 @@ export class ProjectApi {
         })
         userEditingManager.audioUnit.edit(audioUnitBox.editing)
         return {audioUnitBox, instrumentBox, trackBox}
-    }
-
-    createEffect(host: DeviceHost, factory: EffectFactory, newIndex: int) {
-        let chain: ReadonlyArray<EffectDeviceBoxAdapter>
-        let field: Field<EffectPointerType>
-        if (factory.type === "audio") {
-            chain = host.audioEffects.adapters()
-            field = host.audioEffects.field()
-        } else if (factory.type === "midi") {
-            chain = host.midiEffects.adapters()
-            field = host.midiEffects.field()
-        } else {
-            return panic(`Unknown factory type: ${factory.type}`)
-        }
-        const box = factory.create(this.#project, field, newIndex)
-        for (let index = newIndex; index < chain.length; index++) {
-            chain[index].indexField.setValue(index + 1)
-        }
-        return box
     }
 
     createAudioBus(name: string,
@@ -136,6 +130,25 @@ export class ProjectApi {
         })
         audioBusBox.output.refer(audioUnitBox.input)
         return audioBusBox
+    }
+
+    createEffect(host: DeviceHost, factory: EffectFactory, newIndex: int): Box {
+        let chain: ReadonlyArray<EffectDeviceBoxAdapter>
+        let field: Field<EffectPointerType>
+        if (factory.type === "audio") {
+            chain = host.audioEffects.adapters()
+            field = host.audioEffects.field()
+        } else if (factory.type === "midi") {
+            chain = host.midiEffects.adapters()
+            field = host.midiEffects.field()
+        } else {
+            return panic(`Unknown factory type: ${factory.type}`)
+        }
+        const box = factory.create(this.#project, field, newIndex)
+        for (let index = newIndex; index < chain.length; index++) {
+            chain[index].indexField.setValue(index + 1)
+        }
+        return box
     }
 
     createNoteTrack(adapter: AudioUnitBoxAdapter, index: int = 0): TrackBox {
@@ -189,6 +202,9 @@ export class ProjectApi {
                          eventOffset, eventCollection,
                          mute, name, hue
                      }: NoteRegionParams): NoteRegionBox {
+        if (trackBox.type.getValue() !== TrackType.Notes) {
+            console.warn("You should not create a note-region in mismatched track")
+        }
         const {boxGraph} = this.#project
         const events = eventCollection ?? NoteEventCollectionBox.create(boxGraph, UUID.generate())
         return NoteRegionBox.create(boxGraph, UUID.generate(), box => {

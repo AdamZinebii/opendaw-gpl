@@ -27,7 +27,7 @@ import {ControlIndicator} from "@/ui/components/ControlIndicator"
 import {attachParameterContextMenu} from "@/ui/menu/automation"
 import {Html} from "@opendaw/lib-dom"
 import {StudioService} from "@/service/StudioService"
-import {Colors, Effects} from "@opendaw/studio-core"
+import {Colors, EffectFactories} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "RevampDeviceEditor")
 
@@ -301,6 +301,6 @@ export const RevampDeviceEditor = ({adapter, service, lifecycle, deviceHost}: Co
                                            receiver={project.liveStreamReceiver}
                                            address={adapter.address}/>
                       )}
-                      icon={Effects.AudioNamed.Revamp.defaultIcon}/>
+                      icon={EffectFactories.AudioNamed.Revamp.defaultIcon}/>
     )
 }

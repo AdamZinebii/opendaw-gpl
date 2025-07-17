@@ -18,7 +18,7 @@ import {MenuItem} from "@/ui/model/menu-item"
 import {StereoMatrix} from "@opendaw/lib-dsp"
 import {MenuItems} from "../menu-items"
 import {StudioService} from "@/service/StudioService"
-import {Colors, Effects} from "@opendaw/studio-core"
+import {Colors, EffectFactories} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "StereoToolDeviceEditor")
 
@@ -129,6 +129,6 @@ export const StereoToolDeviceEditor = ({lifecycle, service, adapter, deviceHost}
                                            receiver={project.liveStreamReceiver}
                                            address={adapter.address}/>
                       )}
-                      icon={Effects.AudioNamed.StereoTool.defaultIcon}/>
+                      icon={EffectFactories.AudioNamed.StereoTool.defaultIcon}/>
     )
 }

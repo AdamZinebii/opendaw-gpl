@@ -1,10 +1,13 @@
-import {TrackBoxAdapter} from "@opendaw/studio-adapters"
+import {
+    AnyRegionBoxAdapter,
+    RegionEditing,
+    TrackBoxAdapter,
+    TrackType,
+    UnionAdapterTypes
+} from "@opendaw/studio-adapters"
 import {Event, EventCollection, ppqn} from "@opendaw/lib-dsp"
 import {RegionModifyStrategies} from "@/ui/timeline/tracks/audio-unit/regions/RegionModifyStrategies.ts"
-import {AnyRegionBoxAdapter, UnionAdapterTypes} from "@opendaw/studio-adapters"
 import {asDefined, assert, Exec, int, mod, panic} from "@opendaw/lib-std"
-import {RegionEditing} from "@opendaw/studio-adapters"
-import {TrackType} from "@opendaw/studio-adapters"
 
 export type ClipTask = {
     type: "delete"
@@ -163,9 +166,6 @@ export class RegionClipResolver {
                 const {type, region} = task
                 switch (type) {
                     case "delete":
-                        // This is necessary to update the modified pointers while running the transaction.
-                        // TODO I hope for a better solution that updates them automatically when information are to be read
-                        region.box.graph.resolvePointers()
                         region.box.delete()
                         break
                     case "start":

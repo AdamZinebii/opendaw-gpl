@@ -9,7 +9,7 @@ import {SnapCommonDecibel} from "@/ui/configs.ts"
 import {DevicePeakMeter} from "@/ui/devices/panel/DevicePeakMeter.tsx"
 import {Html} from "@opendaw/lib-dom"
 import {StudioService} from "@/service/StudioService"
-import {Effects} from "@opendaw/studio-core"
+import {EffectFactories} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "DelayDeviceEditor")
 
@@ -83,6 +83,6 @@ export const DelayDeviceEditor = ({lifecycle, service, adapter, deviceHost}: Con
                                            receiver={project.liveStreamReceiver}
                                            address={adapter.address}/>
                       )}
-                      icon={Effects.AudioNamed.Delay.defaultIcon}/>
+                      icon={EffectFactories.AudioNamed.Delay.defaultIcon}/>
     )
 }

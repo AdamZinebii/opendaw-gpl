@@ -7,7 +7,7 @@ import {DragAndDrop} from "@/ui/DragAndDrop"
 import {DragDevice} from "@/ui/AnyDragData"
 import {TextTooltip} from "@/ui/surface/TextTooltip"
 import {DeviceHost, Devices} from "@opendaw/studio-adapters"
-import {EffectFactory, Effects, InstrumentFactories, Project} from "@opendaw/studio-core"
+import {EffectFactories, EffectFactory, InstrumentFactories, Project} from "@opendaw/studio-core"
 import {ModularBox} from "@opendaw/studio-boxes"
 import {Icon} from "../components/Icon"
 
@@ -28,12 +28,12 @@ export const DevicesBrowser = ({lifecycle, service}: Construct) => {
                     {createInstrumentList(lifecycle, project)}
                 </section>
                 <section className="audio">
-                    <h1>Audio Effects</h1>
-                    {createEffectList(lifecycle, service, project, Objects.exclude(Effects.AudioNamed, "Modular"), "audio-effect")}
+                    <h1>Audio EffectFactories</h1>
+                    {createEffectList(lifecycle, service, project, Objects.exclude(EffectFactories.AudioNamed, "Modular"), "audio-effect")}
                 </section>
                 <section className="midi">
-                    <h1>Midi Effects</h1>
-                    {createEffectList(lifecycle, service, project, Effects.MidiNamed, "midi-effect")}
+                    <h1>Midi EffectFactories</h1>
+                    {createEffectList(lifecycle, service, project, EffectFactories.MidiNamed, "midi-effect")}
                 </section>
             </div>
             <div className="manual help-section">
@@ -46,7 +46,7 @@ export const DevicesBrowser = ({lifecycle, service}: Construct) => {
                     </p>
                 </section>
                 <section>
-                    <h1>Adding Effects</h1>
+                    <h1>Adding EffectFactories</h1>
                     <p>
                         Once an instrument is created, you can add effects. To do this, simply drag an effect
                         from the list and drop it into the instrument’s device chain.
@@ -120,7 +120,7 @@ const createEffectList = <
                 DragAndDrop.installSource(element, () => ({
                     type: type as any,
                     start_index: null,
-                    device: key as keyof typeof Effects.MergedNamed
+                    device: key as keyof typeof EffectFactories.MergedNamed
                 } satisfies DragDevice)),
                 TextTooltip.simple(element, () => {
                     const {bottom, left} = element.getBoundingClientRect()

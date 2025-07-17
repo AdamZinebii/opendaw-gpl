@@ -9,7 +9,7 @@ import {
 } from "@opendaw/studio-adapters"
 import {InsertMarker} from "@/ui/components/InsertMarker"
 import {Pointers} from "@opendaw/studio-enums"
-import {Effects, InstrumentFactories, Project} from "@opendaw/studio-core"
+import {EffectFactories, InstrumentFactories, Project} from "@opendaw/studio-core"
 
 export namespace DevicePanelDragAndDrop {
     export const install = (project: Project,
@@ -84,7 +84,7 @@ export namespace DevicePanelDragAndDrop {
                 const [index] = DragAndDrop.findInsertLocation(event, container)
                 if (dragData.start_index === null) {
                     editing.modify(() => {
-                        Effects.MergedNamed[dragData.device].create(project, field, index)
+                        EffectFactories.MergedNamed[dragData.device].create(project, field, index)
                         const adapters = collection.adapters()
                         for (let i = index; i < adapters.length; i++) {
                             adapters[i].indexField.setValue(i + 1)

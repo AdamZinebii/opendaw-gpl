@@ -8,7 +8,7 @@ import {ControlBuilder} from "@/ui/devices/ControlBuilder.tsx"
 import {DeviceMidiMeter} from "@/ui/devices/panel/DeviceMidiMeter.tsx"
 import {Html} from "@opendaw/lib-dom"
 import {StudioService} from "@/service/StudioService"
-import {Effects} from "@opendaw/studio-core"
+import {EffectFactories} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "PitchDeviceEditor")
 
@@ -58,6 +58,6 @@ export const PitchDeviceEditor = ({lifecycle, service, adapter, deviceHost}: Con
                                            receiver={project.liveStreamReceiver}
                                            address={adapter.address}/>
                       )}
-                      icon={Effects.MidiNamed.Pitch.defaultIcon}/>
+                      icon={EffectFactories.MidiNamed.Pitch.defaultIcon}/>
     )
 }

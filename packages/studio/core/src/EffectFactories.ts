@@ -17,7 +17,7 @@ import {
 import {IconSymbol} from "@opendaw/studio-adapters"
 import {EffectFactory} from "./EffectFactory"
 
-export namespace Effects {
+export namespace EffectFactories {
     export const Arpeggio: EffectFactory = {
         defaultName: "Arpeggio",
         defaultIcon: IconSymbol.Stack,
