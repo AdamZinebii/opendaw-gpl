@@ -85,14 +85,7 @@ export class PointerField<P extends PointerTypes = PointerTypes> extends Field<U
     isEmpty(): boolean {return this.targetAddress.isEmpty()}
     nonEmpty(): boolean {return this.targetAddress.nonEmpty()}
 
-    resolve(): void {
-        const targetAddress: Option<Address> = this.targetAddress
-        const target: Option<Vertex> = targetAddress.flatMap((address: Address) => this.graph.findVertex(address))
-        if (targetAddress.nonEmpty() && target.isEmpty()) {
-            return panic(`${targetAddress.unwrapOrNull()?.toString()} could not be resolved`)
-        }
-        this.#targetVertex = target
-    }
+    resolvedTo(newTarget: Option<Vertex>): void {this.#targetVertex = newTarget}
 
     read(input: DataInput) {
         this.targetAddress = input.readBoolean() ? Option.wrap(Address.read(input)) : Option.None

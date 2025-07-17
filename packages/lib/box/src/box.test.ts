@@ -248,7 +248,7 @@ describe("gen (create/navigate)", () => {
         expect(fooBox.incomingEdges().length).toBe(0)
         graph.beginTransaction()
         barBox.ref.refer(fooBox)
-        expect(barBox.outgoingEdges()[0]).toStrictEqual([barBox.ref, fooBox])
+        expect(barBox.outgoingEdges()[0]).toStrictEqual([barBox.ref, fooBox.ref.address])
         graph.endTransaction()
     })
     it("isDetached after deletion", () => {

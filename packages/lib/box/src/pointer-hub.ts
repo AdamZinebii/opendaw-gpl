@@ -8,7 +8,9 @@ export interface PointerListener {
     onRemove(pointer: PointerField): void
 }
 
-export class PointerHub implements Iterable<PointerField> {
+type ChangeLog = Array<{ type: "add" | "remove", pointerField: PointerField }>
+
+export class PointerHub {
     static validate(pointer: PointerField, target: Vertex): Option<string> {
         if (pointer.address.equals(target.address)) {
             return Option.wrap(`PointerField cannot point to itself: ${pointer}`)
@@ -25,7 +27,7 @@ export class PointerHub implements Iterable<PointerField> {
     readonly #immediateListeners: Listeners<PointerListener>
     readonly #transactualListeners: Listeners<PointerListener>
 
-    #inTransaction: Option<Set<PointerField>> = Option.None
+    #inTransaction: Option<ChangeLog> = Option.None
 
     constructor(vertex: Vertex) {
         this.#vertex = vertex
@@ -46,9 +48,9 @@ export class PointerHub implements Iterable<PointerField> {
         const added: SortedSet<Address, PointerField> = Address.newSet(pointer => pointer.address)
         added.addMany(this.filter(...filter))
         added.forEach(pointer => listener.onAdd(pointer))
-        // This takes track of the listeners notification state.
+        // This takes track of the listener notification state.
         // It is possible that the pointer has been added, but it has not been notified yet.
-        // That would cause the listener.onAdd method to be involked twice.
+        // That would cause the listener.onAdd method to be invoked twice.
         return this.subscribeTransactual({
             onAdd: (pointer: PointerField) => {
                 if (added.add(pointer)) {
@@ -63,8 +65,9 @@ export class PointerHub implements Iterable<PointerField> {
     }
 
     filter<P extends PointerTypes>(...types: ReadonlyArray<P>): Array<PointerField<P>> {
-        return (types.length === 0 ? this.incoming() : Iterables.filter(this, (pointerField: PointerField) =>
-            types.some((type: P) => type === pointerField.pointerType))) as Array<PointerField<P>>
+        return (types.length === 0 ? this.incoming() : Iterables.filter(this.incoming().values(),
+            (pointerField: PointerField) => types.some((type: P) =>
+                type === pointerField.pointerType))) as Array<PointerField<P>>
     }
 
     size(): int {return this.incoming().length}
@@ -78,7 +81,9 @@ export class PointerHub implements Iterable<PointerField> {
         if (issue.nonEmpty()) {return panic(issue.unwrap())}
         if (this.#inTransaction.isEmpty()) {
             this.#vertex.graph.subscribeEndTransaction(this.#onEndTransaction)
-            this.#inTransaction = Option.wrap(new Set(this))
+            this.#inTransaction = Option.wrap([{type: "add", pointerField}])
+        } else {
+            this.#inTransaction.unwrap().push({type: "add", pointerField})
         }
         this.#immediateListeners.proxy.onAdd(pointerField)
     }
@@ -86,15 +91,15 @@ export class PointerHub implements Iterable<PointerField> {
     onRemoved(pointerField: PointerField): void {
         if (this.#inTransaction.isEmpty()) {
             this.#vertex.graph.subscribeEndTransaction(this.#onEndTransaction)
-            this.#inTransaction = Option.wrap(new Set(this))
+            this.#inTransaction = Option.wrap([{type: "remove", pointerField}])
+        } else {
+            this.#inTransaction.unwrap().push({type: "remove", pointerField})
         }
         this.#immediateListeners.proxy.onRemove(pointerField)
     }
 
-    [Symbol.iterator](): Iterator<PointerField> {return this.incoming().values()}
-
     toString(): string {
-        return `{Pointers ${this.#vertex.address}, pointers: ${Array.from(this)
+        return `{Pointers ${this.#vertex.address}, pointers: ${this.incoming().values()
             .map((pointerField: PointerField) => pointerField.toString())}}`
     }
 
@@ -117,18 +122,17 @@ export class PointerHub implements Iterable<PointerField> {
 
     readonly #onEndTransaction: Exec = (): void => {
         if (this.#vertex.isAttached()) {
-            const beforeState: Set<PointerField> = this.#inTransaction.unwrap("Callback without transaction")
-            const afterState: Set<PointerField> = new Set(this)
-            beforeState.forEach(pointer => {
-                if (!afterState.has(pointer)) {
-                    this.#transactualListeners.proxy.onRemove(pointer)
+            const log: ChangeLog = this.#inTransaction.unwrap("Callback without ChangeLog")
+            log.forEach(({type, pointerField}) => {
+                if (type === "add") {
+                    this.#transactualListeners.proxy.onAdd(pointerField)
+                } else if (type === "remove") {
+                    this.#transactualListeners.proxy.onRemove(pointerField)
+                } else {
+                    panic(`Unknown type: ${type}`)
                 }
             })
-            afterState.forEach(pointer => {
-                if (!beforeState.has(pointer)) {
-                    this.#transactualListeners.proxy.onAdd(pointer)
-                }
-            })
+            log.length = 0
         }
         this.#inTransaction = Option.None
     }

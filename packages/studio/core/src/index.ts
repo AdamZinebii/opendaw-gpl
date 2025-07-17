@@ -10,6 +10,7 @@ export * from "./samples/SampleProvider"
 
 export * from "./ColorCodes"
 export * from "./Colors"
+export * from "./EffectBox"
 export * from "./EffectFactory"
 export * from "./EffectFactories"
 export * from "./Engine"

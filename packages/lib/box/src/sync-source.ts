@@ -62,7 +62,7 @@ export class SyncSource<M> implements Terminable {
                     updates.push({
                         type: "update-pointer",
                         address: update.address.decompose(),
-                        target: update.newValue.unwrapOrNull()?.decompose()
+                        target: update.newAddress.unwrapOrNull()?.decompose()
                     })
                 } else if (update.type === "delete") {
                     updates.push({

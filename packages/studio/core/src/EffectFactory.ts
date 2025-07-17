@@ -1,7 +1,8 @@
 import {EffectPointerType, IconSymbol} from "@opendaw/studio-adapters"
-import {Box, Field} from "@opendaw/lib-box"
+import {Field} from "@opendaw/lib-box"
 import {int} from "@opendaw/lib-std"
 import {Project} from "./Project"
+import {EffectBox} from "./EffectBox"
 
 export interface EffectFactory {
     get defaultName(): string
@@ -10,5 +11,5 @@ export interface EffectFactory {
     get separatorBefore(): boolean
     get type(): "audio" | "midi"
 
-    create(project: Project, unit: Field<EffectPointerType>, index: int): Box
+    create(project: Project, unit: Field<EffectPointerType>, index: int): EffectBox
 }

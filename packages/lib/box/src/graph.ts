@@ -7,7 +7,6 @@ import {
     int,
     isDefined,
     Listeners,
-    Nullable,
     Option,
     panic,
     Procedure,
@@ -78,7 +77,7 @@ export class BoxGraph<BoxMap = any> {
         this.#inTransaction = false
         if (this.#deferredPointerUpdates.length > 0) {
             this.#deferredPointerUpdates.forEach(({pointerField, update}) =>
-                this.#processPointerValueUpdate(pointerField, update))
+                this.#processPointerVertexUpdate(pointerField, update))
             this.#deferredPointerUpdates.length = 0
         }
         // it is possible that new observers will be added while executing
@@ -172,29 +171,25 @@ export class BoxGraph<BoxMap = any> {
 
     onPointerAddressUpdated(pointerField: PointerField, oldValue: Option<Address>, newValue: Option<Address>): void {
         this.#assertTransaction()
+        if (oldValue.nonEmpty()) {this.#edges.disconnect(pointerField)}
+        if (newValue.nonEmpty()) {this.#edges.connect(pointerField, newValue.unwrap())}
         const update = new PointerUpdate(pointerField.address, oldValue, newValue)
         if (this.#constructingBox) {
             this.#deferredPointerUpdates.push({pointerField, update})
         } else {
-            this.#processPointerValueUpdate(pointerField, update)
+            this.#processPointerVertexUpdate(pointerField, update)
             this.#immediateUpdateListeners.proxy.onUpdate(update)
         }
     }
 
-    #processPointerValueUpdate(pointerField: PointerField, update: PointerUpdate): void {
-        const {oldValue} = update
-        const oldVertex: Nullable<Vertex> = oldValue.flatMap(address => this.findVertex(address)).unwrapOrNull()
-        pointerField.resolve()
-        const newVertex: Nullable<Vertex> = pointerField.targetVertex.unwrapOrNull()
-        if (oldVertex !== newVertex) {
-            oldVertex?.pointerHub.onRemoved(pointerField)
-            newVertex?.pointerHub.onAdded(pointerField)
-            if (oldVertex !== null) {
-                this.#edges.disconnect(pointerField)
-            }
-            if (newVertex !== null) {
-                this.#edges.connect(pointerField, newVertex)
-            }
+    #processPointerVertexUpdate(pointerField: PointerField, update: PointerUpdate): void {
+        const {oldAddress, newAddress} = update
+        const oldVertex = oldAddress.flatMap(address => this.findVertex(address))
+        const newVertex = newAddress.flatMap(address => this.findVertex(address))
+        pointerField.resolvedTo(newVertex)
+        if (!oldVertex.equals(newVertex)) {
+            oldVertex.ifSome(vertex => vertex.pointerHub.onRemoved(pointerField))
+            newVertex.ifSome(vertex => vertex.pointerHub.onAdded(pointerField))
         }
         this.#dispatchers.dispatch(update)
         this.#updateListeners.proxy.onUpdate(update)
@@ -208,11 +203,13 @@ export class BoxGraph<BoxMap = any> {
             boxes.add(box)
             box.outgoingEdges()
                 .filter(([pointer]) => !pointers.has(pointer))
-                .forEach(([source, target]: [PointerField, Vertex]) => {
+                .forEach(([source, targetAddress]: [PointerField, Address]) => {
+                    const targetVertex = this.findVertex(targetAddress)
+                        .unwrap(`Could not find target of ${source.toString()}`)
                     pointers.add(source)
-                    if (target.pointerRules.mandatory &&
-                        target.pointerHub.incoming().every(pointer => pointers.has(pointer))) {
-                        return trace(target.box)
+                    if (targetVertex.pointerRules.mandatory &&
+                        targetVertex.pointerHub.incoming().every(pointer => pointers.has(pointer))) {
+                        return trace(targetVertex.box)
                     }
                 })
             box.incomingEdges()

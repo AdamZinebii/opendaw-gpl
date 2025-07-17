@@ -7,14 +7,14 @@ import {Box} from "./box"
 export class GraphEdges {
     readonly #requiresTarget: SortedSet<Address, PointerField>
     readonly #requiresPointer: SortedSet<Address, Vertex>
-    readonly #incoming: SortedSet<Address, [Vertex, Array<PointerField>]>
-    readonly #outgoing: SortedSet<Address, [PointerField, Vertex]>
+    readonly #incoming: SortedSet<Address, [Address, Array<PointerField>]>
+    readonly #outgoing: SortedSet<Address, [PointerField, Address]>
 
     constructor() {
         this.#requiresTarget = Address.newSet<PointerField>(source => source.address)
         this.#requiresPointer = Address.newSet<Vertex>(vertex => vertex.address)
-        this.#incoming = Address.newSet<[Vertex, Array<PointerField>]>(([vertex]) => vertex.address)
-        this.#outgoing = Address.newSet<[PointerField, Vertex]>(([source]) => source.address)
+        this.#incoming = Address.newSet<[Address, Array<PointerField>]>(([address]) => address)
+        this.#outgoing = Address.newSet<[PointerField, Address]>(([source]) => source.address)
     }
 
     watchVertex(vertex: Vertex | PointerField): void {
@@ -51,9 +51,9 @@ export class GraphEdges {
         }
     }
 
-    connect(source: PointerField, target: Vertex): void {
+    connect(source: PointerField, target: Address): void {
         this.#outgoing.add([source, target])
-        this.#incoming.opt(target.address).match<void>({
+        this.#incoming.opt(target).match<void>({
             none: () => this.#incoming.add([target, [source]]),
             some: ([, sources]) => sources.push(source)
         })
@@ -61,18 +61,18 @@ export class GraphEdges {
 
     disconnect(source: PointerField): void {
         const [, target] = this.#outgoing.removeByKey(source.address)
-        const [, sources] = this.#incoming.get(target.address)
+        const [, sources] = this.#incoming.get(target)
         Arrays.remove(sources, source)
-        if (sources.length === 0) {this.#incoming.removeByKey(target.address)}
+        if (sources.length === 0) {this.#incoming.removeByKey(target)}
     }
 
-    outgoingEdgesOf(box: Box): ReadonlyArray<[PointerField, Vertex]> {
+    outgoingEdgesOf(box: Box): ReadonlyArray<[PointerField, Address]> {
         return this.#collectSameBox(this.#outgoing, box.address.uuid, ([{box: {address: {uuid}}}]) => uuid)
     }
 
     incomingEdgesOf(vertex: Box | Vertex): ReadonlyArray<PointerField> {
         if (vertex.isBox()) {
-            return this.#collectSameBox(this.#incoming, vertex.address.uuid, ([{address: {uuid}}]) => uuid)
+            return this.#collectSameBox(this.#incoming, vertex.address.uuid, ([{uuid}]) => uuid)
                 .flatMap(([_, pointers]) => pointers)
         } else {
             return this.#incoming.opt(vertex.address).mapOr(([_, pointers]) => pointers, Arrays.empty())

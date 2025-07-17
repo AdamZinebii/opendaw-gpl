@@ -1,6 +1,6 @@
 import {assert, clamp, float, int, Observer, Option, panic, Strings, Subscription, UUID} from "@opendaw/lib-std"
 import {ppqn, PPQN} from "@opendaw/lib-dsp"
-import {Box, Field, PointerField} from "@opendaw/lib-box"
+import {BoxUtils, Field, PointerField} from "@opendaw/lib-box"
 import {AudioUnitType, Pointers} from "@opendaw/studio-enums"
 import {
     AudioBusBox,
@@ -18,7 +18,6 @@ import {
     AnyClipBox,
     AudioUnitBoxAdapter,
     DeviceHost,
-    EffectDeviceBoxAdapter,
     EffectPointerType,
     IconSymbol,
     IndexedAdapterCollectionListener,
@@ -31,6 +30,7 @@ import {InstrumentProduct} from "./InstrumentProduct"
 import {InstrumentOptions} from "./InstrumentOptions"
 import {EffectFactory} from "./EffectFactory"
 import {ColorCodes} from "./ColorCodes"
+import {EffectBox} from "./EffectBox"
 
 export type ClipRegionOptions = {
     name?: string
@@ -133,24 +133,8 @@ export class ProjectApi {
         return audioBusBox
     }
 
-    // TODO If the newIndex is occupied, move to next index
-    createEffect(host: DeviceHost, factory: EffectFactory, newIndex: int): Box {
-        let chain: ReadonlyArray<EffectDeviceBoxAdapter>
-        let field: Field<EffectPointerType>
-        if (factory.type === "audio") {
-            chain = host.audioEffects.adapters()
-            field = host.audioEffects.field()
-        } else if (factory.type === "midi") {
-            chain = host.midiEffects.adapters()
-            field = host.midiEffects.field()
-        } else {
-            return panic(`Unknown factory type: ${factory.type}`)
-        }
-        const box = factory.create(this.#project, field, newIndex)
-        for (let index = newIndex; index < chain.length; index++) {
-            chain[index].indexField.setValue(index + 1)
-        }
-        return box
+    insertEffect(field: Field<EffectPointerType>, factory: EffectFactory, insertIndex: int = Number.MAX_SAFE_INTEGER): EffectBox {
+        return factory.create(this.#project, field, BoxUtils.insert(field, insertIndex))
     }
 
     createNoteTrack(adapter: AudioUnitBoxAdapter, index: int = 0): TrackBox {

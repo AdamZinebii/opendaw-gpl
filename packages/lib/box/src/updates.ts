@@ -139,23 +139,23 @@ export class PointerUpdate implements Modification {
     readonly type = "pointer"
 
     readonly #address: Address
-    readonly #oldValue: Option<Address>
-    readonly #newValue: Option<Address>
+    readonly #oldAddress: Option<Address>
+    readonly #newAddress: Option<Address>
 
-    constructor(address: Address, oldValue: Option<Address>, newValue: Option<Address>) {
+    constructor(address: Address, oldAddress: Option<Address>, newAddress: Option<Address>) {
         this.#address = address
-        this.#oldValue = oldValue
-        this.#newValue = newValue
+        this.#oldAddress = oldAddress
+        this.#newAddress = newAddress
     }
 
     get address(): Address {return this.#address}
-    get oldValue(): Option<Address> {return this.#oldValue}
-    get newValue(): Option<Address> {return this.#newValue}
+    get oldAddress(): Option<Address> {return this.#oldAddress}
+    get newAddress(): Option<Address> {return this.#newAddress}
 
     matches(field: PointerField): boolean {return field.address.equals(this.address)}
 
-    inverse(graph: BoxGraph): void {this.field(graph).targetAddress = this.#oldValue}
-    forward(graph: BoxGraph): void {this.field(graph).targetAddress = this.#newValue}
+    inverse(graph: BoxGraph): void {this.field(graph).targetAddress = this.#oldAddress}
+    forward(graph: BoxGraph): void {this.field(graph).targetAddress = this.#newAddress}
 
     field(graph: BoxGraph): PointerField {
         return graph.findVertex(this.#address)
@@ -165,14 +165,14 @@ export class PointerUpdate implements Modification {
     write(output: DataOutput): void {
         output.writeString(this.type)
         this.#address.write(output)
-        this.#oldValue.match({
+        this.#oldAddress.match({
             none: () => output.writeBoolean(false),
             some: address => {
                 output.writeBoolean(true)
                 address.write(output)
             }
         })
-        this.#newValue.match({
+        this.#newAddress.match({
             none: () => output.writeBoolean(false),
             some: address => {
                 output.writeBoolean(true)
@@ -182,7 +182,7 @@ export class PointerUpdate implements Modification {
     }
 
     toString(): string {
-        return `{PointerUpdate oldValue: ${this.#oldValue.unwrapOrNull()}, newValue: ${this.#newValue.unwrapOrNull()}`
+        return `{PointerUpdate oldValue: ${this.#oldAddress.unwrapOrNull()}, newValue: ${this.#newAddress.unwrapOrNull()}`
     }
 }
 
