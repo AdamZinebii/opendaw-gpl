@@ -15,15 +15,15 @@ import {
     Subscription,
     UUID
 } from "@opendaw/lib-std"
-import {Vertex} from "./vertex"
-import {Box} from "./box"
 import {Address} from "./address"
+import {Vertex} from "./vertex"
 import {PointerField} from "./pointer"
 import {PrimitiveField, PrimitiveValues} from "./primitive"
-import {Dispatchers, Propagation} from "./dispatchers"
-import {DeleteUpdate, FieldUpdate, NewUpdate, PointerUpdate, PrimitiveUpdate, Update} from "./updates"
-import {GraphEdges} from "./graph-edges"
 import {ObjectField} from "./object"
+import {Box} from "./box"
+import {DeleteUpdate, FieldUpdate, NewUpdate, PointerUpdate, PrimitiveUpdate, Update} from "./updates"
+import {Dispatchers, Propagation} from "./dispatchers"
+import {GraphEdges} from "./graph-edges"
 
 export type BoxFactory<BoxMap> = (name: keyof BoxMap,
                                   graph: BoxGraph<BoxMap>,
@@ -185,7 +185,8 @@ export class BoxGraph<BoxMap = any> {
     }
 
     #processPointerValueUpdate(pointerField: PointerField, update: PointerUpdate): void {
-        const oldVertex: Nullable<Vertex> = pointerField.targetVertex.unwrapOrNull()
+        const {oldValue} = update
+        const oldVertex: Nullable<Vertex> = oldValue.flatMap(address => this.findVertex(address)).unwrapOrNull()
         pointerField.resolve()
         const newVertex: Nullable<Vertex> = pointerField.targetVertex.unwrapOrNull()
         if (oldVertex !== newVertex) {

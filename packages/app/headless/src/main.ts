@@ -10,6 +10,7 @@ import {SampleApi} from "./SampleApi"
 
 import WorkersUrl from "@opendaw/studio-core/workers.js?worker&url"
 import WorkletsUrl from "@opendaw/studio-core/processors.js?url"
+import {createExampleProject} from "./ExampleProject"
 
 (async () => {
     console.debug("openDAW -> headless")
@@ -41,7 +42,11 @@ import WorkletsUrl from "@opendaw/studio-core/processors.js?url"
             fetch: (uuid: UUID.Format, progress: ProgressHandler): Promise<[AudioData, SampleMetaData]> =>
                 SampleApi.load(context, uuid, progress)
         }, context)
-        const project = Project.load({sampleManager}, await fetch("subset.od").then(x => x.arrayBuffer()))
+
+        const loadProject = false
+        const project = loadProject
+            ? Project.load({sampleManager}, await fetch("subset.od").then(x => x.arrayBuffer()))
+            : createExampleProject({sampleManager})
         const worklet = Worklets.get(context).createEngine(project)
         await worklet.isReady()
         while (!await worklet.queryLoadingComplete()) {}

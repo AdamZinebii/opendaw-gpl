@@ -58,7 +58,11 @@ export class PointerField<P extends PointerTypes = PointerTypes> extends Field<U
 
     defer(): void {this.targetVertex = Option.None}
 
-    get targetVertex(): Option<Vertex> {return this.#targetVertex}
+    get targetVertex(): Option<Vertex> {
+        return this.graph.inTransaction()
+            ? this.#targetAddress.flatMap((address: Address) => this.graph.findVertex(address))
+            : this.#targetVertex
+    }
     set targetVertex(option: Option<Vertex>) {
         if (option.nonEmpty()) {
             const issue = PointerHub.validate(this, option.unwrap())

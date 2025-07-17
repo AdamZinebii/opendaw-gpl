@@ -1,6 +1,6 @@
 import {assert, float, int, Option, panic, Strings, UUID} from "@opendaw/lib-std"
-import {Field} from "@opendaw/lib-box"
-import {AudioUnitType} from "@opendaw/studio-enums"
+import {Field, PointerField} from "@opendaw/lib-box"
+import {AudioUnitType, Pointers} from "@opendaw/studio-enums"
 import {
     AudioBusBox,
     AudioUnitBox,
@@ -20,7 +20,6 @@ import {
     EffectDeviceBoxAdapter,
     EffectPointerType,
     IconSymbol,
-    NoteEventBoxAdapter,
     RootBoxAdapter,
     TrackType
 } from "@opendaw/studio-adapters"
@@ -38,13 +37,26 @@ export type ClipRegionOptions = {
 }
 
 export type NoteEventParams = {
-    owner: NoteRegionBox | NoteClipBox
+    owner: { events: PointerField<Pointers.NoteEventCollection> }
     position: ppqn
     duration: ppqn
     pitch: int
     cent?: number
     velocity?: float
     chance?: int
+}
+
+export type NoteRegionParams = {
+    trackBox: TrackBox
+    position: ppqn
+    duration: ppqn
+    loopOffset?: ppqn
+    loopDuration?: ppqn
+    eventOffset?: ppqn
+    eventCollection?: NoteEventCollectionBox
+    mute?: boolean
+    name?: string
+    hue?: number
 }
 
 export class ProjectApi {
@@ -158,7 +170,7 @@ export class ProjectApi {
                 const events = ValueEventCollectionBox.create(boxGraph, UUID.generate())
                 return Option.wrap(ValueClipBox.create(boxGraph, UUID.generate(), box => {
                     box.index.setValue(clipIndex)
-                    box.label.setValue(name ?? "CV")
+                    box.label.setValue(name ?? "Automation")
                     box.hue.setValue(hue ?? ColorCodes.forTrackType(type))
                     box.mute.setValue(false)
                     box.duration.setValue(PPQN.Bar)
@@ -170,7 +182,30 @@ export class ProjectApi {
         return Option.None
     }
 
-    createRegion(trackBox: TrackBox, position: ppqn, duration: ppqn, {name, hue}: ClipRegionOptions = {}) {
+    createNoteRegion({
+                         trackBox,
+                         position, duration,
+                         loopOffset, loopDuration,
+                         eventOffset, eventCollection,
+                         mute, name, hue
+                     }: NoteRegionParams): NoteRegionBox {
+        const {boxGraph} = this.#project
+        const events = eventCollection ?? NoteEventCollectionBox.create(boxGraph, UUID.generate())
+        return NoteRegionBox.create(boxGraph, UUID.generate(), box => {
+            box.position.setValue(position)
+            box.label.setValue(name ?? "Notes")
+            box.hue.setValue(hue ?? ColorCodes.forTrackType(trackBox.type.getValue()))
+            box.mute.setValue(mute ?? false)
+            box.duration.setValue(duration)
+            box.loopDuration.setValue(loopOffset ?? 0)
+            box.loopDuration.setValue(loopDuration ?? duration)
+            box.eventOffset.setValue(eventOffset ?? 0)
+            box.events.refer(events.owners)
+            box.regions.refer(trackBox.regions)
+        })
+    }
+
+    createTrackRegion(trackBox: TrackBox, position: ppqn, duration: ppqn, {name, hue}: ClipRegionOptions = {}) {
         const {boxGraph} = this.#project
         const type = trackBox.type.getValue()
         switch (type) {
@@ -204,9 +239,9 @@ export class ProjectApi {
         return Option.None
     }
 
-    createNoteEvent({owner, position, duration, velocity, pitch, chance, cent}: NoteEventParams): NoteEventBoxAdapter {
-        const {boxAdapters, boxGraph} = this.#project
-        return boxAdapters.adapterFor(NoteEventBox.create(boxGraph, UUID.generate(), box => {
+    createNoteEvent({owner, position, duration, velocity, pitch, chance, cent}: NoteEventParams): NoteEventBox {
+        const {boxGraph} = this.#project
+        return NoteEventBox.create(boxGraph, UUID.generate(), box => {
             box.position.setValue(position)
             box.duration.setValue(duration)
             box.velocity.setValue(velocity ?? 1.0)
@@ -216,7 +251,7 @@ export class ProjectApi {
             box.events.refer(owner.events.targetVertex
                 .unwrap("Owner has no event-collection").box
                 .asBox(NoteEventCollectionBox).events)
-        }), NoteEventBoxAdapter)
+        })
     }
 
     deleteAudioUnit(adapter: AudioUnitBoxAdapter): void {
