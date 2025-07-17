@@ -1,6 +1,19 @@
-import {assert, clamp, float, int, Observer, Option, panic, Strings, Subscription, UUID} from "@opendaw/lib-std"
+import {
+    asDefined,
+    asInstanceOf,
+    assert,
+    clamp,
+    float,
+    int,
+    Observer,
+    Option,
+    panic,
+    Strings,
+    Subscription,
+    UUID
+} from "@opendaw/lib-std"
 import {ppqn, PPQN} from "@opendaw/lib-dsp"
-import {BoxUtils, Field, PointerField} from "@opendaw/lib-box"
+import {BoxUtils, Field, PointerField, StringField} from "@opendaw/lib-box"
 import {AudioUnitType, Pointers} from "@opendaw/studio-enums"
 import {
     AudioBusBox,
@@ -17,7 +30,6 @@ import {
 import {
     AnyClipBox,
     AudioUnitBoxAdapter,
-    DeviceHost,
     EffectPointerType,
     IconSymbol,
     IndexedAdapterCollectionListener,
@@ -87,22 +99,22 @@ export class ProjectApi {
 
     createInstrument({create, defaultIcon, defaultName, trackType}: InstrumentFactory,
                      {name, icon, index}: InstrumentOptions = {}): InstrumentProduct {
-        const {boxGraph, boxAdapters, rootBoxAdapter, userEditingManager} = this.#project
-        const existingNames = rootBoxAdapter.audioUnits.adapters()
-            .map(adapter => adapter.input.getValue().match({
-                none: () => "Untitled",
-                some: adapter => adapter.labelField.getValue()
-            }))
+        const {boxGraph, rootBox, userEditingManager} = this.#project
+
+        const existingNames = rootBox.audioUnits.pointerHub.incoming().map(({box}) => {
+            const inputBox = asDefined(asInstanceOf(box, AudioUnitBox).input.pointerHub.incoming().at(0)).box
+            return "label" in inputBox && inputBox.label instanceof StringField ? inputBox.label.getValue() : "N/A"
+        })
+
         const audioUnitBox = this.#createAudioUnit(AudioUnitType.Instrument, index)
-        const audioUnitBoxAdapter = boxAdapters.adapterFor(audioUnitBox, AudioUnitBoxAdapter)
         const uniqueName = Strings.getUniqueName(existingNames, name ?? defaultName)
         const iconSymbol = icon ?? defaultIcon
-        const instrumentBox = create(boxGraph, audioUnitBoxAdapter, uniqueName, iconSymbol)
+        const instrumentBox = create(boxGraph, audioUnitBox.input, uniqueName, iconSymbol)
         const trackBox = TrackBox.create(boxGraph, UUID.generate(), box => {
             box.index.setValue(0)
             box.type.setValue(trackType)
-            box.tracks.refer(audioUnitBoxAdapter.tracksField)
-            box.target.refer(audioUnitBoxAdapter.audioUnitBoxAdapter().box)
+            box.tracks.refer(audioUnitBox.tracks)
+            box.target.refer(audioUnitBox)
         })
         userEditingManager.audioUnit.edit(audioUnitBox.editing)
         return {audioUnitBox, instrumentBox, trackBox}

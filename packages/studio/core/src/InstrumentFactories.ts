@@ -8,10 +8,11 @@ import {
 } from "@opendaw/studio-boxes"
 import {UUID} from "@opendaw/lib-std"
 import {Waveform} from "@opendaw/lib-dsp"
-import {BoxGraph} from "@opendaw/lib-box"
-import {DeviceHost, IconSymbol, TrackType} from "@opendaw/studio-adapters"
+import {BoxGraph, Field} from "@opendaw/lib-box"
+import {IconSymbol, TrackType} from "@opendaw/studio-adapters"
 
 import {InstrumentFactory} from "./InstrumentFactory"
+import {Pointers} from "@opendaw/studio-enums"
 
 export namespace InstrumentFactories {
     export const Tape: InstrumentFactory = {
@@ -19,7 +20,7 @@ export namespace InstrumentFactories {
         defaultIcon: IconSymbol.Tape,
         description: "Plays audio regions & clips",
         trackType: TrackType.Audio,
-        create: (boxGraph: BoxGraph, deviceHost: DeviceHost, name: string, icon: IconSymbol): TapeDeviceBox =>
+        create: (boxGraph: BoxGraph, host: Field<Pointers.InstrumentHost | Pointers.AudioOutput>, name: string, icon: IconSymbol): TapeDeviceBox =>
             TapeDeviceBox.create(boxGraph, UUID.generate(), box => {
                 box.label.setValue(name)
                 box.icon.setValue(IconSymbol.toName(icon))
@@ -27,7 +28,7 @@ export namespace InstrumentFactories {
                 box.wow.setValue(0.05)
                 box.noise.setValue(0.02)
                 box.saturation.setValue(0.5)
-                box.host.refer(deviceHost.inputField)
+                box.host.refer(host)
             })
     }
 
@@ -36,7 +37,7 @@ export namespace InstrumentFactories {
         defaultIcon: IconSymbol.NanoWave,
         description: "Simple sampler",
         trackType: TrackType.Notes,
-        create: (boxGraph: BoxGraph, deviceHost: DeviceHost, name: string, icon: IconSymbol): NanoDeviceBox => {
+        create: (boxGraph: BoxGraph, host: Field<Pointers.InstrumentHost | Pointers.AudioOutput>, name: string, icon: IconSymbol): NanoDeviceBox => {
             const fileUUID = UUID.parse("c1678daa-4a47-4cba-b88f-4f4e384663c3")
             const audioFileBox: AudioFileBox = boxGraph.findBox<AudioFileBox>(fileUUID)
                 .unwrapOrElse(() => AudioFileBox.create(boxGraph, fileUUID, box => {
@@ -46,7 +47,7 @@ export namespace InstrumentFactories {
                 box.label.setValue(name)
                 box.icon.setValue(IconSymbol.toName(icon))
                 box.file.refer(audioFileBox)
-                box.host.refer(deviceHost.inputField)
+                box.host.refer(host)
             })
         }
     }
@@ -56,11 +57,11 @@ export namespace InstrumentFactories {
         defaultIcon: IconSymbol.Playfield,
         description: "Drum computer",
         trackType: TrackType.Notes,
-        create: (boxGraph: BoxGraph, deviceHost: DeviceHost, name: string, icon: IconSymbol): PlayfieldDeviceBox => {
+        create: (boxGraph: BoxGraph, host: Field<Pointers.InstrumentHost | Pointers.AudioOutput>, name: string, icon: IconSymbol): PlayfieldDeviceBox => {
             const deviceBox = PlayfieldDeviceBox.create(boxGraph, UUID.generate(), box => {
                 box.label.setValue(name)
                 box.icon.setValue(IconSymbol.toName(icon))
-                box.host.refer(deviceHost.inputField)
+                box.host.refer(host)
             })
             const files = [
                 useFile(boxGraph, UUID.parse("8bb2c6e8-9a6d-4d32-b7ec-1263594ef367"), "909 Bassdrum"),
@@ -91,7 +92,7 @@ export namespace InstrumentFactories {
         defaultIcon: IconSymbol.Piano,
         description: "Classic subtractive synthesizer",
         trackType: TrackType.Notes,
-        create: (boxGraph: BoxGraph, deviceHost: DeviceHost, name: string, icon: IconSymbol): VaporisateurDeviceBox =>
+        create: (boxGraph: BoxGraph, host: Field<Pointers.InstrumentHost | Pointers.AudioOutput>, name: string, icon: IconSymbol): VaporisateurDeviceBox =>
             VaporisateurDeviceBox.create(boxGraph, UUID.generate(), box => {
                 box.label.setValue(name)
                 box.icon.setValue(IconSymbol.toName(icon))
@@ -101,7 +102,7 @@ export namespace InstrumentFactories {
                 box.attack.setInitValue(0.005)
                 box.release.setInitValue(0.1)
                 box.waveform.setInitValue(Waveform.sine)
-                box.host.refer(deviceHost.inputField)
+                box.host.refer(host)
             })
     }
 

@@ -30,14 +30,14 @@ export namespace MenuItems {
                     .map(entry => MenuItem.default({
                         label: entry.defaultName,
                         separatorBefore: entry.separatorBefore
-                    }).setTriggerProcedure(() => editing.modify(() => api.createEffect(deviceHost, entry, 0))))
+                    }).setTriggerProcedure(() => editing.modify(() => api.insertEffect(deviceHost.midiEffects.field(), entry, 0))))
                 )),
             MenuItem.default({label: "Add Audio Effect"})
                 .setRuntimeChildrenProcedure(parent => parent.addMenuItem(...EffectFactories.AudioList
                     .map(entry => MenuItem.default({
                         label: entry.defaultName,
                         separatorBefore: entry.separatorBefore
-                    }).setTriggerProcedure(() => editing.modify(() => api.createEffect(deviceHost, entry, 0))
+                    }).setTriggerProcedure(() => editing.modify(() => api.insertEffect(deviceHost.audioEffects.field(), entry, 0))
                         .ifSome(box => {
                             if (isInstanceOf(box, ModularDeviceBox)) {service.switchScreen("modular")}
                         })))
@@ -105,7 +105,7 @@ export namespace MenuItems {
                             label: factory.defaultName,
                             separatorBefore: factory.separatorBefore
                         }).setTriggerProcedure(() =>
-                            editing.modify(() => api.createEffect(host, factory, adapter.indexField.getValue() + 1))
+                            editing.modify(() => api.insertEffect(host.audioEffects.field(), factory, adapter.indexField.getValue() + 1))
                                 .ifSome(box => {
                                     if (isInstanceOf(box, ModularDeviceBox)) {service.switchScreen("modular")}
                                 })))
@@ -118,7 +118,7 @@ export namespace MenuItems {
                                 label: factory.defaultName,
                                 separatorBefore: factory.separatorBefore
                             }).setTriggerProcedure(() => editing.modify(() => api
-                                .createEffect(host, factory, adapter.indexField.getValue() + 1))))
+                                .insertEffect(host.midiEffects.field(), factory, adapter.indexField.getValue() + 1))))
                         )) : panic(`Unknown accepts value: ${adapter.accepts}`)
     }
 
