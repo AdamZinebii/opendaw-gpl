@@ -7,13 +7,12 @@ import {
     int,
     Observer,
     Option,
-    panic,
     Strings,
     Subscription,
     UUID
 } from "@opendaw/lib-std"
 import {ppqn, PPQN} from "@opendaw/lib-dsp"
-import {BoxUtils, Field, PointerField, StringField} from "@opendaw/lib-box"
+import {Field, IndexedBox, PointerField, StringField} from "@opendaw/lib-box"
 import {AudioUnitType, Pointers} from "@opendaw/studio-enums"
 import {
     AudioBusBox,
@@ -33,7 +32,6 @@ import {
     EffectPointerType,
     IconSymbol,
     IndexedAdapterCollectionListener,
-    RootBoxAdapter,
     TrackType
 } from "@opendaw/studio-adapters"
 import {Project} from "./Project"
@@ -72,8 +70,9 @@ export type NoteRegionParams = {
     hue?: number
 }
 
+// noinspection JSUnusedGlobalSymbols
 export class ProjectApi {
-    static readonly AudioUnitOrdering = {
+    static readonly AudioUnitOrdering: Record<string, int> = {
         [AudioUnitType.Instrument]: 0,
         [AudioUnitType.Aux]: 1,
         [AudioUnitType.Bus]: 2,
@@ -100,12 +99,11 @@ export class ProjectApi {
     createInstrument({create, defaultIcon, defaultName, trackType}: InstrumentFactory,
                      {name, icon, index}: InstrumentOptions = {}): InstrumentProduct {
         const {boxGraph, rootBox, userEditingManager} = this.#project
-
+        assert(rootBox.isAttached(), "rootBox not attached")
         const existingNames = rootBox.audioUnits.pointerHub.incoming().map(({box}) => {
             const inputBox = asDefined(asInstanceOf(box, AudioUnitBox).input.pointerHub.incoming().at(0)).box
             return "label" in inputBox && inputBox.label instanceof StringField ? inputBox.label.getValue() : "N/A"
         })
-
         const audioUnitBox = this.#createAudioUnit(AudioUnitType.Instrument, index)
         const uniqueName = Strings.getUniqueName(existingNames, name ?? defaultName)
         const iconSymbol = icon ?? defaultIcon
@@ -126,7 +124,7 @@ export class ProjectApi {
                    color: string): AudioBusBox {
         console.debug(`createAudioBus '${name}', type: ${type}, color: ${color}`)
         const {rootBox, boxGraph} = this.#project
-        assert(rootBox.audioBusses.isAttached(), "rootBox not attached")
+        assert(rootBox.isAttached(), "rootBox not attached")
         const uuid = UUID.generate()
         const audioBusBox = AudioBusBox.create(boxGraph, uuid, box => {
             box.collection.refer(rootBox.audioBusses)
@@ -146,19 +144,19 @@ export class ProjectApi {
     }
 
     insertEffect(field: Field<EffectPointerType>, factory: EffectFactory, insertIndex: int = Number.MAX_SAFE_INTEGER): EffectBox {
-        return factory.create(this.#project, field, BoxUtils.insert(field, insertIndex))
+        return factory.create(this.#project, field, IndexedBox.insertOrder(field, insertIndex))
     }
 
-    createNoteTrack(adapter: AudioUnitBoxAdapter, index: int = 0): TrackBox {
-        return this.#createTrack(adapter, TrackType.Notes, index)
+    createNoteTrack(audioUnitBox: AudioUnitBox, insertIndex: int = Number.MAX_SAFE_INTEGER): TrackBox {
+        return this.#createTrack({field: audioUnitBox.tracks, trackType: TrackType.Notes, insertIndex})
     }
 
-    createAudioTrack(adapter: AudioUnitBoxAdapter, index: int = 0): TrackBox {
-        return this.#createTrack(adapter, TrackType.Audio, index)
+    createAudioTrack(audioUnitBox: AudioUnitBox, insertIndex: int = Number.MAX_SAFE_INTEGER): TrackBox {
+        return this.#createTrack({field: audioUnitBox.tracks, trackType: TrackType.Audio, insertIndex})
     }
 
-    createAutomationTrack(adapter: AudioUnitBoxAdapter, index: int = 0): TrackBox {
-        return this.#createTrack(adapter, TrackType.Value, index)
+    createAutomationTrack(audioUnitBox: AudioUnitBox, target: Field<Pointers.Automation>, insertIndex: int = Number.MAX_SAFE_INTEGER): TrackBox {
+        return this.#createTrack({field: audioUnitBox.tracks, target, trackType: TrackType.Value, insertIndex})
     }
 
     createClip(trackBox: TrackBox, clipIndex: int, {name, hue}: ClipRegionOptions = {}): Option<AnyClipBox> {
@@ -268,26 +266,15 @@ export class ProjectApi {
         })
     }
 
-    deleteAudioUnit(adapter: AudioUnitBoxAdapter): void {
-        const {rootBoxAdapter} = this.#project
-        const adapters = rootBoxAdapter.audioUnits.adapters()
-        const boxIndex = adapter.indexField.getValue()
-        const deleteIndex = adapters.indexOf(adapter)
-        console.debug(`deleteAudioUnit adapter: ${adapter.toString()}, deleteIndex: ${deleteIndex}, indexField: ${boxIndex}`)
-        if (deleteIndex === -1) {return panic(`Cannot delete ${adapter}. Does not exist.`)}
-        if (deleteIndex !== boxIndex) {
-            console.debug("indices", adapters.map(x => x.box.index.getValue()).join(", "))
-            return panic(`Cannot delete ${adapter}. Wrong index.`)
-        }
-        for (let index = deleteIndex + 1; index < adapters.length; index++) {
-            adapters[index].indexField.setValue(index - 1)
-        }
-        adapter.box.delete()
+    deleteAudioUnit(audioUnitBox: AudioUnitBox): void {
+        const {rootBox} = this.#project
+        IndexedBox.removeOrder(rootBox.audioUnits, audioUnitBox.index.getValue())
+        audioUnitBox.delete()
     }
 
     #createAudioUnit(type: AudioUnitType, index?: int): AudioUnitBox {
-        const {boxGraph, rootBox, rootBoxAdapter, masterBusBox} = this.#project
-        const insertIndex = index ?? this.#pushAudioUnitsIndices(rootBoxAdapter, type, 1)
+        const {boxGraph, rootBox, masterBusBox} = this.#project
+        const insertIndex = index ?? this.#pushAudioUnitsIndices(type, 1)
         console.debug(`createAudioUnit type: ${type}, insertIndex: ${insertIndex}`)
         return AudioUnitBox.create(boxGraph, UUID.generate(), box => {
             box.collection.refer(rootBox.audioUnits)
@@ -297,25 +284,33 @@ export class ProjectApi {
         })
     }
 
-    #createTrack(adapter: AudioUnitBoxAdapter, trackType: TrackType, index: int = 0): TrackBox {
+    #createTrack({field, target, trackType, insertIndex}: {
+        field: Field<Pointers.TrackCollection>,
+        target?: Field<Pointers.Automation>,
+        insertIndex: int
+        trackType: TrackType,
+    }): TrackBox {
+        const index = IndexedBox.insertOrder(field, insertIndex)
         return TrackBox.create(this.#project.boxGraph, UUID.generate(), box => {
             box.index.setValue(index)
             box.type.setValue(trackType)
-            box.tracks.refer(adapter.tracksField)
-            box.target.refer(adapter.audioUnitBoxAdapter().box)
+            box.tracks.refer(field)
+            box.target.refer(target ?? field.box)
         })
     }
 
-    #pushAudioUnitsIndices(rootBoxAdapter: RootBoxAdapter, type: AudioUnitType, count: int = 1): int {
-        const adapters = rootBoxAdapter.audioUnits.adapters()
-        const order: int = ProjectApi.AudioUnitOrdering[type]
+    #pushAudioUnitsIndices(type: AudioUnitType, count: int = 1): int {
+        const {AudioUnitOrdering} = ProjectApi
+        const {rootBox} = this.#project
+        const boxes = IndexedBox.collectIndexedBoxes(rootBox.audioUnits, AudioUnitBox)
+        const order: int = AudioUnitOrdering[type]
         let index = 0 | 0
-        for (; index < adapters.length; index++) {
-            if (ProjectApi.AudioUnitOrdering[adapters[index].type] > order) {break}
+        for (; index < boxes.length; index++) {
+            if (AudioUnitOrdering[boxes[index].type.getValue()] > order) {break}
         }
         const insertIndex = index
-        while (index < adapters.length) {
-            adapters[index].indexField.setValue(count + index++)
+        while (index < boxes.length) {
+            boxes[index].index.setValue(count + index++)
         }
         return insertIndex
     }

@@ -70,7 +70,7 @@ export const TrackHeader = ({lifecycle, service, trackBoxAdapter, audioUnitBoxAd
             if (!Keyboard.GlobalShortcut.isDelete(event)) {return}
             project.editing.modify(() => {
                 if (audioUnitBoxAdapter.tracks.collection.size() === 1) {
-                    project.api.deleteAudioUnit(audioUnitBoxAdapter)
+                    project.api.deleteAudioUnit(audioUnitBoxAdapter.box)
                 } else {
                     audioUnitBoxAdapter.deleteTrack(trackBoxAdapter)
                 }

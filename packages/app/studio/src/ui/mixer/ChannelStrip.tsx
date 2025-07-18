@@ -161,7 +161,7 @@ export const ChannelStrip = ({lifecycle, service, adapter, compact}: Construct) 
             if (!isOutput) {
                 collector.addItems(
                     MenuItem.default({label: `Delete '${adapter.input.label.unwrapOrElse("Untitled")}'`})
-                        .setTriggerProcedure(() => editing.modify(() => project.api.deleteAudioUnit(adapter))))
+                        .setTriggerProcedure(() => editing.modify(() => project.api.deleteAudioUnit(adapter.box))))
             }
             collector.addItems(
                 MenuItem.default({

@@ -75,7 +75,7 @@ export const installTrackHeaderMenu = (service: StudioService,
                 separatorBefore: true
             }).setTriggerProcedure(() => editing.modify(() => {
                 if (audioUnitBoxAdapter.tracks.collection.size() === 1) {
-                    project.api.deleteAudioUnit(audioUnitBoxAdapter)
+                    project.api.deleteAudioUnit(audioUnitBoxAdapter.box)
                 } else {
                     audioUnitBoxAdapter.deleteTrack(trackBoxAdapter)
                 }
@@ -84,7 +84,7 @@ export const installTrackHeaderMenu = (service: StudioService,
                 label: `Delete '${audioUnitBoxAdapter.input.label.unwrapOrElse("No Input")}'`,
                 selectable: !audioUnitBoxAdapter.isOutput
             }).setTriggerProcedure(() => editing.modify(() =>
-                project.api.deleteAudioUnit(audioUnitBoxAdapter))),
+                project.api.deleteAudioUnit(audioUnitBoxAdapter.box))),
             DebugMenus.debugBox(audioUnitBoxAdapter.box)
         )
     }
