@@ -274,7 +274,7 @@ export class ProjectApi {
 
     #createAudioUnit(type: AudioUnitType, index?: int): AudioUnitBox {
         const {boxGraph, rootBox, masterBusBox} = this.#project
-        const insertIndex = index ?? this.#pushAudioUnitsIndices(type, 1)
+        const insertIndex = index ?? this.#sortAudioUnitOrdering(type)
         console.debug(`createAudioUnit type: ${type}, insertIndex: ${insertIndex}`)
         return AudioUnitBox.create(boxGraph, UUID.generate(), box => {
             box.collection.refer(rootBox.audioUnits)
@@ -299,7 +299,7 @@ export class ProjectApi {
         })
     }
 
-    #pushAudioUnitsIndices(type: AudioUnitType, count: int = 1): int {
+    #sortAudioUnitOrdering(type: AudioUnitType): int {
         const {AudioUnitOrdering} = ProjectApi
         const {rootBox} = this.#project
         const boxes = IndexedBox.collectIndexedBoxes(rootBox.audioUnits, AudioUnitBox)
@@ -310,7 +310,7 @@ export class ProjectApi {
         }
         const insertIndex = index
         while (index < boxes.length) {
-            boxes[index].index.setValue(count + index++)
+            boxes[index].index.setValue(++index)
         }
         return insertIndex
     }

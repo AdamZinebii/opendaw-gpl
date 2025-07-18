@@ -33,7 +33,7 @@ export namespace IndexedBox {
 
     export const collectIndexedBoxes = <B extends IndexedBox>(field: Field, type?: Class<B>): ReadonlyArray<B> =>
         field.pointerHub.incoming()
-            .map(({box}) => isIndexedBox(box)
+            .map(({box}) => isIndexedBox(box) && (type === undefined || box instanceof type)
                 ? box as B
                 : panic(`${box} has no index field`))
             .sort((a, b) => a.index.getValue() - b.index.getValue())
