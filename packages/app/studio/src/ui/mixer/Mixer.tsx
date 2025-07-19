@@ -2,9 +2,9 @@ import css from "./Mixer.sass?inline"
 import {clamp, Lifecycle, Terminable, Terminator, UUID} from "@opendaw/lib-std"
 import {createElement} from "@opendaw/lib-jsx"
 import {StudioService} from "@/service/StudioService.ts"
-import {AudioUnitBoxAdapter} from "@opendaw/studio-adapters"
+import {AudioUnitBoxAdapter, Devices} from "@opendaw/studio-adapters"
 import {ChannelStrip} from "@/ui/mixer/ChannelStrip.tsx"
-import {Vertex} from "@opendaw/lib-box"
+import {IndexedBox, Vertex} from "@opendaw/lib-box"
 import {Orientation, Scroller} from "@/ui/components/Scroller.tsx"
 import {ScrollModel} from "@/ui/components/ScrollModel.ts"
 import {DragAndDrop} from "@/ui/DragAndDrop"
@@ -12,7 +12,6 @@ import {AnyDragData} from "@/ui/AnyDragData"
 import {installAutoScroll} from "@/ui/AutoScroll"
 import {InsertMarker} from "@/ui/components/InsertMarker"
 import {deferNextFrame, Events, Html} from "@opendaw/lib-dom"
-import {Devices} from "@opendaw/studio-adapters"
 
 const className = Html.adoptStyleSheet(css, "mixer")
 
@@ -163,9 +162,9 @@ export const Mixer = ({lifecycle, service}: Construct) => {
                 if (min === max) {return}
                 const [index] = DragAndDrop.findInsertLocation(event, element)
                 const delta = clamp(index, min, max) - dragData.start_index
-                if (delta < 0 || delta > 1) { // if delta is zero or one it has no effect on the order
+                if (delta < 0 || delta > 1) { // if delta is zero or one, it has no effect on the order
                     service.project.editing.modify(() =>
-                        project.rootBoxAdapter.audioUnits.moveIndex(dragData.start_index, delta))
+                        IndexedBox.moveIndex(project.rootBox.audioUnits, dragData.start_index, delta))
                 }
             },
             enter: () => {},

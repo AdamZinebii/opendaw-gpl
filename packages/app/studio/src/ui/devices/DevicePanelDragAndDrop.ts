@@ -1,15 +1,10 @@
 import {asDefined, panic, Terminable} from "@opendaw/lib-std"
 import {DragAndDrop} from "@/ui/DragAndDrop"
 import {AnyDragData} from "@/ui/AnyDragData"
-import {
-    AudioEffectDeviceBoxAdapter,
-    Devices,
-    MidiEffectDeviceAdapter,
-    SortedBoxAdapterCollection
-} from "@opendaw/studio-adapters"
+import {Devices} from "@opendaw/studio-adapters"
 import {InsertMarker} from "@/ui/components/InsertMarker"
-import {Pointers} from "@opendaw/studio-enums"
 import {EffectFactories, InstrumentFactories, InstrumentFactory, Project} from "@opendaw/studio-core"
+import {IndexedBox} from "@opendaw/lib-box"
 
 export namespace DevicePanelDragAndDrop {
     export const install = (project: Project,
@@ -68,16 +63,12 @@ export namespace DevicePanelDragAndDrop {
                     return
                 }
                 let container: HTMLElement
-                let collection: SortedBoxAdapterCollection<MidiEffectDeviceAdapter, Pointers.MidiEffectHost>
-                    | SortedBoxAdapterCollection<AudioEffectDeviceBoxAdapter, Pointers.AudioEffectHost>
                 let field
                 if (type === "audio-effect") {
                     container = audioEffectsContainer
-                    collection = deviceHost.audioEffects
                     field = deviceHost.audioEffects.field()
                 } else if (type === "midi-effect") {
                     container = midiEffectsContainer
-                    collection = deviceHost.midiEffects
                     field = deviceHost.midiEffects.field()
                 } else {
                     return panic(`Unknown type: ${type}`)
@@ -85,16 +76,13 @@ export namespace DevicePanelDragAndDrop {
                 const [index] = DragAndDrop.findInsertLocation(event, container)
                 if (dragData.start_index === null) {
                     editing.modify(() => {
-                        EffectFactories.MergedNamed[dragData.device].create(project, field, index)
-                        const adapters = collection.adapters()
-                        for (let i = index; i < adapters.length; i++) {
-                            adapters[i].indexField.setValue(i + 1)
-                        }
+                        const factory = EffectFactories.MergedNamed[dragData.device]
+                        project.api.insertEffect(field, factory, index)
                     })
                 } else {
                     const delta = index - dragData.start_index
-                    if (delta < 0 || delta > 1) { // if delta is zero or one it has no effect on the order
-                        editing.modify(() => collection.moveIndex(dragData.start_index, delta))
+                    if (delta < 0 || delta > 1) { // if delta is zero or one, it has no effect on the order
+                        editing.modify(() => IndexedBox.moveIndex(field, dragData.start_index, delta))
                     }
                 }
             },

@@ -4,7 +4,7 @@ import {Pointers} from "@opendaw/studio-enums"
 import {UUID} from "@opendaw/lib-std"
 import {DeviceHost, Devices, InstrumentDeviceBoxAdapter} from "../../devices"
 import {BoxAdaptersContext} from "../../BoxAdaptersContext"
-import {SortedBoxAdapterCollection} from "../../SortedBoxAdapterCollection"
+import {IndexedBoxAdapterCollection} from "../../IndexedBoxAdapterCollection"
 import {PlayfieldSampleBoxAdapter} from "./Playfield/PlayfieldSampleBoxAdapter"
 import {ParameterAdapterSet} from "../../ParameterAdapterSet"
 import {TrackType} from "../../timeline/TrackType"
@@ -18,14 +18,14 @@ export class PlayfieldDeviceBoxAdapter implements InstrumentDeviceBoxAdapter {
     readonly #context: BoxAdaptersContext
     readonly #box: PlayfieldDeviceBox
 
-    readonly #samples: SortedBoxAdapterCollection<PlayfieldSampleBoxAdapter, Pointers.Sample>
+    readonly #samples: IndexedBoxAdapterCollection<PlayfieldSampleBoxAdapter, Pointers.Sample>
     readonly #parametric: ParameterAdapterSet
 
     constructor(context: BoxAdaptersContext, box: PlayfieldDeviceBox) {
         this.#context = context
         this.#box = box
 
-        this.#samples = SortedBoxAdapterCollection.create(
+        this.#samples = IndexedBoxAdapterCollection.create(
             box.samples, box => context.boxAdapters.adapterFor(box, PlayfieldSampleBoxAdapter), Pointers.Sample)
         this.#parametric = new ParameterAdapterSet(this.#context)
     }
@@ -42,7 +42,7 @@ export class PlayfieldDeviceBoxAdapter implements InstrumentDeviceBoxAdapter {
     get enabledField(): BooleanField {return this.#box.enabled}
     get minimizedField(): BooleanField {return this.#box.minimized}
     get acceptsMidiEvents(): boolean {return true}
-    get samples(): SortedBoxAdapterCollection<PlayfieldSampleBoxAdapter, Pointers.Sample> {return this.#samples}
+    get samples(): IndexedBoxAdapterCollection<PlayfieldSampleBoxAdapter, Pointers.Sample> {return this.#samples}
     get context(): BoxAdaptersContext {return this.#context}
 
     deviceHost(): DeviceHost {

@@ -1,7 +1,7 @@
 import {Arrays, asDefined, EmptyExec, SortedSet, Subscription, Terminable, Terminator, UUID} from "@opendaw/lib-std"
 import {Pointers} from "@opendaw/studio-enums"
 import {AudioUnitBox, AuxSendBox, BoxVisitor} from "@opendaw/studio-boxes"
-import {AudioUnitBoxAdapter, SortedBoxAdapterCollection} from "@opendaw/studio-adapters"
+import {AudioUnitBoxAdapter, IndexedBoxAdapterCollection} from "@opendaw/studio-adapters"
 import {DeferExec, deferNextFrame} from "@opendaw/lib-dom"
 import {Box} from "@opendaw/lib-box"
 
@@ -22,7 +22,7 @@ export class Mixer implements Terminable {
     readonly #virtualSolo: Set<AudioUnitBoxAdapter>
     readonly #deferUpdate: DeferExec
 
-    constructor(audioUnits: SortedBoxAdapterCollection<AudioUnitBoxAdapter, Pointers.AudioUnits>) {
+    constructor(audioUnits: IndexedBoxAdapterCollection<AudioUnitBoxAdapter, Pointers.AudioUnits>) {
         this.#states = UUID.newSet(({adapter: {uuid}}) => uuid)
         this.#solo = new Set()
         this.#virtualSolo = new Set()

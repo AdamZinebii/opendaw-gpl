@@ -26,11 +26,11 @@ export interface IndexedAdapterCollectionListener<A extends IndexedBoxAdapter> e
     onReorder(adapter: A): void
 }
 
-export class SortedBoxAdapterCollection<A extends IndexedBoxAdapter, P extends Pointers> implements Terminable {
+export class IndexedBoxAdapterCollection<A extends IndexedBoxAdapter, P extends Pointers> implements Terminable {
     static create<A extends IndexedBoxAdapter, P extends Pointers>(field: Field<P>,
                                                                    provider: Func<Box, A>,
-                                                                   pointers: P): SortedBoxAdapterCollection<A, P> {
-        return new SortedBoxAdapterCollection(field, provider, pointers)
+                                                                   pointers: P): IndexedBoxAdapterCollection<A, P> {
+        return new IndexedBoxAdapterCollection(field, provider, pointers)
     }
 
     readonly #field: Field<P>

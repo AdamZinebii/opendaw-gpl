@@ -10,7 +10,7 @@ import {
     Devices,
     MidiEffectDeviceAdapter,
     PlayfieldSampleBoxAdapter,
-    SortedBoxAdapterCollection
+    IndexedBoxAdapterCollection
 } from "@opendaw/studio-adapters"
 import {ScrollModel} from "@/ui/components/ScrollModel.ts"
 import {Orientation, Scroller} from "@/ui/components/Scroller"
@@ -128,9 +128,9 @@ export const DevicePanel = ({lifecycle, service}: Construct) => {
     }))
 
     const subscribeChain = ({midiEffects, instrument, audioEffects, host}: {
-        midiEffects: SortedBoxAdapterCollection<MidiEffectDeviceAdapter, Pointers.MidiEffectHost>,
+        midiEffects: IndexedBoxAdapterCollection<MidiEffectDeviceAdapter, Pointers.MidiEffectHost>,
         instrument: ObservableValue<Option<AudioUnitInputAdapter>>,
-        audioEffects: SortedBoxAdapterCollection<AudioEffectDeviceBoxAdapter, Pointers.AudioEffectHost>,
+        audioEffects: IndexedBoxAdapterCollection<AudioEffectDeviceBoxAdapter, Pointers.AudioEffectHost>,
         host: DeviceHost
     }): Terminable => {
         const terminator = new Terminator()

@@ -13,7 +13,7 @@ import {
     ZeitgeistDeviceBox
 } from "@opendaw/studio-boxes"
 import {TrackType} from "./timeline/TrackType"
-import {SortedBoxAdapterCollection} from "./SortedBoxAdapterCollection"
+import {IndexedBoxAdapterCollection} from "./IndexedBoxAdapterCollection"
 import {BoxAdapter} from "./BoxAdapter"
 import {AudioUnitInputAdapter} from "./audio-unit/AudioUnitInputAdapter"
 import {AudioUnitBoxAdapter} from "./audio-unit/AudioUnitBoxAdapter"
@@ -66,9 +66,9 @@ export interface InstrumentDeviceBoxAdapter extends DeviceBoxAdapter {
 export interface DeviceHost extends BoxAdapter {
     readonly class: "device-host"
 
-    get midiEffects(): SortedBoxAdapterCollection<MidiEffectDeviceAdapter, Pointers.MidiEffectHost>
+    get midiEffects(): IndexedBoxAdapterCollection<MidiEffectDeviceAdapter, Pointers.MidiEffectHost>
     get inputAdapter(): Option<AudioUnitInputAdapter>
-    get audioEffects(): SortedBoxAdapterCollection<AudioEffectDeviceBoxAdapter, Pointers.AudioEffectHost>
+    get audioEffects(): IndexedBoxAdapterCollection<AudioEffectDeviceBoxAdapter, Pointers.AudioEffectHost>
     get inputField(): Field<Pointers.InstrumentHost | Pointers.AudioOutput>
     get tracksField(): Field<Pointers.TrackCollection>
     get minimizedField(): BooleanField

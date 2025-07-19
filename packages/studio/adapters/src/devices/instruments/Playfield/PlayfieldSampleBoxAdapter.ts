@@ -9,7 +9,7 @@ import {
     InstrumentDeviceBoxAdapter,
     MidiEffectDeviceAdapter
 } from "../../../devices"
-import {IndexedBoxAdapter, SortedBoxAdapterCollection} from "../../../SortedBoxAdapterCollection"
+import {IndexedBoxAdapter, IndexedBoxAdapterCollection} from "../../../IndexedBoxAdapterCollection"
 import {BoxAdaptersContext} from "../../../BoxAdaptersContext"
 import {ParameterAdapterSet} from "../../../ParameterAdapterSet"
 import {AudioFileBoxAdapter} from "../../../audio/AudioFileBoxAdapter"
@@ -29,8 +29,8 @@ export class PlayfieldSampleBoxAdapter implements DeviceHost, InstrumentDeviceBo
     readonly #context: BoxAdaptersContext
     readonly #box: PlayfieldSampleBox
 
-    readonly #midiEffects: SortedBoxAdapterCollection<MidiEffectDeviceAdapter, Pointers.MidiEffectHost>
-    readonly #audioEffects: SortedBoxAdapterCollection<AudioEffectDeviceBoxAdapter, Pointers.AudioEffectHost>
+    readonly #midiEffects: IndexedBoxAdapterCollection<MidiEffectDeviceAdapter, Pointers.MidiEffectHost>
+    readonly #audioEffects: IndexedBoxAdapterCollection<AudioEffectDeviceBoxAdapter, Pointers.AudioEffectHost>
 
     readonly #parametric: ParameterAdapterSet
     readonly namedParameter // let typescript infer the type
@@ -41,9 +41,9 @@ export class PlayfieldSampleBoxAdapter implements DeviceHost, InstrumentDeviceBo
         this.#context = context
         this.#box = box
 
-        this.#midiEffects = this.#terminator.own(SortedBoxAdapterCollection.create(this.#box.midiEffects,
+        this.#midiEffects = this.#terminator.own(IndexedBoxAdapterCollection.create(this.#box.midiEffects,
             box => this.#context.boxAdapters.adapterFor(box, Devices.isMidiEffect), Pointers.MidiEffectHost))
-        this.#audioEffects = this.#terminator.own(SortedBoxAdapterCollection.create(this.#box.audioEffects,
+        this.#audioEffects = this.#terminator.own(IndexedBoxAdapterCollection.create(this.#box.audioEffects,
             box => this.#context.boxAdapters.adapterFor(box, Devices.isAudioEffect), Pointers.AudioEffectHost))
 
         this.#parametric = this.#terminator.own(new ParameterAdapterSet(this.#context))
@@ -110,13 +110,13 @@ export class PlayfieldSampleBoxAdapter implements DeviceHost, InstrumentDeviceBo
         })
     }
 
-    get midiEffects(): SortedBoxAdapterCollection<MidiEffectDeviceAdapter, Pointers.MidiEffectHost> {
+    get midiEffects(): IndexedBoxAdapterCollection<MidiEffectDeviceAdapter, Pointers.MidiEffectHost> {
         return this.#midiEffects
     }
     get inputAdapter(): Option<AudioUnitInputAdapter> {
         return Option.wrap(this)
     }
-    get audioEffects(): SortedBoxAdapterCollection<AudioEffectDeviceBoxAdapter, Pointers.AudioEffectHost> {
+    get audioEffects(): IndexedBoxAdapterCollection<AudioEffectDeviceBoxAdapter, Pointers.AudioEffectHost> {
         return this.#audioEffects
     }
 

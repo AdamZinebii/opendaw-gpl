@@ -4,7 +4,7 @@ import {AudioEffectDeviceProcessorFactory} from "./DeviceProcessorFactory"
 import {AudioInput, ProcessPhase} from "./processing"
 import {DeviceChain} from "./DeviceChain"
 import {EngineContext} from "./EngineContext"
-import {SortedBoxAdapterCollection} from "@opendaw/studio-adapters"
+import {IndexedBoxAdapterCollection} from "@opendaw/studio-adapters"
 import {Pointers} from "@opendaw/studio-enums"
 import {DeviceProcessor} from "./DeviceProcessor"
 import {AudioDeviceProcessor} from "./AudioDeviceProcessor"
@@ -21,7 +21,7 @@ export interface AudioTarget extends AudioInput, DeviceProcessor {}
 
 export class InsertReturnAudioChain implements DeviceChain {
     static create(context: EngineContext,
-                  collection: SortedBoxAdapterCollection<AudioEffectDeviceBoxAdapter, Pointers.AudioEffectHost>,
+                  collection: IndexedBoxAdapterCollection<AudioEffectDeviceBoxAdapter, Pointers.AudioEffectHost>,
                   sourceProcessor: AudioDeviceProcessor,
                   targetProcessor: AudioTarget) {
         return new InsertReturnAudioChain(context, collection, sourceProcessor, targetProcessor)
@@ -36,7 +36,7 @@ export class InsertReturnAudioChain implements DeviceChain {
     #needsWiring = true
 
     private constructor(context: EngineContext,
-                        collection: SortedBoxAdapterCollection<AudioEffectDeviceBoxAdapter, Pointers.AudioEffectHost>,
+                        collection: IndexedBoxAdapterCollection<AudioEffectDeviceBoxAdapter, Pointers.AudioEffectHost>,
                         sourceProcessor: AudioDeviceProcessor,
                         targetProcessor: AudioTarget) {
         this.#effects = UUID.newSet(({device}) => device.uuid)

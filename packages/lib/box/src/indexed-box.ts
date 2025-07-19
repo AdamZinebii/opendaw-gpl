@@ -29,6 +29,26 @@ export namespace IndexedBox {
         }
     }
 
+    export const moveIndex = (field: Field, startIndex: int, delta: int): void => {
+        const boxes = collectIndexedBoxes(field)
+        const movingBox = boxes[startIndex]
+        if (delta < 0) {
+            const newIndex = clamp(startIndex + delta, 0, boxes.length - 1)
+            for (let index = newIndex; index < startIndex; index++) {
+                boxes[index].index.setValue(index + 1)
+            }
+            movingBox.index.setValue(newIndex)
+        } else if (delta > 1) {
+            const newIndex = clamp(startIndex + (delta - 1), 0, boxes.length - 1)
+            for (let index = startIndex; index < newIndex; index++) {
+                boxes[index + 1].index.setValue(index)
+            }
+            movingBox.index.setValue(newIndex)
+        } else {
+            console.warn(`moveIndex had no effect: startIndex: ${startIndex}, delta: ${delta}`)
+        }
+    }
+
     export const isIndexedBox = (box: Box): box is IndexedBox => "index" in box && box.index instanceof Int32Field
 
     export const collectIndexedBoxes = <B extends IndexedBox>(field: Field, type?: Class<B>): ReadonlyArray<B> =>

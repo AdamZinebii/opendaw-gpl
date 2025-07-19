@@ -5,7 +5,7 @@ import {AudioUnitType, Pointers} from "@opendaw/studio-enums"
 import {AudioEffectDeviceBoxAdapter, DeviceHost, Devices, MidiEffectDeviceAdapter} from "../devices"
 import {AudioUnitTracks} from "./AudioUnitTracks"
 import {AudioUnitInput} from "./AudioUnitInput"
-import {SortedBoxAdapterCollection} from "../SortedBoxAdapterCollection"
+import {IndexedBoxAdapterCollection} from "../IndexedBoxAdapterCollection"
 import {ParameterAdapterSet} from "../ParameterAdapterSet"
 import {BoxAdaptersContext} from "../BoxAdaptersContext"
 import {AuxSendBoxAdapter} from "./AuxSendBoxAdapter"
@@ -23,9 +23,9 @@ export class AudioUnitBoxAdapter implements DeviceHost, BoxAdapter {
     readonly #parametric: ParameterAdapterSet
     readonly #tracks: AudioUnitTracks
     readonly #input: AudioUnitInput
-    readonly #midiEffects: SortedBoxAdapterCollection<MidiEffectDeviceAdapter, Pointers.MidiEffectHost>
-    readonly #audioEffects: SortedBoxAdapterCollection<AudioEffectDeviceBoxAdapter, Pointers.AudioEffectHost>
-    readonly #auxSends: SortedBoxAdapterCollection<AuxSendBoxAdapter, Pointers.AuxSend>
+    readonly #midiEffects: IndexedBoxAdapterCollection<MidiEffectDeviceAdapter, Pointers.MidiEffectHost>
+    readonly #audioEffects: IndexedBoxAdapterCollection<AudioEffectDeviceBoxAdapter, Pointers.AudioEffectHost>
+    readonly #auxSends: IndexedBoxAdapterCollection<AuxSendBoxAdapter, Pointers.AuxSend>
     readonly #output: AudioUnitOutput
     readonly namedParameter // let typescript infer the type
 
@@ -36,11 +36,11 @@ export class AudioUnitBoxAdapter implements DeviceHost, BoxAdapter {
         this.#parametric = this.#terminator.own(new ParameterAdapterSet(this.#context))
         this.#tracks = this.#terminator.own(new AudioUnitTracks(this, this.#context.boxAdapters))
         this.#input = this.#terminator.own(new AudioUnitInput(this.#box.input.pointerHub, this.#context.boxAdapters))
-        this.#midiEffects = this.#terminator.own(SortedBoxAdapterCollection.create(this.#box.midiEffects,
+        this.#midiEffects = this.#terminator.own(IndexedBoxAdapterCollection.create(this.#box.midiEffects,
             box => this.#context.boxAdapters.adapterFor(box, Devices.isMidiEffect), Pointers.MidiEffectHost))
-        this.#audioEffects = this.#terminator.own(SortedBoxAdapterCollection.create(this.#box.audioEffects,
+        this.#audioEffects = this.#terminator.own(IndexedBoxAdapterCollection.create(this.#box.audioEffects,
             box => this.#context.boxAdapters.adapterFor(box, Devices.isAudioEffect), Pointers.AudioEffectHost))
-        this.#auxSends = this.#terminator.own(SortedBoxAdapterCollection.create(this.#box.auxSends,
+        this.#auxSends = this.#terminator.own(IndexedBoxAdapterCollection.create(this.#box.auxSends,
             box => this.#context.boxAdapters.adapterFor(box, AuxSendBoxAdapter), Pointers.AuxSend))
         this.#output = this.#terminator.own(new AudioUnitOutput(this.#box.output, this.#context.boxAdapters))
         this.namedParameter = this.#wrapParameters(box)
@@ -53,10 +53,10 @@ export class AudioUnitBoxAdapter implements DeviceHost, BoxAdapter {
     get type(): AudioUnitType {return this.#box.type.getValue() as AudioUnitType}
     get tracks(): AudioUnitTracks {return this.#tracks}
     get input(): AudioUnitInput {return this.#input}
-    get midiEffects(): SortedBoxAdapterCollection<MidiEffectDeviceAdapter, Pointers.MidiEffectHost> {return this.#midiEffects}
-    get audioEffects(): SortedBoxAdapterCollection<AudioEffectDeviceBoxAdapter, Pointers.AudioEffectHost> {return this.#audioEffects}
+    get midiEffects(): IndexedBoxAdapterCollection<MidiEffectDeviceAdapter, Pointers.MidiEffectHost> {return this.#midiEffects}
+    get audioEffects(): IndexedBoxAdapterCollection<AudioEffectDeviceBoxAdapter, Pointers.AudioEffectHost> {return this.#audioEffects}
     get inputAdapter(): Option<AudioUnitInputAdapter> {return this.#input.getValue()}
-    get auxSends(): SortedBoxAdapterCollection<AuxSendBoxAdapter, Pointers.AuxSend> {return this.#auxSends}
+    get auxSends(): IndexedBoxAdapterCollection<AuxSendBoxAdapter, Pointers.AuxSend> {return this.#auxSends}
     get output(): AudioUnitOutput {return this.#output}
     get isBus(): boolean {return this.input.getValue().mapOr(adapter => adapter.type === "bus", false)}
     get isInstrument(): boolean {return this.input.getValue().mapOr(adapter => adapter.type === "instrument", false)}

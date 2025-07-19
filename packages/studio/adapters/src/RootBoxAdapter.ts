@@ -3,7 +3,7 @@ import {Address} from "@opendaw/lib-box"
 import {UUID} from "@opendaw/lib-std"
 import {AudioBusBoxAdapter} from "./audio-unit/AudioBusBoxAdapter"
 import {Pointers} from "@opendaw/studio-enums"
-import {SortedBoxAdapterCollection} from "./SortedBoxAdapterCollection"
+import {IndexedBoxAdapterCollection} from "./IndexedBoxAdapterCollection"
 import {AudioUnitBoxAdapter} from "./audio-unit/AudioUnitBoxAdapter"
 import {AnyClipBoxAdapter} from "./UnionAdapterTypes"
 import {BoxAdapterCollection} from "./BoxAdapterCollection"
@@ -17,7 +17,7 @@ export class RootBoxAdapter implements BoxAdapter {
     readonly #context: BoxAdaptersContext
     readonly #box: RootBox
 
-    readonly #audioUnits: SortedBoxAdapterCollection<AudioUnitBoxAdapter, Pointers.AudioUnits>
+    readonly #audioUnits: IndexedBoxAdapterCollection<AudioUnitBoxAdapter, Pointers.AudioUnits>
     readonly #audioBusses: BoxAdapterCollection<AudioBusBoxAdapter>
     readonly #pianoMode: PianoModeAdapter
 
@@ -25,7 +25,7 @@ export class RootBoxAdapter implements BoxAdapter {
         this.#context = context
         this.#box = box
 
-        this.#audioUnits = SortedBoxAdapterCollection.create(this.#box.audioUnits,
+        this.#audioUnits = IndexedBoxAdapterCollection.create(this.#box.audioUnits,
             box => this.#context.boxAdapters.adapterFor(box, AudioUnitBoxAdapter), Pointers.AudioUnits)
 
         this.#audioBusses = new BoxAdapterCollection<AudioBusBoxAdapter>(this.#box.audioBusses.pointerHub, box =>
@@ -38,7 +38,7 @@ export class RootBoxAdapter implements BoxAdapter {
     get address(): Address {return this.#box.address}
     get box(): RootBox {return this.#box}
     get audioBusses(): BoxAdapterCollection<AudioBusBoxAdapter> {return this.#audioBusses}
-    get audioUnits(): SortedBoxAdapterCollection<AudioUnitBoxAdapter, Pointers.AudioUnits> {return this.#audioUnits}
+    get audioUnits(): IndexedBoxAdapterCollection<AudioUnitBoxAdapter, Pointers.AudioUnits> {return this.#audioUnits}
     get clips(): ReadonlyArray<AnyClipBoxAdapter> {
         return this.#audioUnits.adapters()
             .flatMap(adapter => adapter.tracks.collection.adapters())

@@ -3,7 +3,7 @@ import {Pointers} from "@opendaw/studio-enums"
 import {TrackBox} from "@opendaw/studio-boxes"
 import {Vertex} from "@opendaw/lib-box"
 import {AudioUnitBoxAdapter} from "./AudioUnitBoxAdapter"
-import {IndexedAdapterCollectionListener, SortedBoxAdapterCollection} from "../SortedBoxAdapterCollection"
+import {IndexedAdapterCollectionListener, IndexedBoxAdapterCollection} from "../IndexedBoxAdapterCollection"
 import {TrackBoxAdapter} from "../timeline/TrackBoxAdapter"
 import {BoxAdapters} from "../BoxAdapters"
 import {TrackType} from "../timeline/TrackType"
@@ -12,13 +12,13 @@ export class AudioUnitTracks implements Terminable {
     readonly #adapter: AudioUnitBoxAdapter
 
     readonly #regionNotifier: Notifier<void> = new Notifier<void>()
-    readonly #collection: SortedBoxAdapterCollection<TrackBoxAdapter, Pointers.TrackCollection>
+    readonly #collection: IndexedBoxAdapterCollection<TrackBoxAdapter, Pointers.TrackCollection>
     readonly #subscriptions: SortedSet<UUID.Format, { uuid: UUID.Format, subscription: Subscription }>
     readonly #subscription: Subscription
 
     constructor(adapter: AudioUnitBoxAdapter, boxAdapters: BoxAdapters) {
         this.#adapter = adapter
-        this.#collection = SortedBoxAdapterCollection.create(adapter.box.tracks,
+        this.#collection = IndexedBoxAdapterCollection.create(adapter.box.tracks,
             box => boxAdapters.adapterFor(box, TrackBoxAdapter), Pointers.TrackCollection)
         this.#subscriptions = UUID.newSet(({uuid}) => uuid)
         this.#subscription = this.#collection.catchupAndSubscribe({
@@ -57,7 +57,7 @@ export class AudioUnitTracks implements Terminable {
         adapter.box.delete()
     }
 
-    get collection(): SortedBoxAdapterCollection<TrackBoxAdapter, Pointers.TrackCollection> {return this.#collection}
+    get collection(): IndexedBoxAdapterCollection<TrackBoxAdapter, Pointers.TrackCollection> {return this.#collection}
 
     values(): ReadonlyArray<TrackBoxAdapter> {return this.#collection.adapters()}
 
