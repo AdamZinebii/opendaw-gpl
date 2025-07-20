@@ -30,7 +30,8 @@ import {ProjectEnv} from "./ProjectEnv"
 import {Mixer} from "./Mixer"
 import {ProjectApi} from "./ProjectApi"
 import {ProjectMigration} from "./ProjectMigration"
-import {serializeProject, Unit} from "@opendaw/lib-dawproject"
+import {DawProject} from "@opendaw/lib-dawproject"
+import Unit = DawProject.Unit
 
 // Main Entry Point for a Project
 //
@@ -164,10 +165,10 @@ export class Project implements BoxAdaptersContext, Terminable, TerminableOwner 
 
     terminate(): void {this.#terminator.terminate()}
 
-    toDawProject(): string {
+    toDawProject(): any {
         const trackBoxes = IndexedBox.collectIndexedBoxes(this.rootBox.audioUnits, AudioUnitBox)
             .flatMap(audioUnitBox => IndexedBox.collectIndexedBoxes(audioUnitBox.tracks, TrackBox))
-        return serializeProject({
+        return ({
             application: {
                 name: "openDAW",
                 version: "0.1"

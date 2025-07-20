@@ -21,10 +21,10 @@
     "lint": "eslint \"**/*.ts\"",
     "test": "vitest run"
   },
-  "dependencies": {},
   "devDependencies": {
     "@opendaw/eslint-config": "^0.0.14",
-    "@opendaw/typescript-config": "^0.0.14"
+    "@opendaw/typescript-config": "^0.0.14",
+    "jsdom": "^26.1.0"
   },
   "gitHead": "498716ab88a9a6bba7f8e1c034703cdc749ef8b0"
 }

@@ -1,25 +1,43 @@
 // noinspection JSUnusedGlobalSymbols
 
-export interface Project {
-    version: "1.0"
-    application: Application
+export class Project {
+    version: "1.0" = "1.0"
+    application!: Application
     transport?: Transport
-    structure: Lane[]
+    structure: Lane[] = []
     arrangement?: Arrangement
+
+    constructor(data: Partial<Project> = {}) {
+        Object.assign(this, data)
+    }
 }
 
-export interface Nameable {
+export class Nameable {
     name?: string
     color?: string
     comment?: string
+
+    constructor(data: Partial<Nameable> = {}) {
+        Object.assign(this, data)
+    }
 }
 
-export interface Referenceable extends Nameable {
+export class Referenceable extends Nameable {
     id?: string
+
+    constructor(data: Partial<Referenceable> = {}) {
+        super(data)
+        Object.assign(this, data)
+    }
 }
 
-export interface Parameter extends Referenceable {
+export class Parameter extends Referenceable {
     parameterID?: number
+
+    constructor(data: Partial<Parameter> = {}) {
+        super(data)
+        Object.assign(this, data)
+    }
 }
 
 export enum Unit {
@@ -34,72 +52,138 @@ export enum Unit {
     BPM = "bpm"
 }
 
-export interface RealParameter extends Parameter {
+export class RealParameter extends Parameter {
     value?: number
-    unit: Unit
+    unit!: Unit
     min?: number
     max?: number
+
+    constructor(data: Partial<RealParameter> = {}) {
+        super(data)
+        Object.assign(this, data)
+    }
 }
 
-export interface TimeSignatureParameter extends Parameter {
-    numerator: number
-    denominator: number
+export class TimeSignatureParameter extends Parameter {
+    numerator!: number
+    denominator!: number
+
+    constructor(data: Partial<TimeSignatureParameter> = {}) {
+        super(data)
+        Object.assign(this, data)
+    }
 }
 
-export interface Transport {
-    tempo?: RealParameter
+export class Transport {
+    tempo?: RealParameter // FIXME This will render to <RealParameter .../> and not <Tempo .../>.
     timeSignature?: TimeSignatureParameter
+
+    constructor(data: Partial<Transport> = {}) {
+        Object.assign(this, data)
+    }
 }
 
-export interface Application {
-    name: string
-    version: string
+export class Application {
+    name!: string
+    version!: string
+
+    constructor(data: Partial<Application> = {}) {
+        Object.assign(this, data)
+    }
 }
 
-export interface Lane extends Referenceable {}
+export class Lane extends Referenceable {
+    constructor(data: Partial<Lane> = {}) {
+        super(data)
+        Object.assign(this, data)
+    }
+}
 
-export interface Arrangement extends Referenceable {
+export class Arrangement extends Referenceable {
     timeSignatureAutomation?: Points
     tempoAutomation?: Points
     transportMarkers?: Markers
     lanes?: Lanes
+
+    constructor(data: Partial<Arrangement> = {}) {
+        super(data)
+        Object.assign(this, data)
+    }
 }
 
-export interface Points extends Timeline {
-    target: AutomationTarget
-    points: Point[]
-}
-
-export interface Markers extends Timeline {
-    markers: Marker[]
-}
-
-export interface Lanes extends Timeline {
-    lanes: Timeline[]
-}
-
-export interface Timeline extends Referenceable {
+export class Timeline extends Referenceable {
     track?: Track
     timeUnit?: TimeUnit
+
+    constructor(data: Partial<Timeline> = {}) {
+        super(data)
+        Object.assign(this, data)
+    }
 }
 
-export interface Point {
-    time: number
+export class Points extends Timeline {
+    target!: AutomationTarget
+    points: Point[] = []
+
+    constructor(data: Partial<Points> = {}) {
+        super(data)
+        Object.assign(this, data)
+    }
 }
 
-export interface AutomationTarget {
+export class Markers extends Timeline {
+    markers: Marker[] = []
+
+    constructor(data: Partial<Markers> = {}) {
+        super(data)
+        Object.assign(this, data)
+    }
+}
+
+export class Lanes extends Timeline {
+    lanes: Timeline[] = []
+
+    constructor(data: Partial<Lanes> = {}) {
+        super(data)
+        Object.assign(this, data)
+    }
+}
+
+export class Point {
+    time!: number
+
+    constructor(data: Partial<Point> = {}) {
+        Object.assign(this, data)
+    }
+}
+
+export class AutomationTarget {
     parameter?: Parameter
     expression?: ExpressionType
     channel?: number
     key?: number
     controller?: number
+
+    constructor(data: Partial<AutomationTarget> = {}) {
+        Object.assign(this, data)
+    }
 }
 
-export interface Marker extends Nameable {
-    time: number
+export class Marker extends Nameable {
+    time!: number
+
+    constructor(data: Partial<Marker> = {}) {
+        super(data)
+        Object.assign(this, data)
+    }
 }
 
-export interface Track extends Lane {}
+export class Track extends Lane {
+    constructor(data: Partial<Track> = {}) {
+        super(data)
+        Object.assign(this, data)
+    }
+}
 
 export enum ExpressionType {
     PAN = "pan",
@@ -113,8 +197,8 @@ export enum ExpressionType {
 
 export type TimeUnit = "beats" | "seconds"
 
-export interface Clip extends Nameable {
-    time: number
+export class Clip extends Nameable {
+    time!: number
     duration?: number
     playStart?: number
     playStop?: number
@@ -122,82 +206,159 @@ export interface Clip extends Nameable {
     loopStop?: number
     timeline?: Timeline
     ref?: Timeline
+
+    constructor(data: Partial<Clip> = {}) {
+        super(data)
+        Object.assign(this, data)
+    }
 }
 
-export interface Note {
-    time: number
-    duration: number
+export class Note {
+    time!: number
+    duration!: number
     channel?: number
-    key: number
-    velocity: number
+    key!: number
+    velocity!: number
     releaseVelocity?: number
     expression?: Timeline[]
+
+    constructor(data: Partial<Note> = {}) {
+        Object.assign(this, data)
+    }
 }
 
-export interface Clips extends Timeline {
-    clips: Clip[]
+export class Clips extends Timeline {
+    clips: Clip[] = []
+
+    constructor(data: Partial<Clips> = {}) {
+        super(data)
+        Object.assign(this, data)
+    }
 }
 
-export interface Notes extends Timeline {
-    notes: Note[]
+export class Notes extends Timeline {
+    notes: Note[] = []
+
+    constructor(data: Partial<Notes> = {}) {
+        super(data)
+        Object.assign(this, data)
+    }
 }
 
-export interface Audio extends MediaFile {
-    sampleRate: number
-    channels: number
+export class MediaFile extends Timeline {
+    file!: FileReference
+    duration!: number
+
+    constructor(data: Partial<MediaFile> = {}) {
+        super(data)
+        Object.assign(this, data)
+    }
+}
+
+export class Audio extends MediaFile {
+    sampleRate!: number
+    channels!: number
     algorithm?: string
+
+    constructor(data: Partial<Audio> = {}) {
+        super(data)
+        Object.assign(this, data)
+    }
 }
 
-export interface MediaFile extends Timeline {
-    file: FileReference
-    duration: number
+export class Warp {
+    time!: number
+    contentTime!: number
+
+    constructor(data: Partial<Warp> = {}) {
+        Object.assign(this, data)
+    }
 }
 
-export interface Warp {
-    time: number
-    contentTime: number
+export class Warps extends Timeline {
+    warps: Warp[] = []
+
+    constructor(data: Partial<Warps> = {}) {
+        super(data)
+        Object.assign(this, data)
+    }
 }
 
-export interface Warps extends Timeline {
-    warps: Warp[]
-}
-
-export interface FileReference {
-    path: string
+export class FileReference {
+    path!: string
     external?: boolean
+
+    constructor(data: Partial<FileReference> = {}) {
+        Object.assign(this, data)
+    }
 }
 
-export interface RealPoint extends Point {
-    value: number
+export class RealPoint extends Point {
+    value!: number
     interpolation?: Interpolation
+
+    constructor(data: Partial<RealPoint> = {}) {
+        super(data)
+        Object.assign(this, data)
+    }
 }
 
-export interface IntegerPoint extends Point {
-    value: number
+export class IntegerPoint extends Point {
+    value!: number
+
+    constructor(data: Partial<IntegerPoint> = {}) {
+        super(data)
+        Object.assign(this, data)
+    }
 }
 
-export interface EnumPoint extends Point {
-    value: string
+export class EnumPoint extends Point {
+    value!: string
+
+    constructor(data: Partial<EnumPoint> = {}) {
+        super(data)
+        Object.assign(this, data)
+    }
 }
 
-export interface BoolPoint extends Point {
-    value: boolean
+export class BoolPoint extends Point {
+    value!: boolean
+
+    constructor(data: Partial<BoolPoint> = {}) {
+        super(data)
+        Object.assign(this, data)
+    }
 }
 
-export interface TimeSignaturePoint extends Point {
-    numerator: number
-    denominator: number
+export class TimeSignaturePoint extends Point {
+    numerator!: number
+    denominator!: number
+
+    constructor(data: Partial<TimeSignaturePoint> = {}) {
+        super(data)
+        Object.assign(this, data)
+    }
 }
 
-export interface Video extends MediaFile {
-    width: number
-    height: number
-    frameRate: number
+export class Video extends MediaFile {
+    width!: number
+    height!: number
+    frameRate!: number
     codec?: string
+
+    constructor(data: Partial<Video> = {}) {
+        super(data)
+        Object.assign(this, data)
+    }
 }
 
-export interface ClipSlot extends Timeline {
+export class ClipSlot extends Timeline {
     clip?: Clip
+
+    constructor(data: Partial<ClipSlot> = {}) {
+        super(data)
+        Object.assign(this, data)
+    }
 }
 
 export enum Interpolation {

@@ -2,7 +2,10 @@
   "extends": "@opendaw/typescript-config/base.json",
   "compilerOptions": {
     "lib": [
-      "ESNext", "DOM"
+      "ESNext",
+      "DOM",
+      "DOM.Iterable",
+      "DOM.AsyncIterable"
     ],
     "outDir": "./dist",
     "rootDir": "./src"
