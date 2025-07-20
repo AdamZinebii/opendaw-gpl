@@ -30,8 +30,6 @@ import {ProjectEnv} from "./ProjectEnv"
 import {Mixer} from "./Mixer"
 import {ProjectApi} from "./ProjectApi"
 import {ProjectMigration} from "./ProjectMigration"
-import {DawProject} from "@opendaw/lib-dawproject"
-import Unit = DawProject.Unit
 
 // Main Entry Point for a Project
 //
@@ -176,7 +174,7 @@ export class Project implements BoxAdaptersContext, Terminable, TerminableOwner 
             transport: {
                 tempo: {
                     value: this.timelineBox.bpm.getValue(),
-                    unit: Unit.BPM
+                    unit: /*Unit.BPM*/ ""
                 },
                 timeSignature: {
                     numerator: this.timelineBox.signature.nominator.getValue(),
