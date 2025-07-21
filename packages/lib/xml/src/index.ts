@@ -24,7 +24,7 @@ export namespace Xml {
                 .set("class", {type: "class", name: tagName})
         }
 
-    export const serialize = (tagName: string, object: Record<string, any>): Element => {
+    export const toElement = (tagName: string, object: Record<string, any>): Element => {
         const doc = document.implementation.createDocument(null, null)
         const visit = (tagName: string, object: Record<string, any>): Element => {
             const element = doc.createElement(tagName)

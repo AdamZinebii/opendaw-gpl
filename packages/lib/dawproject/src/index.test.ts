@@ -15,6 +15,6 @@ describe("Serializer", () => {
                 new Lane({id: "1"})
             ]
         })
-        console.debug(Xml.pretty(Xml.serialize("Project", project)))
+        console.debug(Xml.pretty(Xml.toElement("Project", project)))
     })
 })
