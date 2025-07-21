@@ -1,26 +1,35 @@
 // noinspection JSUnusedGlobalSymbols
 
-import {isDefined, Nullish, WeakMaps} from "@opendaw/lib-std"
+import {isDefined, Nullish, panic, Predicate, WeakMaps} from "@opendaw/lib-std"
 
 //--- DECORATORS ---//
 
-type Meta = { type: "attr" | "element", name: string }
-const MetaMap = new WeakMap<Function, Map<string | symbol, Meta>>()
-const resolveMeta = (target: Function, propertyKey: string | symbol): Nullish<Meta> => MetaMap.get(target)?.get(propertyKey)
+type Meta =
+    |({ type: "element" | "class" }
+    | { type: "attribute", name: string, validator?: Predicate<any> }) & { name: string }
+type PropertyKey = string | symbol
+type MetaMap = Map<PropertyKey, Meta>
+const MetaClassMap = new WeakMap<Function, MetaMap>()
+const resolveMeta = (target: Function, propertyKey: PropertyKey): Nullish<Meta> =>
+    MetaClassMap.get(target)?.get(propertyKey)
 
-export const Attr = (name: string): PropertyDecorator => (target: Object, propertyKey: string | symbol): void => {
-    WeakMaps.createIfAbsent(MetaMap, target.constructor, () => new Map<string | symbol, Meta>()).set(propertyKey, {
-        type: "attr",
-        name
-    })
-}
+export const XmlAttribute = (name: string, validator?: Predicate<any>): PropertyDecorator =>
+    (target: Object, propertyKey: PropertyKey): void => {
+        WeakMaps.createIfAbsent(MetaClassMap, target.constructor, () => new Map<PropertyKey, Meta>())
+            .set(propertyKey, {type: "attribute", name, validator})
+    }
 
-export const Element = (name: string): PropertyDecorator => (target: Object, propertyKey: string | symbol): void => {
-    WeakMaps.createIfAbsent(MetaMap, target.constructor, () => new Map<string | symbol, Meta>()).set(propertyKey, {
-        type: "element",
-        name
-    })
-}
+export const XmlElement = (name: string): PropertyDecorator =>
+    (target: Object, propertyKey: PropertyKey): void => {
+        WeakMaps.createIfAbsent(MetaClassMap, target.constructor, () => new Map<PropertyKey, Meta>())
+            .set(propertyKey, {type: "element", name})
+    }
+
+export const XmlArrayElement = (name: string): ClassDecorator =>
+    (constructor: Function): void => {
+        WeakMaps.createIfAbsent(MetaClassMap, constructor, () => new Map<PropertyKey, Meta>())
+            .set("class", {type: "class", name})
+    }
 
 //--- ENUMS ---//
 
@@ -39,21 +48,26 @@ export enum Unit {
 //--- CLASSES ---//
 
 export class Project {
-    @Attr("version")
+    @XmlAttribute("version", version => version === "1.0")
     readonly version: "1.0" = "1.0"
 
-    @Element("Application")
+    @XmlElement("Application")
     readonly application: Application
 
-    @Element("Transport")
+    @XmlElement("Transport")
     readonly transport?: Transport
 
-    constructor({application, transport}: {
+    @XmlElement("Structure")
+    readonly structure: ReadonlyArray<Lane>
+
+    constructor({application, transport, structure}: {
         application: Application
         transport?: Transport
+        structure: ReadonlyArray<Lane>
     }) {
         this.application = application
         this.transport = transport
+        this.structure = structure
     }
 
     toXML(): Element {
@@ -64,14 +78,22 @@ export class Project {
                 if (!isDefined(value)) {return}
                 const meta = resolveMeta(object.constructor, key)
                 if (!isDefined(meta)) {return}
-                switch (meta.type) {
-                    case "attr": {
-                        element.setAttribute(meta.name, value)
-                        return
+                if (meta.type === "attribute") {
+                    if (meta.validator?.call(null, value) === false) {
+                        return panic(`Attribute validator failed for ${key} = ${value}`)
                     }
-                    case "element": {
+                    element.setAttribute(meta.name, value)
+                } else if (meta.type === "element") {
+                    if (Array.isArray(value)) {
+                        const elements = doc.createElement(meta.name)
+                        elements.append(...value.map(item => {
+                            const tag = resolveMeta(item.constructor, "class")?.name
+                                ?? item.constructor.name
+                            return visit(tag, item)
+                        }))
+                        element.appendChild(elements)
+                    } else {
                         element.appendChild(visit(meta.name, value))
-                        return
                     }
                 }
             })
@@ -82,10 +104,10 @@ export class Project {
 }
 
 export class Application {
-    @Attr("name")
+    @XmlAttribute("name")
     readonly name: string
 
-    @Attr("version")
+    @XmlAttribute("version")
     readonly version: string
 
     constructor(name: string, version: string) {
@@ -95,10 +117,10 @@ export class Application {
 }
 
 export class Transport {
-    @Element("Tempo")
+    @XmlElement("Tempo")
     readonly tempo?: RealParameter
 
-    @Element("TimeSignature")
+    @XmlElement("TimeSignature")
     readonly timeSignature?: TimeSignatureParameter
 
     constructor({tempo, timeSignature}: { tempo?: RealParameter, timeSignature?: TimeSignatureParameter }) {
@@ -108,16 +130,16 @@ export class Transport {
 }
 
 export class RealParameter {
-    @Attr("value")
+    @XmlAttribute("value")
     readonly value?: number
 
-    @Attr("unit")
+    @XmlAttribute("unit")
     readonly unit!: Unit
 
-    @Attr("min")
+    @XmlAttribute("min")
     readonly min?: number
 
-    @Attr("max")
+    @XmlAttribute("max")
     readonly max?: number
 
     constructor({unit, value, min, max}: { unit: Unit, value?: number, min?: number, max?: number }) {
@@ -129,14 +151,24 @@ export class RealParameter {
 }
 
 export class TimeSignatureParameter {
-    @Attr("nominator")
+    @XmlAttribute("nominator")
     readonly nominator?: number
 
-    @Attr("denominator")
+    @XmlAttribute("denominator")
     readonly denominator?: number
 
     constructor({nominator, denominator}: { nominator?: number, denominator?: number }) {
         this.nominator = nominator
         this.denominator = denominator
+    }
+}
+
+@XmlArrayElement("Lane")
+export class Lane {
+    @XmlAttribute("id")
+    readonly id?: string
+
+    constructor({id}: { id: string }) {
+        this.id = id
     }
 }
