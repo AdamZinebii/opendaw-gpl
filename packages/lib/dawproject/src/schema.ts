@@ -1,44 +1,28 @@
 // noinspection JSUnusedGlobalSymbols
 
-export class Project {
-    version: "1.0" = "1.0"
-    application!: Application
-    transport?: Transport
-    structure: Lane[] = []
-    arrangement?: Arrangement
+import {isDefined, Nullish, WeakMaps} from "@opendaw/lib-std"
 
-    constructor(data: Partial<Project> = {}) {
-        Object.assign(this, data)
-    }
+//--- DECORATORS ---//
+
+type Meta = { type: "attr" | "element", name: string }
+const MetaMap = new WeakMap<Function, Map<string | symbol, Meta>>()
+const resolveMeta = (target: Function, propertyKey: string | symbol): Nullish<Meta> => MetaMap.get(target)?.get(propertyKey)
+
+export const Attr = (name: string): PropertyDecorator => (target: Object, propertyKey: string | symbol): void => {
+    WeakMaps.createIfAbsent(MetaMap, target.constructor, () => new Map<string | symbol, Meta>()).set(propertyKey, {
+        type: "attr",
+        name
+    })
 }
 
-export class Nameable {
-    name?: string
-    color?: string
-    comment?: string
-
-    constructor(data: Partial<Nameable> = {}) {
-        Object.assign(this, data)
-    }
+export const Element = (name: string): PropertyDecorator => (target: Object, propertyKey: string | symbol): void => {
+    WeakMaps.createIfAbsent(MetaMap, target.constructor, () => new Map<string | symbol, Meta>()).set(propertyKey, {
+        type: "element",
+        name
+    })
 }
 
-export class Referenceable extends Nameable {
-    id?: string
-
-    constructor(data: Partial<Referenceable> = {}) {
-        super(data)
-        Object.assign(this, data)
-    }
-}
-
-export class Parameter extends Referenceable {
-    parameterID?: number
-
-    constructor(data: Partial<Parameter> = {}) {
-        super(data)
-        Object.assign(this, data)
-    }
-}
+//--- ENUMS ---//
 
 export enum Unit {
     LINEAR = "linear",
@@ -52,316 +36,107 @@ export enum Unit {
     BPM = "bpm"
 }
 
-export class RealParameter extends Parameter {
-    value?: number
-    unit!: Unit
-    min?: number
-    max?: number
+//--- CLASSES ---//
 
-    constructor(data: Partial<RealParameter> = {}) {
-        super(data)
-        Object.assign(this, data)
+export class Project {
+    @Attr("version")
+    readonly version: "1.0" = "1.0"
+
+    @Element("Application")
+    readonly application: Application
+
+    @Element("Transport")
+    readonly transport?: Transport
+
+    constructor({application, transport}: {
+        application: Application
+        transport?: Transport
+    }) {
+        this.application = application
+        this.transport = transport
     }
-}
 
-export class TimeSignatureParameter extends Parameter {
-    numerator!: number
-    denominator!: number
-
-    constructor(data: Partial<TimeSignatureParameter> = {}) {
-        super(data)
-        Object.assign(this, data)
-    }
-}
-
-export class Transport {
-    tempo?: RealParameter // FIXME This will render to <RealParameter .../> and not <Tempo .../>.
-    timeSignature?: TimeSignatureParameter
-
-    constructor(data: Partial<Transport> = {}) {
-        Object.assign(this, data)
+    toXML(): Element {
+        const doc = document.implementation.createDocument(null, null)
+        const visit = (tag: string, object: Record<string, any>): Element => {
+            const element = doc.createElement(tag)
+            Object.entries(object).forEach(([key, value]) => {
+                if (!isDefined(value)) {return}
+                const meta = resolveMeta(object.constructor, key)
+                if (!isDefined(meta)) {return}
+                switch (meta.type) {
+                    case "attr": {
+                        element.setAttribute(meta.name, value)
+                        return
+                    }
+                    case "element": {
+                        element.appendChild(visit(meta.name, value))
+                        return
+                    }
+                }
+            })
+            return element
+        }
+        return visit("Project", this)
     }
 }
 
 export class Application {
-    name!: string
-    version!: string
+    @Attr("name")
+    readonly name: string
 
-    constructor(data: Partial<Application> = {}) {
-        Object.assign(this, data)
+    @Attr("version")
+    readonly version: string
+
+    constructor(name: string, version: string) {
+        this.name = name
+        this.version = version
     }
 }
 
-export class Lane extends Referenceable {
-    constructor(data: Partial<Lane> = {}) {
-        super(data)
-        Object.assign(this, data)
+export class Transport {
+    @Element("Tempo")
+    readonly tempo?: RealParameter
+
+    @Element("TimeSignature")
+    readonly timeSignature?: TimeSignatureParameter
+
+    constructor({tempo, timeSignature}: { tempo?: RealParameter, timeSignature?: TimeSignatureParameter }) {
+        this.tempo = tempo
+        this.timeSignature = timeSignature
     }
 }
 
-export class Arrangement extends Referenceable {
-    timeSignatureAutomation?: Points
-    tempoAutomation?: Points
-    transportMarkers?: Markers
-    lanes?: Lanes
+export class RealParameter {
+    @Attr("value")
+    readonly value?: number
 
-    constructor(data: Partial<Arrangement> = {}) {
-        super(data)
-        Object.assign(this, data)
+    @Attr("unit")
+    readonly unit!: Unit
+
+    @Attr("min")
+    readonly min?: number
+
+    @Attr("max")
+    readonly max?: number
+
+    constructor({unit, value, min, max}: { unit: Unit, value?: number, min?: number, max?: number }) {
+        this.value = value
+        this.unit = unit
+        this.min = min
+        this.max = max
     }
 }
 
-export class Timeline extends Referenceable {
-    track?: Track
-    timeUnit?: TimeUnit
+export class TimeSignatureParameter {
+    @Attr("nominator")
+    readonly nominator?: number
 
-    constructor(data: Partial<Timeline> = {}) {
-        super(data)
-        Object.assign(this, data)
+    @Attr("denominator")
+    readonly denominator?: number
+
+    constructor({nominator, denominator}: { nominator?: number, denominator?: number }) {
+        this.nominator = nominator
+        this.denominator = denominator
     }
-}
-
-export class Points extends Timeline {
-    target!: AutomationTarget
-    points: Point[] = []
-
-    constructor(data: Partial<Points> = {}) {
-        super(data)
-        Object.assign(this, data)
-    }
-}
-
-export class Markers extends Timeline {
-    markers: Marker[] = []
-
-    constructor(data: Partial<Markers> = {}) {
-        super(data)
-        Object.assign(this, data)
-    }
-}
-
-export class Lanes extends Timeline {
-    lanes: Timeline[] = []
-
-    constructor(data: Partial<Lanes> = {}) {
-        super(data)
-        Object.assign(this, data)
-    }
-}
-
-export class Point {
-    time!: number
-
-    constructor(data: Partial<Point> = {}) {
-        Object.assign(this, data)
-    }
-}
-
-export class AutomationTarget {
-    parameter?: Parameter
-    expression?: ExpressionType
-    channel?: number
-    key?: number
-    controller?: number
-
-    constructor(data: Partial<AutomationTarget> = {}) {
-        Object.assign(this, data)
-    }
-}
-
-export class Marker extends Nameable {
-    time!: number
-
-    constructor(data: Partial<Marker> = {}) {
-        super(data)
-        Object.assign(this, data)
-    }
-}
-
-export class Track extends Lane {
-    constructor(data: Partial<Track> = {}) {
-        super(data)
-        Object.assign(this, data)
-    }
-}
-
-export enum ExpressionType {
-    PAN = "pan",
-    GAIN = "gain",
-    PITCH = "pitch",
-    TIMBRE = "timbre",
-    PRESSURE = "pressure",
-    POLY_PRESSURE = "polyPressure",
-    CC = "cc"
-}
-
-export type TimeUnit = "beats" | "seconds"
-
-export class Clip extends Nameable {
-    time!: number
-    duration?: number
-    playStart?: number
-    playStop?: number
-    loopStart?: number
-    loopStop?: number
-    timeline?: Timeline
-    ref?: Timeline
-
-    constructor(data: Partial<Clip> = {}) {
-        super(data)
-        Object.assign(this, data)
-    }
-}
-
-export class Note {
-    time!: number
-    duration!: number
-    channel?: number
-    key!: number
-    velocity!: number
-    releaseVelocity?: number
-    expression?: Timeline[]
-
-    constructor(data: Partial<Note> = {}) {
-        Object.assign(this, data)
-    }
-}
-
-export class Clips extends Timeline {
-    clips: Clip[] = []
-
-    constructor(data: Partial<Clips> = {}) {
-        super(data)
-        Object.assign(this, data)
-    }
-}
-
-export class Notes extends Timeline {
-    notes: Note[] = []
-
-    constructor(data: Partial<Notes> = {}) {
-        super(data)
-        Object.assign(this, data)
-    }
-}
-
-export class MediaFile extends Timeline {
-    file!: FileReference
-    duration!: number
-
-    constructor(data: Partial<MediaFile> = {}) {
-        super(data)
-        Object.assign(this, data)
-    }
-}
-
-export class Audio extends MediaFile {
-    sampleRate!: number
-    channels!: number
-    algorithm?: string
-
-    constructor(data: Partial<Audio> = {}) {
-        super(data)
-        Object.assign(this, data)
-    }
-}
-
-export class Warp {
-    time!: number
-    contentTime!: number
-
-    constructor(data: Partial<Warp> = {}) {
-        Object.assign(this, data)
-    }
-}
-
-export class Warps extends Timeline {
-    warps: Warp[] = []
-
-    constructor(data: Partial<Warps> = {}) {
-        super(data)
-        Object.assign(this, data)
-    }
-}
-
-export class FileReference {
-    path!: string
-    external?: boolean
-
-    constructor(data: Partial<FileReference> = {}) {
-        Object.assign(this, data)
-    }
-}
-
-export class RealPoint extends Point {
-    value!: number
-    interpolation?: Interpolation
-
-    constructor(data: Partial<RealPoint> = {}) {
-        super(data)
-        Object.assign(this, data)
-    }
-}
-
-export class IntegerPoint extends Point {
-    value!: number
-
-    constructor(data: Partial<IntegerPoint> = {}) {
-        super(data)
-        Object.assign(this, data)
-    }
-}
-
-export class EnumPoint extends Point {
-    value!: string
-
-    constructor(data: Partial<EnumPoint> = {}) {
-        super(data)
-        Object.assign(this, data)
-    }
-}
-
-export class BoolPoint extends Point {
-    value!: boolean
-
-    constructor(data: Partial<BoolPoint> = {}) {
-        super(data)
-        Object.assign(this, data)
-    }
-}
-
-export class TimeSignaturePoint extends Point {
-    numerator!: number
-    denominator!: number
-
-    constructor(data: Partial<TimeSignaturePoint> = {}) {
-        super(data)
-        Object.assign(this, data)
-    }
-}
-
-export class Video extends MediaFile {
-    width!: number
-    height!: number
-    frameRate!: number
-    codec?: string
-
-    constructor(data: Partial<Video> = {}) {
-        super(data)
-        Object.assign(this, data)
-    }
-}
-
-export class ClipSlot extends Timeline {
-    clip?: Clip
-
-    constructor(data: Partial<ClipSlot> = {}) {
-        super(data)
-        Object.assign(this, data)
-    }
-}
-
-export enum Interpolation {
-    HOLD = "hold",
-    LINEAR = "linear"
 }

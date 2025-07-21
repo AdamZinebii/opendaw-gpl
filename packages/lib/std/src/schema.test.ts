@@ -51,7 +51,7 @@ describe("Schema IO implementation", () => {
             samples: new Float32Array(3)
         })
 
-        // object should be non-extensible because of Object.seal
+        // an object should be non-extensible because of Object.seal
         expect(() => { (io.object as any).newProp = 123 }).toThrow()
     })
 
