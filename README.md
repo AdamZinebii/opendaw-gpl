@@ -1,8 +1,23 @@
-# openDAW
+<p align="center">
+  <img src="https://raw.githubusercontent.com/andremichelle/openDAW/refs/heads/main/packages/app/studio/public/favicon.svg" height="120"/>
+  <h1 align="center">openDAW</h1>
+</p>
+
+<p align="center">
+<a href="https://www.gnu.org/licenses/gpl-3.0.html" rel="nofollow"><img src="https://img.shields.io/badge/license-GPLv3-blue.svg" alt="License: GPLv3"></a>
+<a href="https://discord.gg/ZRm8du7vn4" rel="nofollow"><img src="https://img.shields.io/discord/1241019312328675399?label=Discord&logo=discord&logoColor=white" alt="discord server"></a>
+<a href="https://github.com/andremichelle/opendaw" rel="nofollow"><img src="https://img.shields.io/github/stars/andremichelle/opendaw" alt="stars"></a>
+</p>
 
 **openDAW** is a next-generation web-based Digital Audio Workstation (DAW) designed to **democratize** music production
 and to **resurface the process of making music** by making **high-quality** creation tools accessible to everyone, with
-a strong focus on **education** and hands-on **learning**. Please consider supporting this project on [Patreon](https://www.patreon.com/join/openDAW) or [ko-fi](https://ko-fi.com/opendaw).
+a strong focus on **education** and data-privacy. Please consider supporting this project on [Patreon](https://www.patreon.com/join/openDAW) or [ko-fi](https://ko-fi.com/opendaw).
+
+<p align="center">
+<img src="https://raw.githubusercontent.com/andremichelle/openDAW/refs/heads/main/assets/studio-teaser.png"/>
+</p>
+
+---
 
 ## Open-Source
 
@@ -23,9 +38,7 @@ The source code for openDAW is available under GPL3 (links below).
 - **No Paywalls**
 - **No Data Mining**
 
-**Just a free, open-source DAW in your browser.**
-
-![studio-teaser.png](assets/studio-teaser.png)
+---
 
 ## Huge Shoutout To The Incredible openDAW Community!
 
