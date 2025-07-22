@@ -36,20 +36,32 @@ export namespace Xml {
             const element = doc.createElement(tagName)
             Object.entries(object).forEach(([key, value]) => {
                 if (!isDefined(value)) {return}
+                if (key === "children" && Array.isArray(value)) {
+                    element.append(...value.map(item => {
+                        const name = resolveMeta(item.constructor, "class")?.name
+                        if (!isDefined(name)) {
+                            return panic("Classes inside an array must have a @Xml.RootElement decorator")
+                        }
+                        return visit(name, item)
+                    }))
+                    return
+                }
                 const meta = resolveMeta(object.constructor, key)
                 if (!isDefined(meta)) {return}
                 if (meta.type === "attribute") {
+                    assert(typeof value === "number" || typeof value === "string" || typeof value === "boolean",
+                        `Attribute value must be a primitive for ${key} = ${value}`)
                     if (meta.validator?.call(null, value) === false) {
                         return panic(`Attribute validator failed for ${key} = ${value}`)
                     }
-                    element.setAttribute(meta.name, value)
+                    element.setAttribute(meta.name, String(value))
                 } else if (meta.type === "element") {
                     if (Array.isArray(value)) {
                         const elements = doc.createElement(meta.name)
                         elements.append(...value.map(item => {
                             const name = resolveMeta(item.constructor, "class")?.name
                             if (!isDefined(name)) {
-                                return panic("Classes inside an array must have a @XmlArrayElement decorator")
+                                return panic("Classes inside an array must have a @Xml.RootElement decorator")
                             }
                             return visit(name, item)
                         }))
@@ -90,6 +102,12 @@ export namespace Xml {
         }).join("\n")
     }
 
-    const resolveMeta = (target: Function, propertyKey: PropertyKey): Nullish<Meta> =>
-        MetaClassMap.get(target)?.get(propertyKey)
+    const resolveMeta = (target: Function, propertyKey: PropertyKey): Nullish<Meta> => {
+        while (isDefined(target)) {
+            const meta = MetaClassMap.get(target)?.get(propertyKey)
+            if (isDefined(meta)) {return meta}
+            target = Object.getPrototypeOf(target)
+        }
+        return undefined
+    }
 }
