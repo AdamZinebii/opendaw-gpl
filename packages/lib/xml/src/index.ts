@@ -177,7 +177,11 @@ export namespace Xml {
                             })
                         }
                     } else if (clazz === String) {
-                        // TODO
+                        const textContent = element.querySelector(`:scope > ${name}`)?.textContent
+                        Object.defineProperty(instance, key, {
+                            value: textContent,
+                            enumerable: true
+                        })
                     } else {
                         const child = element.querySelector(`:scope > ${name}`)
                         if (isDefined(child)) {

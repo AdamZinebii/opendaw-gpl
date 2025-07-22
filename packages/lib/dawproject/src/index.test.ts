@@ -17,11 +17,16 @@ import {asInstanceOf} from "@opendaw/lib-std"
 
 describe("Serializer", () => {
     it("MetaData", () => {
-        console.debug(Xml.pretty(Xml.toElement("MetaData", Xml.element({
-            title: "This is the title.",
-            artist: "André Michelle",
-            website: "https://opendaw.studio"
-        }, MetaDataSchema))))
+        const title = "This is the title."
+        const artist = "André Michelle"
+        const website = "https://opendaw.studio"
+        const xmlString = Xml.pretty(Xml.toElement("MetaData", Xml.element({title, artist, website}, MetaDataSchema)))
+        console.debug(xmlString)
+        const metaDataSchema = Xml.parse(xmlString, MetaDataSchema)
+        expect(metaDataSchema.title).toBe(title)
+        expect(metaDataSchema.artist).toBe(artist)
+        expect(metaDataSchema.website).toBe(website)
+        expect(metaDataSchema.comment).toBe(undefined)
     })
     it("random tests", () => {
         const project = Xml.element({
