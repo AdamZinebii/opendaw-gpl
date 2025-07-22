@@ -21,43 +21,37 @@ export enum Unit {
     BPM = "bpm"
 }
 
-export class Project {
+export class ProjectSchema {
     @Xml.Attribute("version", version => version === "1.0")
     readonly version: "1.0" = "1.0"
 
     @Xml.Element("Application")
-    readonly application!: Application
+    readonly application!: ApplicationSchema
 
     @Xml.Element("Transport")
-    readonly transport?: Transport
+    readonly transport?: TransportSchema
 
     @Xml.Element("Structure")
-    readonly structure!: ReadonlyArray<Lane>
-
-    constructor(project: Partial<Project>) {Object.assign(this, project)}
+    readonly structure!: ReadonlyArray<LaneSchema>
 }
 
-export class Application {
+export class ApplicationSchema {
     @Xml.Attribute("name")
     readonly name!: string
 
     @Xml.Attribute("version")
     readonly version!: string
-
-    constructor(application: Application) {Object.assign(this, application)}
 }
 
-export class Transport {
+export class TransportSchema {
     @Xml.Element("Tempo")
-    readonly tempo?: RealParameter
+    readonly tempo?: RealParameterSchema
 
     @Xml.Element("TimeSignature")
-    readonly timeSignature?: TimeSignatureParameter
-
-    constructor(transport: Partial<Transport>) {Object.assign(this, transport)}
+    readonly timeSignature?: TimeSignatureParameterSchema
 }
 
-export class RealParameter {
+export class RealParameterSchema {
     @Xml.Attribute("value")
     readonly value?: number
 
@@ -69,43 +63,39 @@ export class RealParameter {
 
     @Xml.Attribute("max")
     readonly max?: number
-
-    constructor(realParameter: Partial<RealParameter>) {Object.assign(this, realParameter)}
 }
 
-export class TimeSignatureParameter {
+export class TimeSignatureParameterSchema {
     @Xml.Attribute("nominator")
     readonly nominator?: number
 
     @Xml.Attribute("denominator")
     readonly denominator?: number
-
-    constructor(timeSignatureParameter: Partial<TimeSignatureParameter>) {Object.assign(this, timeSignatureParameter)}
 }
 
-@Xml.ArrayElement("Lane")
-export class Lane {
+@Xml.RootElement("Lane")
+export class LaneSchema {
     @Xml.Attribute("id")
     readonly id?: string
-
-    constructor(lane: Partial<Lane>) {Object.assign(this, lane)}
 }
 ```
 
 ### Example
 
 ```typescript
-const project = new Project({
-    application: new Application({name: "openDAW", version: "0.1"}),
-    transport: new Transport({
-        tempo: new RealParameter({unit: Unit.BPM, value: 120}),
-        timeSignature: new TimeSignatureParameter({nominator: 4, denominator: 4})
-    }),
+const project = Xml.element({
+    application: Xml.element({name: "openDAW", version: "0.1"}, ApplicationSchema),
+    transport: Xml.element({
+        tempo: Xml.element({unit: Unit.BPM, value: 120}, RealParameterSchema),
+        timeSignature: Xml.element({nominator: 4, denominator: 4}, TimeSignatureParameterSchema)
+    }, TransportSchema),
     structure: [
-        new Lane({id: "0"}),
-        new Lane({id: "1"})
+        // Element classes in an array must have @Xml.RootElement decorator with an element tag-name 
+        Xml.element({id: "0"}, LaneSchema),
+        Xml.element({id: "1"}, LaneSchema)
     ]
-})
+}, ProjectSchema)
+
 console.debug(Xml.pretty(Xml.toElement("Project", project)))
 ```
 

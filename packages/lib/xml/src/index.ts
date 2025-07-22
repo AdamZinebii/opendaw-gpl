@@ -1,4 +1,4 @@
-import {int, isDefined, Nullish, panic, Predicate, WeakMaps} from "@opendaw/lib-std"
+import {assert, Class, int, isDefined, Nullish, panic, Predicate, WeakMaps} from "@opendaw/lib-std"
 
 type Meta =
     |({ type: "element" | "class" }
@@ -18,11 +18,17 @@ export namespace Xml {
             WeakMaps.createIfAbsent(MetaClassMap, target.constructor, () => new Map<PropertyKey, Meta>())
                 .set(propertyKey, {type: "element", name: tagName})
 
-    export const ArrayElement = (tagName: string): ClassDecorator =>
+    export const RootElement = (tagName: string): ClassDecorator =>
         (constructor: Function): void => {
             WeakMaps.createIfAbsent(MetaClassMap, constructor, () => new Map<PropertyKey, Meta>())
                 .set("class", {type: "class", name: tagName})
         }
+
+    export const element = <T extends {}>(object: Partial<T>, clazz: Class<T>): T => {
+        assert(clazz.length === 0, "constructor cannot have arguments")
+        return Object.freeze(Object.create(clazz.prototype, Object.fromEntries(
+            Object.entries(object).map(([key, value]) => [key, {value, enumerable: true}]))))
+    }
 
     export const toElement = (tagName: string, object: Record<string, any>): Element => {
         const doc = document.implementation.createDocument(null, null)

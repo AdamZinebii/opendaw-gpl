@@ -18,43 +18,37 @@ export enum Unit {
 
 //--- CLASSES ---//
 
-export class Project {
+export class ProjectSchema {
     @Xml.Attribute("version", version => version === "1.0")
     readonly version: "1.0" = "1.0"
 
     @Xml.Element("Application")
-    readonly application!: Application
+    readonly application!: ApplicationSchema
 
     @Xml.Element("Transport")
-    readonly transport?: Transport
+    readonly transport?: TransportSchema
 
     @Xml.Element("Structure")
-    readonly structure!: ReadonlyArray<Lane>
-
-    constructor(project: Partial<Project>) {Object.assign(this, project)}
+    readonly structure!: ReadonlyArray<LaneSchema>
 }
 
-export class Application {
+export class ApplicationSchema {
     @Xml.Attribute("name")
     readonly name!: string
 
     @Xml.Attribute("version")
     readonly version!: string
-
-    constructor(application: Application) {Object.assign(this, application)}
 }
 
-export class Transport {
+export class TransportSchema {
     @Xml.Element("Tempo")
-    readonly tempo?: RealParameter
+    readonly tempo?: RealParameterSchema
 
     @Xml.Element("TimeSignature")
-    readonly timeSignature?: TimeSignatureParameter
-
-    constructor(transport: Partial<Transport>) {Object.assign(this, transport)}
+    readonly timeSignature?: TimeSignatureParameterSchema
 }
 
-export class RealParameter {
+export class RealParameterSchema {
     @Xml.Attribute("value")
     readonly value?: number
 
@@ -66,24 +60,18 @@ export class RealParameter {
 
     @Xml.Attribute("max")
     readonly max?: number
-
-    constructor(realParameter: Partial<RealParameter>) {Object.assign(this, realParameter)}
 }
 
-export class TimeSignatureParameter {
+export class TimeSignatureParameterSchema {
     @Xml.Attribute("nominator")
     readonly nominator?: number
 
     @Xml.Attribute("denominator")
     readonly denominator?: number
-
-    constructor(timeSignatureParameter: Partial<TimeSignatureParameter>) {Object.assign(this, timeSignatureParameter)}
 }
 
-@Xml.ArrayElement("Lane")
-export class Lane {
+@Xml.RootElement("Lane")
+export class LaneSchema {
     @Xml.Attribute("id")
     readonly id?: string
-
-    constructor(lane: Partial<Lane>) {Object.assign(this, lane)}
 }
