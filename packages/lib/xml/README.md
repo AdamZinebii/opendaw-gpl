@@ -21,7 +21,7 @@ export enum Unit {
     BPM = "bpm"
 }
 
-@Xml.Class("Application", ApplicationSchema)
+@Xml.Class("Application")
 export class ApplicationSchema {
     @Xml.Attribute("name", Xml.StringRequired)
     readonly name!: string
@@ -30,7 +30,7 @@ export class ApplicationSchema {
     readonly version!: string
 }
 
-@Xml.Class("RealParameter", RealParameterSchema)
+@Xml.Class("RealParameter")
 export class RealParameterSchema {
     @Xml.Attribute("value", Xml.NumberOptional)
     readonly value?: number
@@ -45,7 +45,7 @@ export class RealParameterSchema {
     readonly max?: number
 }
 
-@Xml.Class("TimeSignature", TimeSignatureParameterSchema)
+@Xml.Class("TimeSignature")
 export class TimeSignatureParameterSchema {
     @Xml.Attribute("nominator", Xml.NumberOptional)
     readonly nominator?: number
@@ -54,7 +54,7 @@ export class TimeSignatureParameterSchema {
     readonly denominator?: number
 }
 
-@Xml.Class("Transport", TransportSchema)
+@Xml.Class("Transport")
 export class TransportSchema {
     @Xml.Element("Tempo", RealParameterSchema)
     readonly tempo?: RealParameterSchema
@@ -63,7 +63,7 @@ export class TransportSchema {
     readonly timeSignature?: TimeSignatureParameterSchema
 }
 
-@Xml.Class("Project", ProjectSchema)
+@Xml.Class("Project")
 export class ProjectSchema {
     @Xml.Attribute("version", Xml.StringRequired)
     readonly version!: "1.0"

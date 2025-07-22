@@ -10,6 +10,8 @@ export namespace Xml {
     const ClassMap = new Map<string, Class>()
     const MetaClassMap = new WeakMap<Function, MetaMap>()
 
+    export const Declaration = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
+
     export interface AttributeValidator<T> {
         required: boolean
         parse(value: string): T
@@ -39,12 +41,12 @@ export namespace Xml {
             WeakMaps.createIfAbsent(MetaClassMap, target.constructor, () => new Map<PropertyKey, Meta>())
                 .set(propertyKey, {type: "element", name, clazz})
 
-    export const Class = (tagName: string, clazz: Class): ClassDecorator => {
+    export const Class = (tagName: string): ClassDecorator => {
         return (constructor: Function): void => {
             assert(!ClassMap.has(tagName), `${tagName} is already registered as a class.`)
-            ClassMap.set(tagName, clazz)
+            ClassMap.set(tagName, constructor)
             WeakMaps.createIfAbsent(MetaClassMap, constructor, () => new Map<PropertyKey, Meta>())
-                .set("class", {type: "class", name: tagName, clazz})
+                .set("class", {type: "class", name: tagName, clazz: constructor})
         }
     }
 
