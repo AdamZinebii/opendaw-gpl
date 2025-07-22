@@ -1,16 +1,35 @@
-import {asDefined, assert, Class, int, isDefined, Nullish, panic, Predicate, WeakMaps} from "@opendaw/lib-std"
-
-type Meta =
-    | { type: "class", name: string, clazz: Class }
-    | { type: "element", name: string, clazz: Class }
-    | { type: "attribute", name: string, validator?: Predicate<unknown> }
-type MetaMap = Map<PropertyKey, Meta>
-
-const ClassMap = new Map<string, Class>()
-const MetaClassMap = new WeakMap<Function, MetaMap>()
+import {asDefined, assert, Class, int, isDefined, Nullish, panic, WeakMaps} from "@opendaw/lib-std"
 
 export namespace Xml {
-    export const Attribute = (name: string, validator?: Predicate<unknown>): PropertyDecorator =>
+    type Meta =
+        | { type: "class", name: string, clazz: Class }
+        | { type: "element", name: string, clazz: Class }
+        | { type: "attribute", name: string, validator?: AttributeValidator<unknown> }
+    type MetaMap = Map<PropertyKey, Meta>
+
+    const ClassMap = new Map<string, Class>()
+    const MetaClassMap = new WeakMap<Function, MetaMap>()
+
+    export interface AttributeValidator<T> {
+        required: boolean
+        parse(value: string): T
+    }
+
+    export const StringRequired: AttributeValidator<string> = {required: true, parse: value => value}
+    export const StringOptional: AttributeValidator<string> = {required: false, parse: value => value}
+
+    export const BoolRequired: AttributeValidator<boolean> = {required: true, parse: value => Boolean(value)}
+    export const BoolOptional: AttributeValidator<boolean> = {required: false, parse: value => Boolean(value)}
+
+    export const NumberRequired: AttributeValidator<number> = {
+        required: true, parse: value => {
+            const number = Number(value)
+            return isNaN(number) ? panic("NumberRequired") : number
+        }
+    }
+    export const NumberOptional: AttributeValidator<number> = {required: false, parse: value => Number(value)}
+
+    export const Attribute = (name: string, validator?: AttributeValidator<unknown>): PropertyDecorator =>
         (target: Object, propertyKey: PropertyKey) =>
             WeakMaps.createIfAbsent(MetaClassMap, target.constructor, () => new Map<PropertyKey, Meta>())
                 .set(propertyKey, {type: "attribute", name, validator})
@@ -56,9 +75,7 @@ export namespace Xml {
                 if (meta.type === "attribute") {
                     assert(typeof value === "number" || typeof value === "string" || typeof value === "boolean",
                         `Attribute value must be a primitive for ${key} = ${value}`)
-                    if (meta.validator?.call(null, value) === false) {
-                        return panic(`Attribute validator failed for ${key} = ${value}`)
-                    }
+                    meta.validator?.parse?.call(null, value)
                     element.setAttribute(meta.name, String(value))
                 } else if (meta.type === "element") {
                     if (Array.isArray(value)) {
@@ -132,11 +149,13 @@ export namespace Xml {
                 const meta: Meta = classMetaDict[key]
                 if (meta.type === "attribute") {
                     const attribute = element.getAttribute(meta.name)
-                    if (meta.validator?.call(null, attribute) === false) {
-                        return panic(`Attribute validator failed for '${String(key)} = ${attribute}' in '${element.nodeName}'`)
-                    }
                     if (isDefined(attribute)) {
-                        Object.defineProperty(instance, key, {value: attribute, enumerable: true})
+                        Object.defineProperty(instance, key, {
+                            value: meta.validator?.parse?.call(null, attribute) ?? attribute,
+                            enumerable: true
+                        })
+                    } else {
+                        meta.validator?.required && panic(`Missing attribute '${meta.name}'`)
                     }
                 } else if (meta.type === "element") {
                     const {name, clazz} = meta

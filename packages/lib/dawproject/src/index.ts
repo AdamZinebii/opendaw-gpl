@@ -32,16 +32,16 @@ export enum Interpolation {
 
 @Xml.Class("Application", ApplicationSchema)
 export class ApplicationSchema {
-    @Xml.Attribute("name")
+    @Xml.Attribute("name", Xml.StringRequired)
     readonly name!: string
 
-    @Xml.Attribute("version")
+    @Xml.Attribute("version", Xml.StringRequired)
     readonly version!: string
 }
 
 @Xml.Class("BooleanParameter", BooleanParameterSchema)
 export class BooleanParameterSchema {
-    @Xml.Attribute("value")
+    @Xml.Attribute("value", Xml.BoolRequired)
     readonly value?: boolean
 
     @Xml.Attribute("id")
@@ -53,25 +53,25 @@ export class BooleanParameterSchema {
 
 @Xml.Class("RealParameter", RealParameterSchema)
 export class RealParameterSchema {
-    @Xml.Attribute("value")
+    @Xml.Attribute("value", Xml.NumberOptional)
     readonly value?: number
 
     @Xml.Attribute("unit")
     readonly unit!: Unit
 
-    @Xml.Attribute("min")
+    @Xml.Attribute("min", Xml.NumberOptional)
     readonly min?: number
 
-    @Xml.Attribute("max")
+    @Xml.Attribute("max", Xml.NumberOptional)
     readonly max?: number
 }
 
 @Xml.Class("TimeSignature", TimeSignatureParameterSchema)
 export class TimeSignatureParameterSchema {
-    @Xml.Attribute("nominator")
+    @Xml.Attribute("nominator", Xml.NumberOptional)
     readonly nominator?: number
 
-    @Xml.Attribute("denominator")
+    @Xml.Attribute("denominator", Xml.NumberOptional)
     readonly denominator?: number
 }
 
@@ -83,16 +83,16 @@ export class ParameterSchema implements Referenceable {
     @Xml.Attribute("name")
     readonly name?: string
 
-    @Xml.Attribute("value")
+    @Xml.Attribute("value", Xml.NumberOptional)
     readonly value?: number
 
     @Xml.Attribute("unit")
     readonly unit?: Unit
 
-    @Xml.Attribute("min")
+    @Xml.Attribute("min", Xml.NumberOptional)
     readonly min?: number
 
-    @Xml.Attribute("max")
+    @Xml.Attribute("max", Xml.NumberOptional)
     readonly max?: number
 }
 
@@ -128,7 +128,7 @@ export class PluginSchema implements Referenceable {
     @Xml.Attribute("deviceRole")
     readonly deviceRole?: string
 
-    @Xml.Attribute("loaded")
+    @Xml.Attribute("loaded", Xml.BoolOptional)
     readonly loaded?: boolean
 
     @Xml.Attribute("name")
@@ -164,13 +164,13 @@ export class ChannelSchema implements Referenceable {
     @Xml.Attribute("role")
     readonly role?: string
 
-    @Xml.Attribute("audioChannels")
+    @Xml.Attribute("audioChannels", Xml.NumberOptional)
     readonly audioChannels?: int
 
     @Xml.Attribute("destination")
     readonly destination?: string
 
-    @Xml.Attribute("solo")
+    @Xml.Attribute("solo", Xml.BoolOptional)
     readonly solo?: boolean
 
     @Xml.Element("Devices", DevicesSchema)
@@ -212,7 +212,7 @@ export class TrackSchema implements Referenceable {
     @Xml.Attribute("color")
     readonly color?: string
 
-    @Xml.Attribute("loaded")
+    @Xml.Attribute("loaded", Xml.BoolOptional)
     readonly loaded?: boolean
 
     @Xml.Element("Channel", ChannelSchema)
@@ -242,22 +242,22 @@ export class TimelineSchema implements Referenceable {
 
 @Xml.Class("Note", NoteSchema)
 export class NoteSchema {
-    @Xml.Attribute("time")
+    @Xml.Attribute("time", Xml.NumberRequired)
     readonly time!: string
 
-    @Xml.Attribute("duration")
+    @Xml.Attribute("duration", Xml.NumberRequired)
     readonly duration!: string
 
-    @Xml.Attribute("channel")
+    @Xml.Attribute("channel", Xml.NumberRequired)
     readonly channel!: int
 
-    @Xml.Attribute("key")
+    @Xml.Attribute("key", Xml.NumberRequired)
     readonly key!: int
 
-    @Xml.Attribute("vel")
+    @Xml.Attribute("vel", Xml.NumberOptional)
     readonly vel?: string
 
-    @Xml.Attribute("rel")
+    @Xml.Attribute("rel", Xml.NumberOptional)
     readonly rel?: string
 }
 
@@ -278,37 +278,37 @@ export class ClipSchema implements Nameable {
     @Xml.Attribute("comment")
     readonly comment?: string
 
-    @Xml.Attribute("time")
+    @Xml.Attribute("time", Xml.NumberOptional)
     readonly time!: number
 
-    @Xml.Attribute("duration")
+    @Xml.Attribute("duration", Xml.NumberOptional)
     readonly duration?: number
 
     @Xml.Attribute("contentTimeUnit")
     readonly contentTimeUnit?: string
 
-    @Xml.Attribute("playStart")
+    @Xml.Attribute("playStart", Xml.NumberOptional)
     readonly playStart?: number
 
-    @Xml.Attribute("playStop")
+    @Xml.Attribute("playStop", Xml.NumberOptional)
     readonly playStop?: number
 
-    @Xml.Attribute("loopStart")
+    @Xml.Attribute("loopStart", Xml.NumberOptional)
     readonly loopStart?: number
 
-    @Xml.Attribute("loopEnd")
+    @Xml.Attribute("loopEnd", Xml.NumberOptional)
     readonly loopEnd?: number
 
     @Xml.Attribute("fadeTimeUnit")
     readonly fadeTimeUnit?: string
 
-    @Xml.Attribute("fadeInTime")
+    @Xml.Attribute("fadeInTime", Xml.NumberOptional)
     readonly fadeInTime?: number
 
-    @Xml.Attribute("fadeOutTime")
+    @Xml.Attribute("fadeOutTime", Xml.NumberOptional)
     readonly fadeOutTime?: number
 
-    @Xml.Attribute("enable")
+    @Xml.Attribute("enable", Xml.BoolOptional)
     readonly enable?: boolean
 
     @Xml.Attribute("reference")
@@ -326,7 +326,7 @@ export class ClipSlotSchema extends TimelineSchema {
     @Xml.Element("Clip", ClipSchema)
     readonly clip?: ClipSchema
 
-    @Xml.Attribute("hasStop")
+    @Xml.Attribute("hasStop", Xml.BoolOptional)
     readonly hasStop?: boolean
 }
 
@@ -344,7 +344,7 @@ export class MarkerSchema implements Referenceable {
     @Xml.Attribute("comment")
     readonly comment?: string
 
-    @Xml.Attribute("time")
+    @Xml.Attribute("time", Xml.NumberRequired)
     readonly time!: number
 }
 
@@ -356,10 +356,10 @@ export class MarkersSchema {
 
 @Xml.Class("Warp", WarpSchema)
 export class WarpSchema {
-    @Xml.Attribute("time")
+    @Xml.Attribute("time", Xml.NumberRequired)
     readonly time!: number
 
-    @Xml.Attribute("contentTime")
+    @Xml.Attribute("contentTime", Xml.NumberRequired)
     readonly contentTime!: number
 }
 
@@ -377,7 +377,7 @@ export class FileReferenceSchema {
     @Xml.Attribute("path")
     readonly path!: string
 
-    @Xml.Attribute("external")
+    @Xml.Attribute("external", Xml.BoolOptional)
     readonly external?: boolean
 }
 
@@ -386,7 +386,7 @@ export class MediaFileSchema extends TimelineSchema {
     @Xml.Element("File", FileReferenceSchema)
     readonly file!: FileReferenceSchema
 
-    @Xml.Attribute("duration")
+    @Xml.Attribute("duration", Xml.NumberRequired)
     readonly duration!: number
 }
 
@@ -395,10 +395,10 @@ export class AudioSchema extends MediaFileSchema {
     @Xml.Attribute("algorithm")
     readonly algorithm?: string
 
-    @Xml.Attribute("channels")
+    @Xml.Attribute("channels", Xml.NumberRequired)
     readonly channels!: int
 
-    @Xml.Attribute("sampleRate")
+    @Xml.Attribute("sampleRate", Xml.NumberRequired)
     readonly sampleRate!: int
 }
 
@@ -407,10 +407,10 @@ export class VideoSchema extends MediaFileSchema {
     @Xml.Attribute("algorithm")
     readonly algorithm?: string
 
-    @Xml.Attribute("channels")
+    @Xml.Attribute("channels", Xml.NumberRequired)
     readonly channels!: int
 
-    @Xml.Attribute("sampleRate")
+    @Xml.Attribute("sampleRate", Xml.NumberRequired)
     readonly sampleRate!: int
 }
 
@@ -422,13 +422,13 @@ export class AutomationTargetSchema {
     @Xml.Attribute("expression")
     readonly expression?: string
 
-    @Xml.Attribute("channel")
+    @Xml.Attribute("channel", Xml.NumberOptional)
     readonly channel?: int
 
-    @Xml.Attribute("key")
+    @Xml.Attribute("key", Xml.NumberOptional)
     readonly key?: int
 
-    @Xml.Attribute("controller")
+    @Xml.Attribute("controller", Xml.NumberOptional)
     readonly controller?: int
 }
 
@@ -548,7 +548,7 @@ export class SceneSchema implements Referenceable {
 
 @Xml.Class("Project", ProjectSchema)
 export class ProjectSchema {
-    @Xml.Attribute("version", version => version === "1.0")
+    @Xml.Attribute("version", Xml.StringRequired)
     readonly version!: "1.0"
 
     @Xml.Element("Application", ApplicationSchema)
