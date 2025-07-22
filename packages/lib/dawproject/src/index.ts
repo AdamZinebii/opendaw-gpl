@@ -13,8 +13,6 @@ interface Referenceable extends Nameable {
     id?: string
 }
 
-//--- ENUMS ---//
-
 export enum Unit {
     LINEAR = "linear",
     NORMALIZED = "normalized",
@@ -32,28 +30,7 @@ export enum Interpolation {
     LINEAR = "linear"
 }
 
-//--- CLASSES ---//
-
-export class ProjectSchema {
-    @Xml.Attribute("version", version => version === "1.0")
-    readonly version: "1.0" = "1.0"
-
-    @Xml.Element("Application")
-    readonly application!: ApplicationSchema
-
-    @Xml.Element("Transport")
-    readonly transport?: TransportSchema
-
-    @Xml.Element("Structure")
-    readonly structure!: ReadonlyArray<LaneSchema>
-
-    @Xml.Element("Arrangement")
-    readonly arrangement?: ArrangementSchema
-
-    @Xml.Element("Scenes")
-    readonly scenes?: SceneSchema[]
-}
-
+@Xml.Class("Application", ApplicationSchema)
 export class ApplicationSchema {
     @Xml.Attribute("name")
     readonly name!: string
@@ -62,14 +39,19 @@ export class ApplicationSchema {
     readonly version!: string
 }
 
-export class TransportSchema {
-    @Xml.Element("Tempo")
-    readonly tempo?: RealParameterSchema
+@Xml.Class("BooleanParameter", BooleanParameterSchema)
+export class BooleanParameterSchema {
+    @Xml.Attribute("value")
+    readonly value?: boolean
 
-    @Xml.Element("TimeSignature")
-    readonly timeSignature?: TimeSignatureParameterSchema
+    @Xml.Attribute("id")
+    readonly id?: string
+
+    @Xml.Attribute("name")
+    readonly name?: string
 }
 
+@Xml.Class("RealParameter", RealParameterSchema)
 export class RealParameterSchema {
     @Xml.Attribute("value")
     readonly value?: number
@@ -84,6 +66,7 @@ export class RealParameterSchema {
     readonly max?: number
 }
 
+@Xml.Class("TimeSignature", TimeSignatureParameterSchema)
 export class TimeSignatureParameterSchema {
     @Xml.Attribute("nominator")
     readonly nominator?: number
@@ -92,13 +75,130 @@ export class TimeSignatureParameterSchema {
     readonly denominator?: number
 }
 
-@Xml.RootElement("Lane")
-export class LaneSchema implements Referenceable {
+@Xml.Class("Parameter", ParameterSchema)
+export class ParameterSchema implements Referenceable {
     @Xml.Attribute("id")
     readonly id?: string
+
+    @Xml.Attribute("name")
+    readonly name?: string
+
+    @Xml.Attribute("value")
+    readonly value?: number
+
+    @Xml.Attribute("unit")
+    readonly unit?: Unit
+
+    @Xml.Attribute("min")
+    readonly min?: number
+
+    @Xml.Attribute("max")
+    readonly max?: number
 }
 
-@Xml.RootElement("Track")
+@Xml.Class("State", StateSchema)
+export class StateSchema {
+    @Xml.Attribute("path")
+    readonly path?: string
+}
+
+@Xml.Class("Send", SendSchema)
+export class SendSchema {
+    @Xml.Attribute("id")
+    readonly id?: string
+
+    @Xml.Attribute("name")
+    readonly name?: string
+
+    @Xml.Element("Value", RealParameterSchema)
+    readonly value!: RealParameterSchema
+}
+
+@Xml.Class("Plugin", PluginSchema)
+export class PluginSchema implements Referenceable {
+    @Xml.Attribute("id")
+    readonly id?: string
+
+    @Xml.Attribute("deviceID")
+    readonly deviceID?: string
+
+    @Xml.Attribute("deviceName")
+    readonly deviceName?: string
+
+    @Xml.Attribute("deviceRole")
+    readonly deviceRole?: string
+
+    @Xml.Attribute("loaded")
+    readonly loaded?: boolean
+
+    @Xml.Attribute("name")
+    readonly name?: string
+
+    @Xml.Element("Parameters", ParameterSchema)
+    readonly parameters?: ParameterSchema[]
+
+    @Xml.Element("State", StateSchema)
+    readonly state?: StateSchema
+
+    @Xml.Element("Enabled", BooleanParameterSchema)
+    readonly enabled?: BooleanParameterSchema
+}
+
+@Xml.Class("Devices", DevicesSchema)
+export class DevicesSchema {
+    @Xml.Element("Vst3Plugin", PluginSchema)
+    readonly vst3plugin?: PluginSchema
+
+    @Xml.Element("ClapPlugin", PluginSchema)
+    readonly clapplugin?: PluginSchema
+
+    @Xml.Element("AuPlugin", PluginSchema)
+    readonly auplugin?: PluginSchema
+}
+
+@Xml.Class("Channel", ChannelSchema)
+export class ChannelSchema implements Referenceable {
+    @Xml.Attribute("id")
+    readonly id?: string
+
+    @Xml.Attribute("role")
+    readonly role?: string
+
+    @Xml.Attribute("audioChannels")
+    readonly audioChannels?: int
+
+    @Xml.Attribute("destination")
+    readonly destination?: string
+
+    @Xml.Attribute("solo")
+    readonly solo?: boolean
+
+    @Xml.Element("Devices", DevicesSchema)
+    readonly devices?: DevicesSchema
+
+    @Xml.Element("Volume", RealParameterSchema)
+    readonly volume?: RealParameterSchema
+
+    @Xml.Element("Pan", RealParameterSchema)
+    readonly pan?: RealParameterSchema
+
+    @Xml.Element("Mute", BooleanParameterSchema)
+    readonly mute?: BooleanParameterSchema
+
+    @Xml.Element("Send", SendSchema)
+    readonly sends?: SendSchema[]
+}
+
+@Xml.Class("Transport", TransportSchema)
+export class TransportSchema {
+    @Xml.Element("Tempo", RealParameterSchema)
+    readonly tempo?: RealParameterSchema
+
+    @Xml.Element("TimeSignature", TimeSignatureParameterSchema)
+    readonly timeSignature?: TimeSignatureParameterSchema
+}
+
+@Xml.Class("Track", TrackSchema)
 export class TrackSchema implements Referenceable {
     @Xml.Attribute("id")
     readonly id?: string
@@ -115,244 +215,354 @@ export class TrackSchema implements Referenceable {
     @Xml.Attribute("loaded")
     readonly loaded?: boolean
 
-    @Xml.Element("Channel")
+    @Xml.Element("Channel", ChannelSchema)
     readonly channel?: ChannelSchema
 
-    @Xml.Element("Track")
+    @Xml.Element("Track", Array)
     readonly tracks?: ReadonlyArray<TrackSchema>
 }
 
-@Xml.RootElement("Channel")
-export class ChannelSchema implements Referenceable {
-    @Xml.Attribute("id") readonly id?: string
-    @Xml.Attribute("role") readonly role?: string
-    @Xml.Attribute("audioChannels") readonly audioChannels?: int
-    @Xml.Attribute("destination") readonly destination?: string
-    @Xml.Attribute("solo") readonly solo?: boolean
-
-    @Xml.Element("Devices")
-    readonly devices?: DevicesSchema
-
-    @Xml.Element("Volume")
-    readonly volume?: RealParameterSchema
-
-    @Xml.Element("Pan")
-    readonly pan?: RealParameterSchema
-
-    @Xml.Element("Mute")
-    readonly mute?: BooleanParameterSchema
-
-    @Xml.Element("Send")
-    readonly sends?: SendSchema[]
+@Xml.Class("Lane", LaneSchema)
+export class LaneSchema implements Referenceable {
+    @Xml.Attribute("id")
+    readonly id?: string
 }
 
-export class DevicesSchema {
-    @Xml.Element("Vst3Plugin")
-    readonly vst3plugin?: PluginSchema
+@Xml.Class("Timeline", TimelineSchema)
+export class TimelineSchema implements Referenceable {
+    @Xml.Attribute("id")
+    readonly id?: string
 
-    @Xml.Element("ClapPlugin")
-    readonly clapplugin?: PluginSchema
+    @Xml.Attribute("timeUnit")
+    readonly timeUnit?: string
 
-    @Xml.Element("AuPlugin")
-    readonly auplugin?: PluginSchema
+    @Xml.Attribute("track")
+    readonly track?: string
 }
 
-export class PluginSchema implements Referenceable {
-    @Xml.Attribute("id") readonly id?: string
-    @Xml.Attribute("deviceID") readonly deviceID?: string
-    @Xml.Attribute("deviceName") readonly deviceName?: string
-    @Xml.Attribute("deviceRole") readonly deviceRole?: string
-    @Xml.Attribute("loaded") readonly loaded?: boolean
-    @Xml.Attribute("name") readonly name?: string
+@Xml.Class("Note", NoteSchema)
+export class NoteSchema {
+    @Xml.Attribute("time")
+    readonly time!: string
 
-    @Xml.Element("Parameters")
-    readonly parameters?: ParameterSchema[]
+    @Xml.Attribute("duration")
+    readonly duration!: string
 
-    @Xml.Element("State")
-    readonly state?: StateSchema
+    @Xml.Attribute("channel")
+    readonly channel!: int
 
-    @Xml.Element("Enabled")
-    readonly enabled?: BooleanParameterSchema
+    @Xml.Attribute("key")
+    readonly key!: int
+
+    @Xml.Attribute("vel")
+    readonly vel?: string
+
+    @Xml.Attribute("rel")
+    readonly rel?: string
 }
 
-export class ParameterSchema implements Referenceable {
-    @Xml.Attribute("id") readonly id?: string
-    @Xml.Attribute("name") readonly name?: string
-    @Xml.Attribute("value") readonly value?: number
-    @Xml.Attribute("unit") readonly unit?: Unit
-    @Xml.Attribute("min") readonly min?: number
-    @Xml.Attribute("max") readonly max?: number
+@Xml.Class("Notes", NotesSchema)
+export class NotesSchema extends TimelineSchema {
+    @Xml.Element("Note", Array)
+    readonly notes?: ReadonlyArray<NoteSchema>
 }
 
-export class StateSchema {
-    @Xml.Attribute("path") readonly path?: string
+@Xml.Class("Clip", ClipSchema)
+export class ClipSchema implements Nameable {
+    @Xml.Attribute("name")
+    readonly name?: string
+
+    @Xml.Attribute("color")
+    readonly color?: string
+
+    @Xml.Attribute("comment")
+    readonly comment?: string
+
+    @Xml.Attribute("time")
+    readonly time!: number
+
+    @Xml.Attribute("duration")
+    readonly duration?: number
+
+    @Xml.Attribute("contentTimeUnit")
+    readonly contentTimeUnit?: string
+
+    @Xml.Attribute("playStart")
+    readonly playStart?: number
+
+    @Xml.Attribute("playStop")
+    readonly playStop?: number
+
+    @Xml.Attribute("loopStart")
+    readonly loopStart?: number
+
+    @Xml.Attribute("loopEnd")
+    readonly loopEnd?: number
+
+    @Xml.Attribute("fadeTimeUnit")
+    readonly fadeTimeUnit?: string
+
+    @Xml.Attribute("fadeInTime")
+    readonly fadeInTime?: number
+
+    @Xml.Attribute("fadeOutTime")
+    readonly fadeOutTime?: number
+
+    @Xml.Attribute("enable")
+    readonly enable?: boolean
+
+    @Xml.Attribute("reference")
+    readonly reference?: string
 }
 
-export class BooleanParameterSchema {
-    @Xml.Attribute("value") readonly value?: boolean
-    @Xml.Attribute("id") readonly id?: string
-    @Xml.Attribute("name") readonly name?: string
+@Xml.Class("Clips", ClipsSchema)
+export class ClipsSchema extends TimelineSchema {
+    @Xml.Element("Clip", Array)
+    readonly clips!: ReadonlyArray<ClipSchema>
 }
 
-export class SendSchema {
-    @Xml.Attribute("id") readonly id?: string
-    @Xml.Attribute("name") readonly name?: string
+@Xml.Class("ClipSlot", ClipSlotSchema)
+export class ClipSlotSchema extends TimelineSchema {
+    @Xml.Element("Clip", ClipSchema)
+    readonly clip?: ClipSchema
 
-    @Xml.Element("Value")
-    readonly value!: RealParameterSchema
+    @Xml.Attribute("hasStop")
+    readonly hasStop?: boolean
 }
 
+@Xml.Class("Marker", MarkerSchema)
+export class MarkerSchema implements Referenceable {
+    @Xml.Attribute("id")
+    readonly id?: string
+
+    @Xml.Attribute("name")
+    readonly name?: string
+
+    @Xml.Attribute("color")
+    readonly color?: string
+
+    @Xml.Attribute("comment")
+    readonly comment?: string
+
+    @Xml.Attribute("time")
+    readonly time!: number
+}
+
+@Xml.Class("Markers", MarkersSchema)
+export class MarkersSchema {
+    @Xml.Element("Marker", Array)
+    readonly marker!: ReadonlyArray<MarkerSchema>
+}
+
+@Xml.Class("Warp", WarpSchema)
+export class WarpSchema {
+    @Xml.Attribute("time")
+    readonly time!: number
+
+    @Xml.Attribute("contentTime")
+    readonly contentTime!: number
+}
+
+@Xml.Class("Warps", WarpsSchema)
+export class WarpsSchema extends TimelineSchema {
+    @Xml.Element("Warp", Array)
+    readonly warps!: ReadonlyArray<WarpSchema>
+
+    @Xml.Attribute("contentTimeUnit")
+    readonly contentTimeUnit!: string
+}
+
+@Xml.Class("File", FileReferenceSchema)
+export class FileReferenceSchema {
+    @Xml.Attribute("path")
+    readonly path!: string
+
+    @Xml.Attribute("external")
+    readonly external?: boolean
+}
+
+@Xml.Class("MediaFile", MediaFileSchema)
+export class MediaFileSchema extends TimelineSchema {
+    @Xml.Element("File", FileReferenceSchema)
+    readonly file!: FileReferenceSchema
+
+    @Xml.Attribute("duration")
+    readonly duration!: number
+}
+
+@Xml.Class("Audio", AudioSchema)
+export class AudioSchema extends MediaFileSchema {
+    @Xml.Attribute("algorithm")
+    readonly algorithm?: string
+
+    @Xml.Attribute("channels")
+    readonly channels!: int
+
+    @Xml.Attribute("sampleRate")
+    readonly sampleRate!: int
+}
+
+@Xml.Class("Video", VideoSchema)
+export class VideoSchema extends MediaFileSchema {
+    @Xml.Attribute("algorithm")
+    readonly algorithm?: string
+
+    @Xml.Attribute("channels")
+    readonly channels!: int
+
+    @Xml.Attribute("sampleRate")
+    readonly sampleRate!: int
+}
+
+@Xml.Class("AutomationTarget", AutomationTargetSchema)
+export class AutomationTargetSchema {
+    @Xml.Attribute("parameter")
+    readonly parameter?: string
+
+    @Xml.Attribute("expression")
+    readonly expression?: string
+
+    @Xml.Attribute("channel")
+    readonly channel?: int
+
+    @Xml.Attribute("key")
+    readonly key?: int
+
+    @Xml.Attribute("controller")
+    readonly controller?: int
+}
+
+@Xml.Class("Point", PointSchema)
+export class PointSchema {
+    @Xml.Attribute("time")
+    readonly time!: string
+
+    @Xml.Attribute("value")
+    readonly value?: any
+
+    @Xml.Attribute("interpolation")
+    readonly interpolation?: Interpolation
+}
+
+@Xml.Class("Points", PointsSchema)
+export class PointsSchema extends TimelineSchema {
+    @Xml.Element("Target", AutomationTargetSchema)
+    readonly target?: AutomationTargetSchema
+
+    @Xml.Element("Point", Array)
+    readonly points?: ReadonlyArray<PointSchema>
+
+    @Xml.Attribute("unit")
+    readonly unit?: Unit
+}
+
+@Xml.Class("Lanes", LanesSchema)
+export class LanesSchema implements Referenceable {
+    @Xml.Attribute("id")
+    readonly id?: string
+
+    @Xml.Element("Timeline", Array)
+    readonly timelines?: ReadonlyArray<TimelineSchema>
+
+    @Xml.Element("Lanes", Array)
+    readonly subLanes?: LanesSchema[]
+
+    @Xml.Element("Notes", Array)
+    readonly notes?: NotesSchema[]
+
+    @Xml.Element("Clips", Array)
+    readonly clips?: ClipsSchema[]
+
+    @Xml.Element("ClipSlot", Array)
+    readonly clipSlots?: ClipSlotSchema[]
+
+    @Xml.Element("markers", Array)
+    readonly markerTracks?: MarkersSchema[]
+
+    @Xml.Element("Warps", Array)
+    readonly warps?: WarpsSchema[]
+
+    @Xml.Element("Audio", Array)
+    readonly audio?: AudioSchema[]
+
+    @Xml.Element("Video", Array)
+    readonly video?: VideoSchema[]
+
+    @Xml.Element("Points", Array)
+    readonly automation?: PointsSchema[]
+}
+
+@Xml.Class("Arrangement", ArrangementSchema)
 export class ArrangementSchema implements Referenceable {
-    @Xml.Attribute("id") readonly id?: string
+    @Xml.Attribute("id")
+    readonly id?: string
 
-    @Xml.Element("Lanes")
+    @Xml.Element("Lanes", LanesSchema)
     readonly lanes?: LanesSchema
 
-    @Xml.Element("Markers")
+    @Xml.Element("Markers", Array)
     readonly markers?: MarkerSchema[]
 
-    @Xml.Element("TempoAutomation")
+    @Xml.Element("TempoAutomation", PointsSchema)
     readonly tempoAutomation?: PointsSchema
 
-    @Xml.Element("TimeSignatureAutomation")
+    @Xml.Element("TimeSignatureAutomation", PointsSchema)
     readonly timeSignatureAutomation?: PointsSchema
 }
 
-export class LanesSchema implements Referenceable {
-    @Xml.Attribute("id") readonly id?: string
-
-    @Xml.Element("Timeline") readonly timelines?: TimelineSchema[]
-    @Xml.Element("Lanes") readonly subLanes?: LanesSchema[]
-    @Xml.Element("Notes") readonly notes?: NotesSchema[]
-    @Xml.Element("Clips") readonly clips?: ClipsSchema[]
-    @Xml.Element("ClipSlot") readonly clipSlots?: ClipSlotSchema[]
-    @Xml.Element("markers") readonly markerTracks?: MarkersSchema[]
-    @Xml.Element("Warps") readonly warps?: WarpsSchema[]
-    @Xml.Element("Audio") readonly audio?: AudioSchema[]
-    @Xml.Element("Video") readonly video?: VideoSchema[]
-    @Xml.Element("Points") readonly automation?: PointsSchema[]
-}
-
-export class MarkerSchema implements Referenceable {
-    @Xml.Attribute("id") readonly id?: string
-    @Xml.Attribute("name") readonly name?: string
-    @Xml.Attribute("color") readonly color?: string
-    @Xml.Attribute("comment") readonly comment?: string
-    @Xml.Attribute("time") readonly time!: number
-}
-
-export class MarkersSchema {
-    @Xml.Element("Marker") readonly marker!: MarkerSchema[]
-}
-
+@Xml.Class("Scene", SceneSchema)
 export class SceneSchema implements Referenceable {
-    @Xml.Attribute("id") readonly id?: string
-    @Xml.Element("Timeline") readonly timeline?: TimelineSchema
-    @Xml.Element("Lanes") readonly lanes?: LanesSchema
-    @Xml.Element("Notes") readonly notes?: NotesSchema
-    @Xml.Element("Clips") readonly clips?: ClipsSchema
-    @Xml.Element("ClipSlot") readonly clipSlot?: ClipSlotSchema
-    @Xml.Element("markers") readonly markers?: MarkersSchema
-    @Xml.Element("Warps") readonly warps?: WarpsSchema
-    @Xml.Element("Audio") readonly audio?: AudioSchema
-    @Xml.Element("Video") readonly video?: VideoSchema
-    @Xml.Element("Points") readonly points?: PointsSchema
+    @Xml.Attribute("id")
+    readonly id?: string
+
+    @Xml.Element("Timeline", TimelineSchema)
+    readonly timeline?: TimelineSchema
+
+    @Xml.Element("Lanes", LanesSchema)
+    readonly lanes?: LanesSchema
+
+    @Xml.Element("Notes", NotesSchema)
+    readonly notes?: NotesSchema
+
+    @Xml.Element("Clips", ClipsSchema)
+    readonly clips?: ClipsSchema
+
+    @Xml.Element("ClipSlot", ClipSlotSchema)
+    readonly clipSlot?: ClipSlotSchema
+
+    @Xml.Element("markers", MarkersSchema)
+    readonly markers?: MarkersSchema
+
+    @Xml.Element("Warps", WarpsSchema)
+    readonly warps?: WarpsSchema
+
+    @Xml.Element("Audio", AudioSchema)
+    readonly audio?: AudioSchema
+
+    @Xml.Element("Video", VideoSchema)
+    readonly video?: VideoSchema
+
+    @Xml.Element("Points", PointsSchema)
+    readonly points?: PointsSchema
 }
 
-export class TimelineSchema implements Referenceable {
-    @Xml.Attribute("id") readonly id?: string
-    @Xml.Attribute("timeUnit") readonly timeUnit?: string
-    @Xml.Attribute("track") readonly track?: string
-}
+@Xml.Class("Project", ProjectSchema)
+export class ProjectSchema {
+    @Xml.Attribute("version", version => version === "1.0")
+    readonly version!: "1.0"
 
-export class NotesSchema extends TimelineSchema {
-    @Xml.Element("Note") readonly notes?: NoteSchema[]
-}
+    @Xml.Element("Application", ApplicationSchema)
+    readonly application!: ApplicationSchema
 
-export class NoteSchema {
-    @Xml.Attribute("time") readonly time!: string
-    @Xml.Attribute("duration") readonly duration!: string
-    @Xml.Attribute("channel") readonly channel!: int
-    @Xml.Attribute("key") readonly key!: int
-    @Xml.Attribute("vel") readonly vel?: string
-    @Xml.Attribute("rel") readonly rel?: string
-}
+    @Xml.Element("Transport", TransportSchema)
+    readonly transport?: TransportSchema
 
-export class ClipsSchema extends TimelineSchema {
-    @Xml.Element("Clip") readonly clips!: ClipSchema[]
-}
+    @Xml.Element("Structure", Array)
+    readonly structure!: ReadonlyArray<LaneSchema>
 
-export class ClipSchema implements Nameable {
-    @Xml.Attribute("name") readonly name?: string
-    @Xml.Attribute("color") readonly color?: string
-    @Xml.Attribute("comment") readonly comment?: string
-    @Xml.Attribute("time") readonly time!: number
-    @Xml.Attribute("duration") readonly duration?: number
-    @Xml.Attribute("contentTimeUnit") readonly contentTimeUnit?: string
-    @Xml.Attribute("playStart") readonly playStart?: number
-    @Xml.Attribute("playStop") readonly playStop?: number
-    @Xml.Attribute("loopStart") readonly loopStart?: number
-    @Xml.Attribute("loopEnd") readonly loopEnd?: number
-    @Xml.Attribute("fadeTimeUnit") readonly fadeTimeUnit?: string
-    @Xml.Attribute("fadeInTime") readonly fadeInTime?: number
-    @Xml.Attribute("fadeOutTime") readonly fadeOutTime?: number
-    @Xml.Attribute("enable") readonly enable?: boolean
-    @Xml.Attribute("reference") readonly reference?: string
-}
+    @Xml.Element("Arrangement", ArrangementSchema)
+    readonly arrangement?: ArrangementSchema
 
-export class ClipSlotSchema extends TimelineSchema {
-    @Xml.Element("Clip") readonly clip?: ClipSchema
-    @Xml.Attribute("hasStop") readonly hasStop?: boolean
-}
-
-export class WarpsSchema extends TimelineSchema {
-    @Xml.Element("Warp") readonly warps!: WarpSchema[]
-    @Xml.Attribute("contentTimeUnit") readonly contentTimeUnit!: string
-}
-
-export class WarpSchema {
-    @Xml.Attribute("time") readonly time!: number
-    @Xml.Attribute("contentTime") readonly contentTime!: number
-}
-
-export class MediaFileSchema extends TimelineSchema {
-    @Xml.Element("File") readonly file!: FileReferenceSchema
-    @Xml.Attribute("duration") readonly duration!: number
-}
-
-export class AudioSchema extends MediaFileSchema {
-    @Xml.Attribute("algorithm") readonly algorithm?: string
-    @Xml.Attribute("channels") readonly channels!: int
-    @Xml.Attribute("sampleRate") readonly sampleRate!: int
-}
-
-export class VideoSchema extends MediaFileSchema {
-    @Xml.Attribute("algorithm") readonly algorithm?: string
-    @Xml.Attribute("channels") readonly channels!: int
-    @Xml.Attribute("sampleRate") readonly sampleRate!: int
-}
-
-export class FileReferenceSchema {
-    @Xml.Attribute("path") readonly path!: string
-    @Xml.Attribute("external") readonly external?: boolean
-}
-
-export class PointsSchema extends TimelineSchema {
-    @Xml.Element("Target") readonly target?: AutomationTargetSchema
-    @Xml.Element("Point") readonly points?: PointSchema[]
-    @Xml.Attribute("unit") readonly unit?: Unit
-}
-
-export class AutomationTargetSchema {
-    @Xml.Attribute("parameter") readonly parameter?: string
-    @Xml.Attribute("expression") readonly expression?: string
-    @Xml.Attribute("channel") readonly channel?: int
-    @Xml.Attribute("key") readonly key?: int
-    @Xml.Attribute("controller") readonly controller?: int
-}
-
-export class PointSchema {
-    @Xml.Attribute("time") readonly time!: string
-    @Xml.Attribute("value") readonly value?: any
-    @Xml.Attribute("interpolation") readonly interpolation?: Interpolation
+    @Xml.Element("Scenes", Array)
+    readonly scenes?: ReadonlyArray<SceneSchema>
 }

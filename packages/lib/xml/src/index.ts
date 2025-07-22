@@ -1,10 +1,12 @@
-import {assert, Class, int, isDefined, Nullish, panic, Predicate, WeakMaps} from "@opendaw/lib-std"
+import {asDefined, assert, Class, int, isDefined, Nullish, panic, Predicate, WeakMaps} from "@opendaw/lib-std"
 
 type Meta =
-    |({ type: "element" | "class" }
-    | { type: "attribute", name: string, validator?: Predicate<unknown> }) & { name: string }
+    | { type: "class", name: string, clazz: Class }
+    | { type: "element", name: string, clazz: Class }
+    | { type: "attribute", name: string, validator?: Predicate<unknown> }
 type MetaMap = Map<PropertyKey, Meta>
 
+const ClassMap = new Map<string, Class>()
 const MetaClassMap = new WeakMap<Function, MetaMap>()
 
 export namespace Xml {
@@ -13,18 +15,21 @@ export namespace Xml {
             WeakMaps.createIfAbsent(MetaClassMap, target.constructor, () => new Map<PropertyKey, Meta>())
                 .set(propertyKey, {type: "attribute", name, validator})
 
-    export const Element = (tagName: string): PropertyDecorator =>
+    export const Element = (name: string, clazz: Class): PropertyDecorator =>
         (target: Object, propertyKey: PropertyKey) =>
             WeakMaps.createIfAbsent(MetaClassMap, target.constructor, () => new Map<PropertyKey, Meta>())
-                .set(propertyKey, {type: "element", name: tagName})
+                .set(propertyKey, {type: "element", name, clazz})
 
-    export const RootElement = (tagName: string): ClassDecorator =>
-        (constructor: Function): void => {
+    export const Class = (tagName: string, clazz: Class): ClassDecorator => {
+        return (constructor: Function): void => {
+            assert(!ClassMap.has(tagName), `${tagName} is already registered as a class.`)
+            ClassMap.set(tagName, clazz)
             WeakMaps.createIfAbsent(MetaClassMap, constructor, () => new Map<PropertyKey, Meta>())
-                .set("class", {type: "class", name: tagName})
+                .set("class", {type: "class", name: tagName, clazz})
         }
+    }
 
-    export const element = <T extends {}>(object: Partial<T>, clazz: Class<T>): T => {
+    export const element = <T extends {}>(object: T, clazz: Class<T>): T => {
         assert(clazz.length === 0, "constructor cannot have arguments")
         return Object.freeze(Object.create(clazz.prototype, Object.fromEntries(
             Object.entries(object).map(([key, value]) => [key, {value, enumerable: true}]))))
@@ -61,7 +66,7 @@ export namespace Xml {
                         elements.append(...value.map(item => {
                             const name = resolveMeta(item.constructor, "class")?.name
                             if (!isDefined(name)) {
-                                return panic("Classes inside an array must have a @Xml.RootElement decorator")
+                                return panic(`Class '${item.constructor.name}' inside an array must have a @Xml.RootElement decorator. key: '${key}'`)
                             }
                             return visit(name, item)
                         }))
@@ -102,12 +107,63 @@ export namespace Xml {
         }).join("\n")
     }
 
-    const resolveMeta = (target: Function, propertyKey: PropertyKey): Nullish<Meta> => {
+    export const resolveMeta = (target: Function, propertyKey: PropertyKey): Nullish<Meta> =>
+        collectMeta(target)?.get(propertyKey)
+
+    export const collectMeta = (target: Function): Nullish<MetaMap> => {
         while (isDefined(target)) {
-            const meta = MetaClassMap.get(target)?.get(propertyKey)
+            const meta = MetaClassMap.get(target)
             if (isDefined(meta)) {return meta}
             target = Object.getPrototypeOf(target)
         }
         return undefined
+    }
+
+    export const parse = <T extends {}>(xml: string, clazz: Class<T>): T => {
+        const deserialize = <T extends {}>(element: Element, clazz: Class<unknown>): T => {
+            const instance = Object.create(clazz.prototype) as T
+            const classMeta = asDefined(Xml.collectMeta(clazz))
+            const classMetaDict: Record<keyof T, Meta> = Array.from(classMeta).reduce((acc: any, [key, metaInfo]) => {
+                acc[key] = metaInfo
+                return acc
+            }, {})
+            const keys = Reflect.ownKeys(clazz.prototype).filter(key => key !== "constructor") as (keyof T)[]
+            for (const key of keys) {
+                const meta: Meta = classMetaDict[key]
+                if (meta.type === "attribute") {
+                    const attribute = element.getAttribute(meta.name)
+                    if (meta.validator?.call(null, attribute) === false) {
+                        return panic(`Attribute validator failed for '${String(key)} = ${attribute}' in '${element.nodeName}'`)
+                    }
+                    if (isDefined(attribute)) {
+                        Object.defineProperty(instance, key, {value: attribute, enumerable: true})
+                    }
+                } else if (meta.type === "element") {
+                    const {name, clazz} = meta
+                    if (clazz === Array) {
+                        const arrayElement = element.querySelector(name)
+                        if (isDefined(arrayElement)) {
+                            Object.defineProperty(instance, key, {
+                                value: Array.from(arrayElement.children)
+                                    .map(child => deserialize(child, asDefined(ClassMap.get(child.nodeName),
+                                        `Could not find class for '${child.nodeName}'`))),
+                                enumerable: true
+                            })
+                        }
+                    } else {
+                        const child = element.querySelector(`:scope > ${name}`)
+                        if (isDefined(child)) {
+                            Object.defineProperty(instance, key, {
+                                value: deserialize(child, clazz),
+                                enumerable: true
+                            })
+                        }
+                    }
+                }
+            }
+            return instance
+        }
+        return deserialize(new DOMParser()
+            .parseFromString(xml.trimStart(), "application/xml").documentElement, clazz)
     }
 }
