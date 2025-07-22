@@ -32,8 +32,19 @@ export enum Interpolation {
 
 @Xml.Class("MetaData")
 export class MetaDataSchema {
-    @Xml.Attribute("name", Xml.StringRequired)
-    readonly name!: string
+    @Xml.Element("Title", String) readonly title?: string
+    @Xml.Element("Artist", String) readonly artist?: string
+    @Xml.Element("Album", String) readonly album?: string
+    @Xml.Element("OriginalArtist", String) readonly originalArtist?: string
+    @Xml.Element("Composer", String) readonly composer?: string
+    @Xml.Element("Songwriter", String) readonly songwriter?: string
+    @Xml.Element("Producer", String) readonly producer?: string
+    @Xml.Element("Arranger", String) readonly arranger?: string
+    @Xml.Element("Year", String) readonly year?: string
+    @Xml.Element("Genre", String) readonly genre?: string
+    @Xml.Element("Copyright", String) readonly copyright?: string
+    @Xml.Element("Website", String) readonly website?: string
+    @Xml.Element("Comment", String) readonly comment?: string
 }
 
 @Xml.Class("Application")

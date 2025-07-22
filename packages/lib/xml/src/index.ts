@@ -81,6 +81,7 @@ export namespace Xml {
                     element.setAttribute(meta.name, String(value))
                 } else if (meta.type === "element") {
                     if (Array.isArray(value)) {
+                        console.debug("Array")
                         const elements = doc.createElement(meta.name)
                         elements.append(...value.map(item => {
                             const name = resolveMeta(item.constructor, "class")?.name
@@ -90,6 +91,10 @@ export namespace Xml {
                             return visit(name, item)
                         }))
                         element.appendChild(elements)
+                    } else if (typeof value === "string") {
+                        const child = doc.createElement(meta.name)
+                        child.textContent = value
+                        element.appendChild(child)
                     } else {
                         element.appendChild(visit(meta.name, value))
                     }
@@ -171,6 +176,8 @@ export namespace Xml {
                                 enumerable: true
                             })
                         }
+                    } else if (clazz === String) {
+                        // TODO
                     } else {
                         const child = element.querySelector(`:scope > ${name}`)
                         if (isDefined(child)) {

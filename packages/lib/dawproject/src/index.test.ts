@@ -4,6 +4,7 @@ import {
     ApplicationSchema,
     BooleanParameterSchema,
     ChannelSchema,
+    MetaDataSchema,
     ProjectSchema,
     RealParameterSchema,
     TimeSignatureParameterSchema,
@@ -15,7 +16,14 @@ import exampleXml from "./bitwig.example.xml?raw"
 import {asInstanceOf} from "@opendaw/lib-std"
 
 describe("Serializer", () => {
-    it("should serialize", () => {
+    it("MetaData", () => {
+        console.debug(Xml.pretty(Xml.toElement("MetaData", Xml.element({
+            title: "This is the title.",
+            artist: "André Michelle",
+            website: "https://opendaw.studio"
+        }, MetaDataSchema))))
+    })
+    it("random tests", () => {
         const project = Xml.element({
             version: "1.0",
             application: Xml.element({

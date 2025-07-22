@@ -1,5 +1,5 @@
 import {ByteArrayOutput, Option, panic, Terminable, TerminableOwner, Terminator, UUID} from "@opendaw/lib-std"
-import {BoxGraph, Editing, IndexedBox} from "@opendaw/lib-box"
+import {BoxGraph, Editing} from "@opendaw/lib-box"
 import {
     AudioBusBox,
     AudioUnitBox,
@@ -7,7 +7,6 @@ import {
     GrooveShuffleBox,
     RootBox,
     TimelineBox,
-    TrackBox,
     UserInterfaceBox
 } from "@opendaw/studio-boxes"
 import {
@@ -30,6 +29,7 @@ import {ProjectEnv} from "./ProjectEnv"
 import {Mixer} from "./Mixer"
 import {ProjectApi} from "./ProjectApi"
 import {ProjectMigration} from "./ProjectMigration"
+import {DawProjectIO} from "./DawProjectIO"
 
 // Main Entry Point for a Project
 //
@@ -163,31 +163,5 @@ export class Project implements BoxAdaptersContext, Terminable, TerminableOwner 
 
     terminate(): void {this.#terminator.terminate()}
 
-    toDawProject(): any {
-        const trackBoxes = IndexedBox.collectIndexedBoxes(this.rootBox.audioUnits, AudioUnitBox)
-            .flatMap(audioUnitBox => IndexedBox.collectIndexedBoxes(audioUnitBox.tracks, TrackBox))
-        return ({
-            application: {
-                name: "openDAW",
-                version: "0.1"
-            },
-            transport: {
-                tempo: {
-                    value: this.timelineBox.bpm.getValue(),
-                    unit: /*Unit.BPM*/ ""
-                },
-                timeSignature: {
-                    numerator: this.timelineBox.signature.nominator.getValue(),
-                    denominator: this.timelineBox.signature.denominator.getValue()
-                }
-            },
-            arrangement: {
-                lanes: {
-                    lanes: trackBoxes.map(({address: {uuid}}) => ({id: UUID.toString(uuid)}))
-                }
-            },
-            structure: [],
-            version: "1.0"
-        })
-    }
+    toDawProject(): string {return DawProjectIO.encode(this)}
 }
