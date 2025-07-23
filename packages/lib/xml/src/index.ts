@@ -1,4 +1,4 @@
-import {asDefined, assert, Class, int, isDefined, Nullish, panic, WeakMaps} from "@opendaw/lib-std"
+import {Arrays, asDefined, assert, Class, int, isDefined, Nullish, panic, WeakMaps} from "@opendaw/lib-std"
 
 export namespace Xml {
     type Meta =
@@ -141,12 +141,17 @@ export namespace Xml {
         collectMeta(target)?.get(propertyKey)
 
     export const collectMeta = (target: Function): Nullish<MetaMap> => {
+        const metaMap: MetaMap = new Map<PropertyKey, Meta>()
         while (isDefined(target)) {
             const meta = MetaClassMap.get(target)
-            if (isDefined(meta)) {return meta}
+            if (isDefined(meta)) {
+                for (const [key, value] of meta.entries()) {
+                    metaMap.set(key, value)
+                }
+            }
             target = Object.getPrototypeOf(target)
         }
-        return undefined
+        return metaMap.size > 0 ? metaMap : undefined
     }
 
     export const parse = <T extends {}>(xml: string, clazz: Class<T>): T => {
@@ -157,7 +162,7 @@ export namespace Xml {
                 acc[key] = metaInfo
                 return acc
             }, {})
-            const keys = Reflect.ownKeys(clazz.prototype).filter(key => key !== "constructor") as (keyof T)[]
+            const keys = [...classMeta.keys()].filter(key => key !== "class") as (keyof T)[]
             for (const key of keys) {
                 const meta: Meta = classMetaDict[key]
                 if (meta.type === "attribute") {
@@ -203,18 +208,22 @@ export namespace Xml {
                     const parent = meta.name
                         ? element.querySelector(`:scope > ${meta.name}`)
                         : element
-                    const children = parent ? Array.from(parent.children) : []
-                    console.debug(`[Xml] Writing ${key.toString()} with ${children.length} children`)
-                    Object.defineProperty(instance, key, {
-                        value: children
-                            .map(child => {
-                                const clazz = asDefined(ClassMap.get(child.nodeName))
-                                if (!(clazz === meta.clazz || clazz.prototype instanceof meta.clazz)) return null
-                                return deserialize(child, clazz)
-                            })
-                            .filter(isDefined),
-                        enumerable: true
-                    })
+                    if (isDefined(parent)) {
+                        Object.defineProperty(instance, key, {
+                            value: isDefined(parent)
+                                ? Array.from(parent.children)
+                                    .map(child => {
+                                        const clazz = asDefined(ClassMap.get(child.nodeName))
+                                        if (!(clazz === meta.clazz || clazz.prototype instanceof meta.clazz)) {
+                                            return null
+                                        }
+                                        return deserialize(child, clazz)
+                                    })
+                                    .filter(isDefined)
+                                : Arrays.empty(),
+                            enumerable: true
+                        })
+                    }
                 }
             }
             return instance
