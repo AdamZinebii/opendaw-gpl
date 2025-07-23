@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Project version="1.0">
+    <Application name="Bitwig Studio" version="5.3.12"/>
+    <Transport>
+        <Tempo max="666.000000" min="20.000000" unit="bpm" value="140.000000" id="id0" name="Tempo"/>
+        <TimeSignature denominator="4" numerator="4" id="id1"/>
+    </Transport>
+    <Structure>
+    </Structure>
+    <Arrangement id="id256">
+        <Lanes timeUnit="beats" id="id257">
+            <Lanes track="id2" id="id258">
+                <Clips id="id259"/>
+            </Lanes>
+            <Lanes track="id9" id="id260">
+                <Clips id="id261">
+                    <Clip time="112.0" duration="16.0" playStart="0.0" enable="true">
+                        <Notes id="id262">
+                            <Note time="0.000000" duration="16.000000" channel="0" key="95" vel="0.787402"
+                                  rel="0.787402"/>
+                        </Notes>
+                    </Clip>
+                    <Clip time="176.0" duration="16.0" playStart="0.0" enable="true">
+                        <Notes id="id263">
+                            <Note time="0.000000" duration="16.000000" channel="0" key="95" vel="0.787402"
+                                  rel="0.787402"/>
+                            <Note time="0.000000" duration="16.000000" channel="0" key="93" vel="0.787402"
+                                  rel="0.787402"/>
+                        </Notes>
+                    </Clip>
+                </Clips>
+            </Lanes>
+        </Lanes>
+    </Arrangement>
+    <Scenes/>
+</Project>

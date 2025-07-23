@@ -3,6 +3,8 @@
 import {Xml} from "@opendaw/lib-xml"
 import type {int} from "@opendaw/lib-std"
 
+type ID = string
+
 interface Nameable {
     name?: string
     color?: string
@@ -28,6 +30,11 @@ export enum Unit {
 export enum Interpolation {
     HOLD = "hold",
     LINEAR = "linear"
+}
+
+export enum TimeUnit {
+    BEATS = "beats",
+    SECONDS = "seconds"
 }
 
 @Xml.Class("MetaData")
@@ -85,8 +92,8 @@ export class RealParameterSchema {
 
 @Xml.Class("TimeSignature")
 export class TimeSignatureParameterSchema {
-    @Xml.Attribute("nominator", Xml.NumberOptional)
-    readonly nominator?: number
+    @Xml.Attribute("numerator", Xml.NumberOptional)
+    readonly numerator?: number
 
     @Xml.Attribute("denominator", Xml.NumberOptional)
     readonly denominator?: number
@@ -328,6 +335,9 @@ export class ClipSchema implements Nameable {
     @Xml.Attribute("enable", Xml.BoolOptional)
     readonly enable?: boolean
 
+    @Xml.ElementRef(TimelineSchema)
+    readonly content?: TimelineSchema
+
     @Xml.Attribute("reference")
     readonly reference?: string
 }
@@ -431,7 +441,7 @@ export class VideoSchema extends MediaFileSchema {
     readonly sampleRate!: int
 }
 
-@Xml.Class("AutomationTarget")
+@Xml.Class("Target")
 export class AutomationTargetSchema {
     @Xml.Attribute("parameter")
     readonly parameter?: string
@@ -461,6 +471,9 @@ export class PointSchema {
     readonly interpolation?: Interpolation
 }
 
+@Xml.Class("RealPoint")
+export class RealPointSchema extends PointSchema {}
+
 @Xml.Class("Points")
 export class PointsSchema extends TimelineSchema {
     @Xml.Element("Target", AutomationTargetSchema)
@@ -474,39 +487,9 @@ export class PointsSchema extends TimelineSchema {
 }
 
 @Xml.Class("Lanes")
-export class LanesSchema implements Referenceable {
-    @Xml.Attribute("id")
-    readonly id?: string
-
-    @Xml.Element("Timeline", Array)
-    readonly timelines?: ReadonlyArray<TimelineSchema>
-
-    @Xml.Element("Lanes", Array)
-    readonly subLanes?: LanesSchema[]
-
-    @Xml.Element("Notes", Array)
-    readonly notes?: NotesSchema[]
-
-    @Xml.Element("Clips", Array)
-    readonly clips?: ClipsSchema[]
-
-    @Xml.Element("ClipSlot", Array)
-    readonly clipSlots?: ClipSlotSchema[]
-
-    @Xml.Element("markers", Array)
-    readonly markerTracks?: MarkersSchema[]
-
-    @Xml.Element("Warps", Array)
-    readonly warps?: WarpsSchema[]
-
-    @Xml.Element("Audio", Array)
-    readonly audio?: AudioSchema[]
-
-    @Xml.Element("Video", Array)
-    readonly video?: VideoSchema[]
-
-    @Xml.Element("Points", Array)
-    readonly automation?: PointsSchema[]
+export class LanesSchema extends TimelineSchema {
+    @Xml.ElementRef(TimelineSchema)
+    readonly lanes?: ReadonlyArray<TimelineSchema>
 }
 
 @Xml.Class("Arrangement")
@@ -514,17 +497,17 @@ export class ArrangementSchema implements Referenceable {
     @Xml.Attribute("id")
     readonly id?: string
 
-    @Xml.Element("Lanes", LanesSchema)
-    readonly lanes?: LanesSchema
-
-    @Xml.Element("Markers", Array)
-    readonly markers?: MarkerSchema[]
+    @Xml.Element("TimeSignatureAutomation", PointsSchema)
+    readonly timeSignatureAutomation?: PointsSchema
 
     @Xml.Element("TempoAutomation", PointsSchema)
     readonly tempoAutomation?: PointsSchema
 
-    @Xml.Element("TimeSignatureAutomation", PointsSchema)
-    readonly timeSignatureAutomation?: PointsSchema
+    @Xml.Element("Markers", MarkersSchema)
+    readonly markers?: MarkerSchema
+
+    @Xml.Element("Lanes", LanesSchema)
+    readonly lanes?: LanesSchema
 }
 
 @Xml.Class("Scene")
@@ -532,35 +515,8 @@ export class SceneSchema implements Referenceable {
     @Xml.Attribute("id")
     readonly id?: string
 
-    @Xml.Element("Timeline", TimelineSchema)
-    readonly timeline?: TimelineSchema
-
-    @Xml.Element("Lanes", LanesSchema)
-    readonly lanes?: LanesSchema
-
-    @Xml.Element("Notes", NotesSchema)
-    readonly notes?: NotesSchema
-
-    @Xml.Element("Clips", ClipsSchema)
-    readonly clips?: ClipsSchema
-
-    @Xml.Element("ClipSlot", ClipSlotSchema)
-    readonly clipSlot?: ClipSlotSchema
-
-    @Xml.Element("markers", MarkersSchema)
-    readonly markers?: MarkersSchema
-
-    @Xml.Element("Warps", WarpsSchema)
-    readonly warps?: WarpsSchema
-
-    @Xml.Element("Audio", AudioSchema)
-    readonly audio?: AudioSchema
-
-    @Xml.Element("Video", VideoSchema)
-    readonly video?: VideoSchema
-
-    @Xml.Element("Points", PointsSchema)
-    readonly points?: PointsSchema
+    @Xml.ElementRef(TimelineSchema)
+    readonly content?: TimelineSchema
 }
 
 @Xml.Class("Project")
@@ -574,12 +530,12 @@ export class ProjectSchema {
     @Xml.Element("Transport", TransportSchema)
     readonly transport?: TransportSchema
 
-    @Xml.Element("Structure", Array)
+    @Xml.ElementRef(LaneSchema, "Structure")
     readonly structure!: ReadonlyArray<LaneSchema>
 
     @Xml.Element("Arrangement", ArrangementSchema)
     readonly arrangement?: ArrangementSchema
 
-    @Xml.Element("Scenes", Array)
+    @Xml.ElementRef(SceneSchema, "Scenes")
     readonly scenes?: ReadonlyArray<SceneSchema>
 }

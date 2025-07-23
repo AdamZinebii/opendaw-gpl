@@ -13,8 +13,38 @@ import {
     TransportSchema,
     Unit
 } from "@opendaw/lib-dawproject"
+import {ProjectEnv} from "./ProjectEnv"
+import {asDefined, isDefined} from "@opendaw/lib-std"
+import JSZip from "jszip"
 
 export namespace DawProjectIO {
+    export const decode = async (env: ProjectEnv, arrayBuffer: ArrayBuffer): Promise<Project> => {
+        const zip = await JSZip.loadAsync(arrayBuffer)
+        const {transport, arrangement} = Xml.parse(asDefined(await zip.file("project.xml")
+            ?.async("string"), "No project.xml found"), ProjectSchema)
+        const project = Project.new(env)
+        const {timelineBox, boxGraph} = project
+        boxGraph.beginTransaction()
+        {
+            timelineBox.bpm.setValue(transport?.tempo?.value ?? 120.0)
+            timelineBox.signature.nominator.setValue(transport?.timeSignature?.numerator ?? 4)
+            timelineBox.signature.denominator.setValue(transport?.timeSignature?.denominator ?? 4)
+            if (isDefined(arrangement)) {
+                const lanes = arrangement.lanes
+                if (isDefined(lanes)) {
+                    console.debug(lanes.timeUnit)
+                    lanes.lanes?.forEach(lane => {
+                        lane.clips?.forEach(clip => {
+                            console.debug(clip)
+                        })
+                    })
+                }
+            }
+        }
+        boxGraph.endTransaction()
+        return project
+    }
+
     export const encode = ({rootBox, timelineBox}: Project): string => {
         const trackBoxes = IndexedBox.collectIndexedBoxes(rootBox.audioUnits, AudioUnitBox)
             .flatMap(audioUnitBox => IndexedBox.collectIndexedBoxes(audioUnitBox.tracks, TrackBox))
@@ -60,7 +90,7 @@ export namespace DawProjectIO {
             value: timelineBox.bpm.getValue()
         }, RealParameterSchema),
         timeSignature: Xml.element({
-            nominator: timelineBox.signature.nominator.getValue(),
+            numerator: timelineBox.signature.nominator.getValue(),
             denominator: timelineBox.signature.denominator.getValue()
         }, TimeSignatureParameterSchema)
     }, TransportSchema)

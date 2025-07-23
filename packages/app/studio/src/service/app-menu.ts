@@ -28,7 +28,10 @@ export const initAppMenu = (service: StudioService) => {
                     MenuItem.default({label: "Audio Files..."})
                         .setTriggerProcedure(() => service.browseForSamples(true)),
                     MenuItem.default({label: "Project Bundle..."})
-                        .setTriggerProcedure(() => service.importZip())
+                        .setTriggerProcedure(() => service.importZip()),
+                    MenuItem.default({
+                        label: "DAWproject..."
+                    }).setTriggerProcedure(() => service.importDawproject())
                 )),
             MenuItem.default({label: "Export", selectable: service.hasProjectSession})
                 .setRuntimeChildrenProcedure(parent => parent.addMenuItem(

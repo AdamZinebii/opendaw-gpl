@@ -4,6 +4,7 @@ import {
     EmptyExec,
     Func,
     int,
+    isDefined,
     Notifier,
     Nullable,
     Observer,
@@ -42,7 +43,7 @@ import {AudioOutputDevice} from "@/audio/AudioOutputDevice"
 import {FooterLabel} from "@/service/FooterLabel"
 import {RouteLocation} from "@opendaw/lib-jsx"
 import {PPQN} from "@opendaw/lib-dsp"
-import {Browser, ConsoleCommands, Errors} from "@opendaw/lib-dom"
+import {Browser, ConsoleCommands, Errors, Files} from "@opendaw/lib-dom"
 import {Promises} from "@opendaw/lib-runtime"
 import {ExportStemsConfiguration, Sample} from "@opendaw/studio-adapters"
 import {ProjectDialogs} from "@/project/ProjectDialogs"
@@ -50,8 +51,17 @@ import {AudioImporter} from "@/audio/AudioImport"
 import {Address} from "@opendaw/lib-box"
 import {Recovery} from "@/Recovery.ts"
 import {MIDILearning} from "@/midi/devices/MIDILearning"
-import {EngineFacade, EngineWorklet, MainThreadSampleManager, Project, ProjectEnv, Worklets} from "@opendaw/studio-core"
+import {
+    DawProjectIO,
+    EngineFacade,
+    EngineWorklet,
+    MainThreadSampleManager,
+    Project,
+    ProjectEnv,
+    Worklets
+} from "@opendaw/studio-core"
 import {AudioOfflineRenderer} from "@/audio/AudioOfflineRenderer"
+import {FilePickerAcceptTypes} from "@/ui/FilePickerAcceptTypes"
 
 /**
  * I am just piling stuff after stuff in here to boot the environment.
@@ -341,6 +351,21 @@ export class StudioService implements ProjectEnv {
 
     async saveFile() {return await this.sessionService.saveFile()}
     async loadFile() {return this.sessionService.loadFile()}
+
+    async importDawproject() {
+        const {status, value, error} =
+            await Promises.tryCatch(Files.open({types: [FilePickerAcceptTypes.DawprojectFileType]}))
+        if (status === "rejected") {
+            if (Errors.isAbort(error)) {return}
+            return panic(String(error))
+        }
+        const file = value.at(0)
+        if (!isDefined(file)) {return}
+        const arrayBuffer = await file.arrayBuffer()
+        const project = await DawProjectIO.decode(this, arrayBuffer)
+        this.sessionService.fromProject(project, "Dawproject")
+    }
+
     fromProject(project: Project, name: string): void {this.sessionService.fromProject(project, name)}
 
     runIfProject<R>(procedure: Func<Project, R>): Option<R> {

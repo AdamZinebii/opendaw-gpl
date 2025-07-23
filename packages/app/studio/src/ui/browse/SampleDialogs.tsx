@@ -7,14 +7,11 @@ import {isDefined, UUID} from "@opendaw/lib-std"
 import {Promises} from "@opendaw/lib-runtime"
 import {Errors, Files} from "@opendaw/lib-dom"
 import {SampleImporter} from "@/project/SampleImporter"
-
-const SampleFileTypes: Array<FilePickerAcceptType> = [
-    {description: "openDAW audio-files", accept: {"application/octet-stream": [".wav"]}}
-]
+import {FilePickerAcceptTypes} from "@/ui/FilePickerAcceptTypes"
 
 export namespace SampleDialogs {
     export const nativeFileBrowser = async (multiple: boolean = true) =>
-        Promises.tryCatch(Files.open({types: SampleFileTypes, multiple}))
+        Promises.tryCatch(Files.open({...FilePickerAcceptTypes.WavFiles, multiple}))
 
     export const missingSampleDialog = async (importer: SampleImporter, uuid: UUID.Format, name: string): Promise<Sample> => {
         const {resolve, reject, promise} = Promise.withResolvers<Sample>()

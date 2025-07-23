@@ -21,4 +21,9 @@ export namespace FilePickerAcceptTypes {
         description: "openDAW project bundle",
         accept: {"application/octet-stream": [".odb"]}
     }
+
+    export const DawprojectFileType: FilePickerAcceptType = {
+        description: "dawproject",
+        accept: {"application/octet-stream": [".dawproject"]}
+    }
 }

@@ -4,6 +4,7 @@ export namespace Xml {
     type Meta =
         | { type: "class", name: string, clazz: Class }
         | { type: "element", name: string, clazz: Class }
+        | { type: "element-ref", clazz: Class, name: string | null }
         | { type: "attribute", name: string, validator?: AttributeValidator<unknown> }
     type MetaMap = Map<PropertyKey, Meta>
 
@@ -41,6 +42,11 @@ export namespace Xml {
             WeakMaps.createIfAbsent(MetaClassMap, target.constructor, () => new Map<PropertyKey, Meta>())
                 .set(propertyKey, {type: "element", name, clazz})
 
+    export const ElementRef = (clazz: Class, wrapperName?: string): PropertyDecorator =>
+        (target: Object, propertyKey: PropertyKey) =>
+            WeakMaps.createIfAbsent(MetaClassMap, target.constructor, () => new Map<PropertyKey, Meta>())
+                .set(propertyKey, {type: "element-ref", clazz, name: wrapperName ?? null})
+
     export const Class = (tagName: string): ClassDecorator => {
         return (constructor: Function): void => {
             assert(!ClassMap.has(tagName), `${tagName} is already registered as a class.`)
@@ -62,16 +68,6 @@ export namespace Xml {
             const element = doc.createElement(tagName)
             Object.entries(object).forEach(([key, value]) => {
                 if (!isDefined(value)) {return}
-                if (key === "children" && Array.isArray(value)) {
-                    element.append(...value.map(item => {
-                        const name = resolveMeta(item.constructor, "class")?.name
-                        if (!isDefined(name)) {
-                            return panic("Classes inside an array must have a @Xml.RootElement decorator")
-                        }
-                        return visit(name, item)
-                    }))
-                    return
-                }
                 const meta = resolveMeta(object.constructor, key)
                 if (!isDefined(meta)) {return}
                 if (meta.type === "attribute") {
@@ -84,11 +80,11 @@ export namespace Xml {
                         console.debug("Array")
                         const elements = doc.createElement(meta.name)
                         elements.append(...value.map(item => {
-                            const name = resolveMeta(item.constructor, "class")?.name
-                            if (!isDefined(name)) {
-                                return panic(`Class '${item.constructor.name}' inside an array must have a @Xml.RootElement decorator. key: '${key}'`)
+                            const tagMeta = resolveMeta(item.constructor, "class")
+                            if (!tagMeta || tagMeta.type !== "class") {
+                                return panic(`Missing or invalid @Xml.Class decorator for ${item.constructor.name}`)
                             }
-                            return visit(name, item)
+                            return visit(tagMeta.name, item)
                         }))
                         element.appendChild(elements)
                     } else if (typeof value === "string") {
@@ -97,6 +93,16 @@ export namespace Xml {
                         element.appendChild(child)
                     } else {
                         element.appendChild(visit(meta.name, value))
+                    }
+                } else if (meta.type === "element-ref") {
+                    if (!Array.isArray(value)) {return}
+                    for (const item of value) {
+                        const itemClass = item?.constructor
+                        const tagMeta = resolveMeta(itemClass, "class")
+                        if (!isDefined(tagMeta) || tagMeta.type !== "class") {
+                            return panic(`Missing @Xml.Class decorator on ${itemClass?.name}`)
+                        }
+                        element.appendChild(visit(tagMeta.name, item))
                     }
                 } else {
                     return panic(`Unknown meta type ${meta.type}`)
@@ -165,18 +171,18 @@ export namespace Xml {
                         meta.validator?.required && panic(`Missing attribute '${meta.name}'`)
                     }
                 } else if (meta.type === "element") {
-                    const {name, clazz} = meta
-                    if (clazz === Array) {
-                        const arrayElement = element.querySelector(name)
-                        if (isDefined(arrayElement)) {
-                            Object.defineProperty(instance, key, {
-                                value: Array.from(arrayElement.children)
-                                    .map(child => deserialize(child, asDefined(ClassMap.get(child.nodeName),
-                                        `Could not find class for '${child.nodeName}'`))),
-                                enumerable: true
-                            })
-                        }
-                    } else if (clazz === String) {
+                    const {name, clazz: elementClazz} = meta
+                    if (elementClazz === Array) {
+                        const arrayElements = element.querySelectorAll(`:scope > ${name}`)
+                        const items = Array.from(arrayElements).map(child =>
+                            deserialize(child, asDefined(ClassMap.get(child.nodeName),
+                                `Could not find class for '${child.nodeName}'`))
+                        )
+                        Object.defineProperty(instance, key, {
+                            value: items,
+                            enumerable: true
+                        })
+                    } else if (elementClazz === String) {
                         const textContent = element.querySelector(`:scope > ${name}`)?.textContent
                         Object.defineProperty(instance, key, {
                             value: textContent,
@@ -186,16 +192,29 @@ export namespace Xml {
                         const child = element.querySelector(`:scope > ${name}`)
                         if (isDefined(child)) {
                             Object.defineProperty(instance, key, {
-                                value: deserialize(child, clazz),
+                                value: deserialize(child, elementClazz),
                                 enumerable: true
                             })
+                        } else {
+                            Object.defineProperty(instance, key, {value: undefined, enumerable: true})
                         }
                     }
+                } else if (meta.type === "element-ref") {
+                    Object.defineProperty(instance, key, {
+                        value: Array.from(element.children)
+                            .map(child => {
+                                const clazz = ClassMap.get(child.nodeName)
+                                if (!isDefined(clazz) || !(clazz.prototype instanceof meta.clazz)) return null
+                                return deserialize(child, clazz)
+                            })
+                            .filter(isDefined),
+                        enumerable: true
+                    })
                 }
             }
             return instance
         }
-        return deserialize(new DOMParser()
-            .parseFromString(xml.trimStart(), "application/xml").documentElement, clazz)
+        const xmlDoc = new DOMParser().parseFromString(xml.trimStart(), "application/xml").documentElement
+        return deserialize(xmlDoc, clazz)
     }
 }

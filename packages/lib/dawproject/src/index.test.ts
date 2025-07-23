@@ -3,7 +3,7 @@ import {Xml} from "@opendaw/lib-xml"
 import {
     ApplicationSchema,
     BooleanParameterSchema,
-    ChannelSchema,
+    ChannelSchema, ClipsSchema,
     MetaDataSchema,
     ProjectSchema,
     RealParameterSchema,
@@ -13,6 +13,8 @@ import {
     Unit
 } from "./"
 import exampleXml from "./bitwig.example.xml?raw"
+import kurpProjectXml from "./kurp.project.xml?raw"
+import testProjectXml from "./test.project.xml?raw"
 import {asInstanceOf} from "@opendaw/lib-std"
 
 describe("Serializer", () => {
@@ -41,7 +43,7 @@ describe("Serializer", () => {
                     value: 120
                 }, RealParameterSchema),
                 timeSignature: Xml.element({
-                    nominator: 4,
+                    numerator: 4,
                     denominator: 4
                 }, TimeSignatureParameterSchema)
             }, TransportSchema),
@@ -77,5 +79,15 @@ describe("Serializer", () => {
 
         expect(asInstanceOf(result.structure[0], TrackSchema).channel?.audioChannels).toBe(2)
         expect(asInstanceOf(result.structure[1], TrackSchema).channel?.id).toBe("id10")
+    })
+
+    it("deep read", () => {
+        kurpProjectXml.at(0)
+        const {transport, arrangement} = Xml.parse(testProjectXml, ProjectSchema)
+
+        console.debug("bpm", transport?.tempo?.value) // 140
+        console.debug("numerator", transport?.timeSignature?.numerator) // 4
+        console.debug("denominator", transport?.timeSignature?.denominator) // 4
+        console.dir(arrangement, {depth: Number.MAX_SAFE_INTEGER}) // ArrangementSchema
     })
 })
