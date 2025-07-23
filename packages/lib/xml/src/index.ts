@@ -95,12 +95,10 @@ export namespace Xml {
                         element.appendChild(visit(meta.name, value))
                     }
                 } else if (meta.type === "element-ref") {
-                    if (!Array.isArray(value)) { return }
-
+                    if (!Array.isArray(value)) {return}
                     const wrapper = meta.name
                         ? doc.createElement(meta.name)
                         : element
-
                     for (const item of value) {
                         const itemClass = item?.constructor
                         const tagMeta = resolveMeta(itemClass, "class")
@@ -110,7 +108,6 @@ export namespace Xml {
                         const childElement = visit(tagMeta.name, item)
                         wrapper.appendChild(childElement)
                     }
-
                     if (wrapper !== element) {
                         element.appendChild(wrapper)
                     }

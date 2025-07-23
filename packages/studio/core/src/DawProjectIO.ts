@@ -14,7 +14,7 @@ import {
     Unit
 } from "@opendaw/lib-dawproject"
 import {ProjectEnv} from "./ProjectEnv"
-import {asDefined, isDefined} from "@opendaw/lib-std"
+import {asDefined} from "@opendaw/lib-std"
 import JSZip from "jszip"
 
 export namespace DawProjectIO {
@@ -29,17 +29,7 @@ export namespace DawProjectIO {
             timelineBox.bpm.setValue(transport?.tempo?.value ?? 120.0)
             timelineBox.signature.nominator.setValue(transport?.timeSignature?.numerator ?? 4)
             timelineBox.signature.denominator.setValue(transport?.timeSignature?.denominator ?? 4)
-            if (isDefined(arrangement)) {
-                const lanes = arrangement.lanes
-                if (isDefined(lanes)) {
-                    console.debug(lanes.timeUnit)
-                    lanes.lanes?.forEach(lane => {
-                        lane.clips?.forEach(clip => {
-                            console.debug(clip)
-                        })
-                    })
-                }
-            }
+            // TODO :-)
         }
         boxGraph.endTransaction()
         return project
