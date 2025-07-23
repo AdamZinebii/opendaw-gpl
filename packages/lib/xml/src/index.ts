@@ -95,14 +95,24 @@ export namespace Xml {
                         element.appendChild(visit(meta.name, value))
                     }
                 } else if (meta.type === "element-ref") {
-                    if (!Array.isArray(value)) {return}
+                    if (!Array.isArray(value)) { return }
+
+                    const wrapper = meta.name
+                        ? doc.createElement(meta.name)
+                        : element
+
                     for (const item of value) {
                         const itemClass = item?.constructor
                         const tagMeta = resolveMeta(itemClass, "class")
                         if (!isDefined(tagMeta) || tagMeta.type !== "class") {
                             return panic(`Missing @Xml.Class decorator on ${itemClass?.name}`)
                         }
-                        element.appendChild(visit(tagMeta.name, item))
+                        const childElement = visit(tagMeta.name, item)
+                        wrapper.appendChild(childElement)
+                    }
+
+                    if (wrapper !== element) {
+                        element.appendChild(wrapper)
                     }
                 } else {
                     return panic(`Unknown meta type ${meta.type}`)
