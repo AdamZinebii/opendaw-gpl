@@ -200,11 +200,16 @@ export namespace Xml {
                         }
                     }
                 } else if (meta.type === "element-ref") {
+                    const parent = meta.name
+                        ? element.querySelector(`:scope > ${meta.name}`)
+                        : element
+                    const children = parent ? Array.from(parent.children) : []
+                    console.debug(`[Xml] Writing ${key.toString()} with ${children.length} children`)
                     Object.defineProperty(instance, key, {
-                        value: Array.from(element.children)
+                        value: children
                             .map(child => {
-                                const clazz = ClassMap.get(child.nodeName)
-                                if (!isDefined(clazz) || !(clazz.prototype instanceof meta.clazz)) return null
+                                const clazz = asDefined(ClassMap.get(child.nodeName))
+                                if (!(clazz === meta.clazz || clazz.prototype instanceof meta.clazz)) return null
                                 return deserialize(child, clazz)
                             })
                             .filter(isDefined),

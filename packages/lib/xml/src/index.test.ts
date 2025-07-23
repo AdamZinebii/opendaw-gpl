@@ -50,6 +50,7 @@ describe("Xml.parse() – LibrarySchema", () => {
         const [novel, comic] = shelf1.books
         expect(novel).toBeInstanceOf(NovelSchema)
         assertInstanceOf(novel, NovelSchema)
+        console.dir(novel, {depth: null})
         expect(novel.title).toBe("1984")
         expect(novel.pages).toBe(328)
         expect(novel.review?.score).toBe(9.5)
