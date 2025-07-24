@@ -363,8 +363,10 @@ export class StudioService implements ProjectEnv {
         const file = value.at(0)
         if (!isDefined(file)) {return}
         const arrayBuffer = await file.arrayBuffer()
-        const {project: ProjectSchema, samples} = await DawProjectIO.decode(arrayBuffer)
-        const {skeleton} = new DawProjectImporter(ProjectSchema, samples)
+        const {project: projectSchema, samples} = await DawProjectIO.decode(arrayBuffer)
+        const {skeleton, audioFiles} = await DawProjectImporter.importProject(projectSchema, samples)
+        await Promise.all(Array.from(audioFiles.entries()).map(([uuidString, arrayBuffer]) =>
+            this.importSample({uuid: UUID.parse(uuidString), arrayBuffer, name: ""}))) // TODO Name???
         this.sessionService.fromProject(Project.skeleton(this, skeleton), "Dawproject")
     }
 

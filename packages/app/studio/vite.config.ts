@@ -1,3 +1,4 @@
+import {UUID} from "@opendaw/lib-std"
 import {readFileSync, writeFileSync} from "fs"
 import {resolve} from "path"
 import {defineConfig} from "vite"
@@ -6,7 +7,7 @@ import viteCompression from "vite-plugin-compression"
 import {BuildInfo} from "./src/BuildInfo"
 
 export default defineConfig(({/*mode, command*/}) => {
-    const uuid = generateUUID()
+    const uuid = UUID.toString(UUID.generate())
     const env = process.env.NODE_ENV as BuildInfo["env"]
     const date = Date.now()
     return {
@@ -78,21 +79,3 @@ export default defineConfig(({/*mode, command*/}) => {
         ]
     }
 })
-
-const generateUUID = (): string => {
-    const format = crypto.getRandomValues(new Uint8Array(16))
-    format[6] = (format[6] & 0x0f) | 0x40 // Version 4 (random)
-    format[8] = (format[8] & 0x3f) | 0x80 // Variant 10xx for UUID
-    const hex: Array<string> = []
-    for (let index = 0; index < 256; index++) {
-        hex[index] = (index + 0x100).toString(16).substring(1)
-    }
-    return hex[format[0]] + hex[format[1]] +
-        hex[format[2]] + hex[format[3]] + "-" +
-        hex[format[4]] + hex[format[5]] + "-" +
-        hex[format[6]] + hex[format[7]] + "-" +
-        hex[format[8]] + hex[format[9]] + "-" +
-        hex[format[10]] + hex[format[11]] +
-        hex[format[12]] + hex[format[13]] +
-        hex[format[14]] + hex[format[15]]
-}

@@ -8,10 +8,10 @@ import {DawProjectImporter} from "./DawProjectImporter"
 describe("DawProjectImport", () => {
     it("import", async () => {
         const __dirname = path.dirname(fileURLToPath(import.meta.url))
-        const buffer = fs.readFileSync(path.join(__dirname, "../../../../../test-files/midi.dawproject"))
+        const buffer = fs.readFileSync(path.join(__dirname, "../../../../../test-files/sample.dawproject"))
         console.debug("buffer", buffer.buffer.byteLength)
         const {project, samples} = await DawProjectIO.decode(buffer)
-        const importer = new DawProjectImporter(project, samples)
+        const importer = await DawProjectImporter.importProject(project, samples)
         console.debug(importer.skeleton)
     })
 })

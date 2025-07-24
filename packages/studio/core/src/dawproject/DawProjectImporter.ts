@@ -10,10 +10,12 @@ import {
     TrackSchema,
     WarpsSchema
 } from "@opendaw/lib-dawproject"
-import {asDefined, int, isInstanceOf, isUndefined, Nullish, Option, panic, UUID} from "@opendaw/lib-std"
+import {asDefined, assert, int, isInstanceOf, isUndefined, Nullish, Option, panic, UUID} from "@opendaw/lib-std"
 import {DawProjectIO} from "./DawProjectIO"
 import {
     AudioBusBox,
+    AudioFileBox,
+    AudioRegionBox,
     AudioUnitBox,
     BoxIO,
     GrooveShuffleBox,
@@ -31,17 +33,17 @@ import {IconSymbol, ProjectDecoder, TrackType} from "@opendaw/studio-adapters"
 import {AudioUnitType} from "@opendaw/studio-enums"
 import {InstrumentFactories} from "../InstrumentFactories"
 
-/**
- * Collecting notes:
- *
- * The intense nesting is very cumbersome to work with.
- * Almost everything in dawproject is a timeline, even audio.
- */
 export class DawProjectImporter {
+    static async importProject(schema: ProjectSchema,
+                               samples: DawProjectIO.Samples): Promise<DawProjectImporter> {
+        return new DawProjectImporter(schema, samples).#read()
+    }
+
     readonly #schema: ProjectSchema
     readonly #samples: DawProjectIO.Samples
 
     readonly #mapTrackBoxes: Map<string, TrackBox>
+    readonly #mapAudioFiles: Map<string, ArrayBuffer>
 
     readonly #boxGraph: BoxGraph<BoxIO.TypeMap>
     readonly #rootBox: RootBox
@@ -50,11 +52,12 @@ export class DawProjectImporter {
     readonly #timelineBox: TimelineBox
     readonly #userInterfaceBox: UserInterfaceBox
 
-    constructor(schema: ProjectSchema, samples: DawProjectIO.Samples) {
+    private constructor(schema: ProjectSchema, samples: DawProjectIO.Samples) {
         this.#schema = schema
         this.#samples = samples
 
         this.#mapTrackBoxes = new Map<string, TrackBox>()
+        this.#mapAudioFiles = new Map<string, ArrayBuffer>()
 
         const isoString = new Date().toISOString()
         console.debug(`New Project imported on ${isoString}`)
@@ -89,13 +92,18 @@ export class DawProjectImporter {
         this.#masterBusBox.output.refer(this.#masterAudioUnit.input)
         this.#userInterfaceBox = UserInterfaceBox.create(this.#boxGraph, UUID.generate(),
             box => box.root.refer(this.#rootBox.users))
+    }
 
+    async #read() {
         this.#readTransport()
         this.#readStructure()
-        this.#readArrangement()
+        await this.#readArrangement()
         this.#boxGraph.endTransaction()
         this.#boxGraph.verifyPointers()
+        return this
     }
+
+    get audioFiles(): Map<string, ArrayBuffer> {return this.#mapAudioFiles}
 
     get skeleton(): ProjectDecoder.Skeleton {
         return {
@@ -112,7 +120,6 @@ export class DawProjectImporter {
 
     #readTransport(): void {
         const {transport} = this.#schema
-
         if (isUndefined(transport)) {return}
         this.#timelineBox.bpm.setValue(transport.tempo?.value ?? 120.0)
         this.#timelineBox.signature.nominator.setValue(transport.timeSignature?.numerator ?? 4)
@@ -123,6 +130,7 @@ export class DawProjectImporter {
         const {structure} = this.#schema
         structure.forEach((lane: LaneSchema, index: int) => {
             if (isInstanceOf(lane, TrackSchema)) {
+                const trackType = this.#contentToTrackType(lane.contentType)
                 const channel = asDefined(lane.channel, "Track has no Channel")
                 if (channel.role === "regular") {
                     const audioUnitBox = AudioUnitBox.create(this.#boxGraph, UUID.generate(), box => {
@@ -132,14 +140,19 @@ export class DawProjectImporter {
                         box.collection.refer(this.#rootBox.audioUnits)
                     })
                     const trackBox = TrackBox.create(this.#boxGraph, UUID.generate(), box => {
-                        box.type.setValue(this.#contentToTrackType(lane.contentType))
+                        box.type.setValue(trackType)
                         box.index.setValue(0)
                         box.tracks.refer(audioUnitBox.tracks)
                         box.target.refer(audioUnitBox)
                     })
                     this.#mapTrackBoxes.set(asDefined(lane.id, "Track must have an id."), trackBox)
-                    InstrumentFactories.Vaporisateur
-                        .create(this.#boxGraph, audioUnitBox.input, lane.name ?? "", IconSymbol.Piano)
+                    if (trackType === TrackType.Notes) {
+                        InstrumentFactories.Vaporisateur
+                            .create(this.#boxGraph, audioUnitBox.input, lane.name ?? "", IconSymbol.Piano)
+                    } else if (trackType === TrackType.Audio) {
+                        InstrumentFactories.Tape
+                            .create(this.#boxGraph, audioUnitBox.input, lane.name ?? "", IconSymbol.Waveform)
+                    }
                 } else if (channel.role === "effect") {
                     // TODO
                 } else if (channel.role === "master") {
@@ -151,27 +164,27 @@ export class DawProjectImporter {
         })
     }
 
-    #readArrangement(): void {
+    #readArrangement(): Promise<unknown> {
         const {arrangement} = this.#schema
 
-        const readRegions = ({clips}: ClipsSchema, track: string): void =>
-            clips.forEach(clip => readAnyRegion(clip, track))
+        const readRegions = ({clips}: ClipsSchema, track: string): Promise<unknown> =>
+            Promise.all(clips.map(clip => readAnyRegion(clip, track)))
 
-        const readLane = (lane: LanesSchema): void => {
+        const readLane = (lane: LanesSchema): Promise<unknown> => {
             const track = lane.track // links to track in structure
-            lane?.lanes?.filter(timeline => isInstanceOf(timeline, ClipsSchema))
-                .forEach(clips => readRegions(clips, asDefined(track, "Region(Clips) must have an id.")))
+            return Promise.all(lane?.lanes?.filter(timeline => isInstanceOf(timeline, ClipsSchema))
+                .map(clips => readRegions(clips, asDefined(track, "Region(Clips) must have an id."))) ?? [])
         }
 
-        const readAnyRegion = (clip: ClipSchema, trackId: string): void => {
+        const readAnyRegion = (clip: ClipSchema, trackId: string): Promise<unknown> => {
             const trackBox = asDefined(this.#mapTrackBoxes.get(trackId), `Could not find track for ${trackId}`)
-            clip.content?.forEach((content: TimelineSchema) => {
+            return Promise.all(clip.content?.map(async (content: TimelineSchema) => {
                 if (isInstanceOf(content, ClipsSchema)) {
-                    readAnyRegionContent(clip, content)
+                    await readAnyRegionContent(clip, content, trackBox)
                 } else if (isInstanceOf(content, NotesSchema)) {
                     readNoteRegionContent(clip, content, trackBox)
                 }
-            })
+            }) ?? [])
         }
 
         const readNoteRegionContent = (clip: ClipSchema, notes: NotesSchema, trackBox: TrackBox): void => {
@@ -179,10 +192,11 @@ export class DawProjectImporter {
             NoteRegionBox.create(this.#boxGraph, UUID.generate(), box => {
                 const position = asDefined(clip.time, "Time not defined")
                 const duration = asDefined(clip.duration, "Duration not defined")
+                const loopDuration = clip.loopEnd ?? duration
                 box.position.setValue(position * PPQN.Quarter)
                 box.duration.setValue(duration * PPQN.Quarter)
                 box.label.setValue(clip.name ?? "")
-                box.loopDuration.setValue(duration * PPQN.Quarter)
+                box.loopDuration.setValue(loopDuration * PPQN.Quarter)
                 box.mute.setValue(clip.enable === false)
                 box.events.refer(collectionBox.owners)
                 box.regions.refer(trackBox.regions)
@@ -198,7 +212,7 @@ export class DawProjectImporter {
             })
         }
 
-        const readAnyRegionContent = (clip: ClipSchema, content: ClipsSchema): void => {
+        const readAnyRegionContent = async (clip: ClipSchema, content: ClipsSchema, trackBox: TrackBox): Promise<unknown> => {
             const contentClip = content.clips.at(0)
             if (isUndefined(contentClip)) {
                 console.warn(clip, "audio-clip without content-clip?")
@@ -208,13 +222,32 @@ export class DawProjectImporter {
             // TODO From which point is it guaranteed that this is an audio region?
             if (isInstanceOf(innerContent, WarpsSchema)) {
                 const audio = innerContent?.content?.at(0) as Nullish<AudioSchema>
-                const path = asDefined(audio?.file.path)
+                if (isUndefined(audio)) {return}
+                const {path, external} = audio.file
+                assert(external !== true, "File cannot be external")
                 const sample = this.#samples.load(path)
-                console.debug(path, sample.byteLength)
+                const fileUUID = await UUID.sha256(sample) // TODO Optimize. We are doing that for each occurrence, Let's do this earlier!
+                const audioFileBox: AudioFileBox = this.#boxGraph.findBox<AudioFileBox>(fileUUID)
+                    .unwrapOrElse(() => AudioFileBox.create(this.#boxGraph, fileUUID, box => {
+                        box.fileName.setValue(path.substring(path.lastIndexOf("/") + 1))
+                    }))
+                this.#mapAudioFiles.set(UUID.toString(fileUUID), sample)
+                AudioRegionBox.create(this.#boxGraph, UUID.generate(), box => {
+                    const position = asDefined(clip.time, "Time not defined")
+                    const duration = asDefined(clip.duration, "Duration not defined")
+                    const loopDuration = clip.loopEnd ?? duration
+                    box.position.setValue(position * PPQN.Quarter)
+                    box.duration.setValue(duration * PPQN.Quarter)
+                    box.label.setValue(clip.name ?? "")
+                    box.loopDuration.setValue(loopDuration * PPQN.Quarter)
+                    box.mute.setValue(clip.enable === false)
+                    box.regions.refer(trackBox.regions)
+                    box.file.refer(audioFileBox)
+                })
             }
         }
-
-        arrangement?.lanes?.lanes?.filter(timeline => isInstanceOf(timeline, LanesSchema)).forEach(readLane)
+        return Promise.all(arrangement?.lanes?.lanes?.filter(timeline => isInstanceOf(timeline, LanesSchema))
+            .map(readLane) ?? [])
     }
 
     #contentToTrackType(contentType?: string): TrackType {

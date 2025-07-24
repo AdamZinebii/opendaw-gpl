@@ -2,6 +2,7 @@
 
 import {Xml} from "@opendaw/lib-xml"
 import type {int} from "@opendaw/lib-std"
+import StringRequired = Xml.StringRequired
 
 interface Nameable {
     name?: string
@@ -387,7 +388,7 @@ export class WarpSchema {
 
 @Xml.Class("File")
 export class FileReferenceSchema {
-    @Xml.Attribute("path")
+    @Xml.Attribute("path", StringRequired)
     readonly path!: string
 
     @Xml.Attribute("external", Xml.BoolOptional)
