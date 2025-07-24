@@ -51,15 +51,7 @@ import {AudioImporter} from "@/audio/AudioImport"
 import {Address} from "@opendaw/lib-box"
 import {Recovery} from "@/Recovery.ts"
 import {MIDILearning} from "@/midi/devices/MIDILearning"
-import {
-    DawProjectIO,
-    EngineFacade,
-    EngineWorklet,
-    MainThreadSampleManager,
-    Project,
-    ProjectEnv,
-    Worklets
-} from "@opendaw/studio-core"
+import {EngineFacade, EngineWorklet, MainThreadSampleManager, Project, ProjectEnv, Worklets} from "@opendaw/studio-core"
 import {AudioOfflineRenderer} from "@/audio/AudioOfflineRenderer"
 import {FilePickerAcceptTypes} from "@/ui/FilePickerAcceptTypes"
 
@@ -361,9 +353,9 @@ export class StudioService implements ProjectEnv {
         }
         const file = value.at(0)
         if (!isDefined(file)) {return}
-        const arrayBuffer = await file.arrayBuffer()
-        const project = await DawProjectIO.decode(this, arrayBuffer)
-        this.sessionService.fromProject(project, "Dawproject")
+        // const arrayBuffer = await file.arrayBuffer()
+        // const project = await DawProjectIO.decode(arrayBuffer)
+        // TODO this.sessionService.fromProject(project, "Dawproject")
     }
 
     fromProject(project: Project, name: string): void {this.sessionService.fromProject(project, name)}

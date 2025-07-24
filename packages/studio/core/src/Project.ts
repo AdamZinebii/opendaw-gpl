@@ -29,7 +29,6 @@ import {ProjectEnv} from "./ProjectEnv"
 import {Mixer} from "./Mixer"
 import {ProjectApi} from "./ProjectApi"
 import {ProjectMigration} from "./ProjectMigration"
-import {DawProjectIO} from "./DawProjectIO"
 
 // Main Entry Point for a Project
 //
@@ -163,5 +162,5 @@ export class Project implements BoxAdaptersContext, Terminable, TerminableOwner 
 
     terminate(): void {this.#terminator.terminate()}
 
-    toDawProject(): string {return DawProjectIO.encode(this)}
+    toDawProject(): string {return panic("Not implemented") }
 }

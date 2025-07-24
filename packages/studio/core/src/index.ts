@@ -8,9 +8,11 @@ export * from "./samples/MainThreadSampleLoader"
 export * from "./samples/MainThreadSampleManager"
 export * from "./samples/SampleProvider"
 
+export * from "./dawproject/DawProjectIO"
+export * from "./dawproject/DawProjectImport"
+
 export * from "./ColorCodes"
 export * from "./Colors"
-export * from "./DawProjectIO"
 export * from "./EffectBox"
 export * from "./EffectFactory"
 export * from "./EffectFactories"
