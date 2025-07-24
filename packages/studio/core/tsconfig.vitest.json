@@ -1,8 +1,11 @@
-// tsconfig.vitest.json
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "rootDir": ".", // or omit
+    "rootDir": "."
   },
-  "include": ["vitest.config.ts", "src", "**/*.test.ts"]
+  "include": [
+    "vitest.config.ts",
+    "src",
+    "**/*.test.ts"
+  ]
 }
