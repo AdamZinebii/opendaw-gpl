@@ -20,7 +20,7 @@ import {DawProjectIO} from "./DawProjectIO"
  * The intense nesting is very cumbersome to work with.
  * Almost everything in dawproject is a timeline, even audio.
  */
-export class DawProjectImport {
+export class DawProjectImporter {
     readonly #project: ProjectSchema
     readonly #samples: DawProjectIO.Samples
 
