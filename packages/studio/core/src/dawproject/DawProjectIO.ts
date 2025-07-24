@@ -1,9 +1,9 @@
 import JSZip from "jszip"
 import {Xml} from "@opendaw/lib-xml"
 import {asDefined, panic} from "@opendaw/lib-std"
-import {MetaDataSchema, ProjectSchema} from "./schema"
+import {MetaDataSchema, ProjectSchema} from "@opendaw/lib-dawproject"
 
-export namespace DAWProjectIO {
+export namespace DawProjectIO {
     export interface Samples {load(path: string): ArrayBuffer}
 
     export const decode = async (buffer: ArrayBuffer | NonSharedBuffer): Promise<{

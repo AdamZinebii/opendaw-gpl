@@ -1,16 +1,16 @@
 import {describe, expect, it} from "vitest"
+import {asInstanceOf} from "@opendaw/lib-std"
 import {Xml} from "@opendaw/lib-xml"
 import {MetaDataSchema, ProjectSchema, TrackSchema} from "./"
-import exampleXml from "../test-files/bitwig.example.xml?raw"
-import {asInstanceOf} from "@opendaw/lib-std"
+import exampleXml from "@test-files/bitwig.example.xml?raw"
 
 describe("DAW-project XML", () => {
     it("MetaData", () => {
         const title = "This is the title."
         const artist = "André Michelle"
         const website = "https://opendaw.studio"
-        const xmlString = Xml.pretty(Xml.toElement("MetaData", Xml.element({title, artist, website}, MetaDataSchema)))
-        console.debug(xmlString)
+        const xmlString = Xml.pretty(Xml.toElement("MetaData",
+            Xml.element({title, artist, website}, MetaDataSchema)))
         const metaDataSchema = Xml.parse(xmlString, MetaDataSchema)
         expect(metaDataSchema.title).toBe(title)
         expect(metaDataSchema.artist).toBe(artist)

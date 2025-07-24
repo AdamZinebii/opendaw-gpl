@@ -10,9 +10,9 @@ import {
     TimelineSchema,
     TrackSchema,
     WarpsSchema
-} from "./schema"
+} from "@opendaw/lib-dawproject"
 import {asDefined, isInstanceOf, isUndefined, Nullish} from "@opendaw/lib-std"
-import {DAWProjectIO} from "./io"
+import {DawProjectIO} from "./DawProjectIO"
 
 /**
  * Collecting notes:
@@ -20,11 +20,11 @@ import {DAWProjectIO} from "./io"
  * The intense nesting is very cumbersome to work with.
  * Almost everything in dawproject is a timeline, even audio.
  */
-export class Visitor {
+export class DawProjectImport {
     readonly #project: ProjectSchema
-    readonly #samples: DAWProjectIO.Samples
+    readonly #samples: DawProjectIO.Samples
 
-    constructor(project: ProjectSchema, samples: DAWProjectIO.Samples) {
+    constructor(project: ProjectSchema, samples: DawProjectIO.Samples) {
         this.#project = project
         this.#samples = samples
 

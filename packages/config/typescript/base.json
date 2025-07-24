@@ -21,7 +21,13 @@
     "allowUnusedLabels": true,
     "preserveWatchOutput": true,
     "skipLibCheck": true,
-    "strict": true
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "@test-files/*": [
+        "test-files/*"
+      ]
+    }
   },
   "exclude": [
     "node_modules"
