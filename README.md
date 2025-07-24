@@ -91,6 +91,7 @@ Huge thanks to our [ambassadors](https://opendaw.org/ambassadors), whose dedicat
 - OxVolt
 - Wojciech Miłkowski
 - Client
+- skyboundzoo
 
 ### openDAW Custom Pledge
 - lokomotywa ($2.47)
