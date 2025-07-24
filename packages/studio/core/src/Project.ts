@@ -78,6 +78,11 @@ export class Project implements BoxAdaptersContext, Terminable, TerminableOwner 
         return new Project(env, skeleton.boxGraph, skeleton.mandatoryBoxes)
     }
 
+    static skeleton(env: ProjectEnv, skeleton: ProjectDecoder.Skeleton): Project {
+        ProjectMigration.migrate(skeleton)
+        return new Project(env, skeleton.boxGraph, skeleton.mandatoryBoxes)
+    }
+
     readonly #terminator = new Terminator()
 
     readonly #env: ProjectEnv

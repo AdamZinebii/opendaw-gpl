@@ -262,10 +262,10 @@ export class TimelineSchema implements Referenceable {
 @Xml.Class("Note")
 export class NoteSchema {
     @Xml.Attribute("time", Xml.NumberRequired)
-    readonly time!: string
+    readonly time!: number
 
     @Xml.Attribute("duration", Xml.NumberRequired)
-    readonly duration!: string
+    readonly duration!: number
 
     @Xml.Attribute("channel", Xml.NumberRequired)
     readonly channel!: int
@@ -274,10 +274,10 @@ export class NoteSchema {
     readonly key!: int
 
     @Xml.Attribute("vel", Xml.NumberOptional)
-    readonly vel?: string
+    readonly vel?: number
 
     @Xml.Attribute("rel", Xml.NumberOptional)
-    readonly rel?: string
+    readonly rel?: number
 }
 
 @Xml.Class("Notes")
@@ -298,7 +298,7 @@ export class ClipSchema implements Nameable {
     readonly comment?: string
 
     @Xml.Attribute("time", Xml.NumberOptional)
-    readonly time!: number
+    readonly time?: number
 
     @Xml.Attribute("duration", Xml.NumberOptional)
     readonly duration?: number
