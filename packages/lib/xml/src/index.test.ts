@@ -30,11 +30,6 @@ ${Xml.Declaration}
 </Library>
 `
 
-const normalizeXml = (xml: string): string => {
-    return new XMLSerializer()
-        .serializeToString(new DOMParser().parseFromString(xml.trim(), "application/xml").documentElement)
-}
-
 describe("Xml.parse() – LibrarySchema", () => {
     it("should parse a complex library with books, reviews and inheritance", () => {
         const library = Xml.parse(xml, LibrarySchema)

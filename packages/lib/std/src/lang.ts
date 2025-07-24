@@ -55,6 +55,7 @@ export type Mutable<T> = { -readonly [P in keyof T]: T[P] }
 export type AssertType<T> = (value: unknown) => value is T
 export const identity = <T>(value: T): T => value
 export const isDefined = <T>(value: Nullish<T>): value is T => value !== undefined && value !== null
+export const isUndefined = <T>(value: Nullish<T>): value is undefined | null => value === undefined || value === null
 export const ifDefined = <T>(value: Nullish<T>, procedure: Procedure<T>): void => {if (value !== undefined && value !== null) {procedure(value)}}
 export const asDefined = <T>(value: Nullish<T>, fail: string = "asDefined failed"): T => value === null || value === undefined ? panic(fail) : value
 export const isInstanceOf = <T>(obj: unknown, clazz: Class<T>): obj is T => obj instanceof clazz

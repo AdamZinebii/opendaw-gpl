@@ -1,4 +1,4 @@
-import {Arrays, asDefined, assert, Class, int, isDefined, Nullish, panic, WeakMaps} from "@opendaw/lib-std"
+import {asDefined, assert, Class, int, isDefined, Nullish, panic, WeakMaps} from "@opendaw/lib-std"
 
 export namespace Xml {
     type Meta =
@@ -21,8 +21,14 @@ export namespace Xml {
     export const StringRequired: AttributeValidator<string> = {required: true, parse: value => value}
     export const StringOptional: AttributeValidator<string> = {required: false, parse: value => value}
 
-    export const BoolRequired: AttributeValidator<boolean> = {required: true, parse: value => Boolean(value)}
-    export const BoolOptional: AttributeValidator<boolean> = {required: false, parse: value => Boolean(value)}
+    export const BoolRequired: AttributeValidator<boolean> = {
+        required: true,
+        parse: value => value?.toLowerCase() === "true"
+    }
+    export const BoolOptional: AttributeValidator<boolean> = {
+        required: false,
+        parse: value => value?.toLowerCase() === "true"
+    }
 
     export const NumberRequired: AttributeValidator<number> = {
         required: true, parse: value => {
@@ -95,7 +101,7 @@ export namespace Xml {
                         element.appendChild(visit(meta.name, value))
                     }
                 } else if (meta.type === "element-ref") {
-                    if (!Array.isArray(value)) {return}
+                    if (!Array.isArray(value)) {return panic("ElementRef must be an array of items.")}
                     const wrapper = meta.name
                         ? doc.createElement(meta.name)
                         : element
@@ -169,7 +175,7 @@ export namespace Xml {
                 acc[key] = metaInfo
                 return acc
             }, {})
-            const keys = [...classMeta.keys()].filter(key => key !== "class") as (keyof T)[]
+            const keys = [...classMeta.keys()].filter(key => key !== "class") as Array<keyof T>
             for (const key of keys) {
                 const meta: Meta = classMetaDict[key]
                 if (meta.type === "attribute") {
@@ -181,6 +187,7 @@ export namespace Xml {
                         })
                     } else {
                         meta.validator?.required && panic(`Missing attribute '${meta.name}'`)
+                        Object.defineProperty(instance, key, {value: undefined, enumerable: true})
                     }
                 } else if (meta.type === "element") {
                     const {name, clazz: elementClazz} = meta
@@ -188,8 +195,7 @@ export namespace Xml {
                         const arrayElements = element.querySelectorAll(`:scope > ${name}`)
                         const items = Array.from(arrayElements).map(child =>
                             deserialize(child, asDefined(ClassMap.get(child.nodeName),
-                                `Could not find class for '${child.nodeName}'`))
-                        )
+                                `Could not find class for '${child.nodeName}'`)))
                         Object.defineProperty(instance, key, {
                             value: items,
                             enumerable: true
@@ -212,22 +218,18 @@ export namespace Xml {
                         }
                     }
                 } else if (meta.type === "element-ref") {
-                    const parent = meta.name
+                    const parent = isDefined(meta.name)
                         ? element.querySelector(`:scope > ${meta.name}`)
                         : element
                     if (isDefined(parent)) {
                         Object.defineProperty(instance, key, {
-                            value: isDefined(parent)
-                                ? Array.from(parent.children)
-                                    .map(child => {
-                                        const clazz = asDefined(ClassMap.get(child.nodeName))
-                                        if (!(clazz === meta.clazz || clazz.prototype instanceof meta.clazz)) {
-                                            return null
-                                        }
-                                        return deserialize(child, clazz)
-                                    })
-                                    .filter(isDefined)
-                                : Arrays.empty(),
+                            value: Array.from(parent.children).map(child => {
+                                const clazz = asDefined(ClassMap.get(child.nodeName))
+                                if (!(clazz === meta.clazz || clazz.prototype instanceof meta.clazz)) {
+                                    return null
+                                }
+                                return deserialize(child, clazz)
+                            }).filter(isDefined),
                             enumerable: true
                         })
                     }

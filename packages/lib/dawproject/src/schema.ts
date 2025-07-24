@@ -331,7 +331,7 @@ export class ClipSchema implements Nameable {
     readonly enable?: boolean
 
     @Xml.ElementRef(TimelineSchema)
-    readonly content?: TimelineSchema
+    readonly content?: ReadonlyArray<TimelineSchema>
 
     @Xml.Attribute("reference")
     readonly reference?: string
@@ -418,7 +418,7 @@ export class AudioSchema extends MediaFileSchema {
 @Xml.Class("Warps")
 export class WarpsSchema extends TimelineSchema {
     @Xml.ElementRef(TimelineSchema)
-    readonly content?: TimelineSchema
+    readonly content?: ReadonlyArray<TimelineSchema>
 
     @Xml.Element("Warp", Array)
     readonly warps!: ReadonlyArray<WarpSchema>
@@ -514,7 +514,7 @@ export class SceneSchema implements Referenceable {
     readonly id?: string
 
     @Xml.ElementRef(TimelineSchema)
-    readonly content?: TimelineSchema
+    readonly content?: ReadonlyArray<TimelineSchema>
 }
 
 @Xml.Class("Project")
