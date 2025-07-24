@@ -16,7 +16,7 @@ import {
     TransportSchema,
     WarpsSchema
 } from "./"
-import {isDefined, isInstanceOf, isUndefined, Nullish} from "@opendaw/lib-std"
+import {asDefined, isDefined, isInstanceOf, isUndefined, Nullish} from "@opendaw/lib-std"
 
 /**
  * Collecting notes:
@@ -68,7 +68,7 @@ describe("DAW-project IO", () => {
                             // this is the start of a region providing an 'id'
                             timeline.clips.forEach((clip: ClipSchema) => {
                                 console.debug("region", clip.name, clip.time, clip.duration)
-                                clip.content?.forEach(async (content: TimelineSchema) => {
+                                clip.content?.forEach((content: TimelineSchema) => {
                                     if (isInstanceOf(content, NotesSchema)) {
                                         console.dir(content.notes?.map((note: NoteSchema) => ({
                                             key: note.key,
@@ -85,7 +85,7 @@ describe("DAW-project IO", () => {
                                         const warps = contentClip.content?.at(0) as Nullish<WarpsSchema>
                                         const audio = warps?.content?.at(0) as Nullish<AudioSchema>
                                         console.debug("------> AUDIO")
-                                        console.debug((await samples.load(audio?.file.path!)).byteLength)
+                                        console.debug(samples.load(asDefined(audio?.file.path)).byteLength)
                                         console.debug("<------ AUDIO")
                                     }
                                 })

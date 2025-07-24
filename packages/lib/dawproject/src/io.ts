@@ -4,7 +4,7 @@ import {asDefined, panic} from "@opendaw/lib-std"
 import {MetaDataSchema, ProjectSchema} from "./schema"
 
 export namespace DAWProjectIO {
-    export interface Samples {load(path: string): Promise<ArrayBuffer>}
+    export interface Samples {load(path: string): ArrayBuffer}
 
     export const decode = async (buffer: ArrayBuffer | NonSharedBuffer): Promise<{
         metaData: MetaDataSchema,
@@ -24,7 +24,7 @@ export namespace DAWProjectIO {
         const assetMap = new Map<string, ArrayBuffer>(assetBuffers)
         return {
             metaData, project, samples: {
-                load: async (path: string): Promise<ArrayBuffer> => assetMap.get(path) ?? panic("Invalid file: " + path)
+                load: (path: string): ArrayBuffer => assetMap.get(path) ?? panic("Asset not found: " + path)
             }
         }
     }
