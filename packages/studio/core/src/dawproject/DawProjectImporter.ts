@@ -1,5 +1,6 @@
 import {
     AudioSchema,
+    ChannelSchema,
     ClipSchema,
     ClipsSchema,
     LaneSchema,
@@ -21,7 +22,8 @@ import {
     Option,
     panic,
     SortedSet,
-    UUID
+    UUID,
+    ValueMapping
 } from "@opendaw/lib-std"
 import {DawProjectIO} from "./DawProjectIO"
 import {
@@ -40,7 +42,7 @@ import {
     UserInterfaceBox
 } from "@opendaw/studio-boxes"
 import {BoxGraph} from "@opendaw/lib-box"
-import {PPQN} from "@opendaw/lib-dsp"
+import {gainToDb, PPQN} from "@opendaw/lib-dsp"
 import {IconSymbol, ProjectDecoder, TrackType} from "@opendaw/studio-adapters"
 import {AudioUnitType} from "@opendaw/studio-enums"
 import {InstrumentFactories} from "../InstrumentFactories"
@@ -135,17 +137,26 @@ export class DawProjectImporter {
     }
 
     #readStructure(): void {
+        const readChannel = (box: AudioUnitBox, channel: ChannelSchema) => {
+            box.volume.setValue(gainToDb(channel.volume?.value ?? 1.0))
+            box.panning.setValue(ValueMapping.bipolar().y(channel.pan?.value ?? 0.5))
+            box.mute.setValue(channel.mute?.value === true)
+            box.solo.setValue(channel.solo === true)
+        }
         const {structure} = this.#schema
-        structure.forEach((lane: LaneSchema, index: int) => {
+        let index: int = 0
+        structure.forEach((lane: LaneSchema) => {
             if (isInstanceOf(lane, TrackSchema)) {
                 const trackType = this.#contentToTrackType(lane.contentType)
                 const channel = asDefined(lane.channel, "Track has no Channel")
+                console.debug(`#${index}`, channel)
                 if (channel.role === "regular") {
                     const audioUnitBox = AudioUnitBox.create(this.#boxGraph, UUID.generate(), box => {
                         box.index.setValue(index)
                         box.type.setValue(AudioUnitType.Instrument)
                         box.output.refer(this.#masterBusBox.input)
                         box.collection.refer(this.#rootBox.audioUnits)
+                        readChannel(box, channel)
                     })
                     const trackBox = TrackBox.create(this.#boxGraph, UUID.generate(), box => {
                         box.type.setValue(trackType)
@@ -162,14 +173,35 @@ export class DawProjectImporter {
                             .create(this.#boxGraph, audioUnitBox.input, lane.name ?? "", IconSymbol.Waveform)
                     }
                 } else if (channel.role === "effect") {
-                    // TODO
+                    const audioUnitBox = AudioUnitBox.create(this.#boxGraph, UUID.generate(), box => {
+                        box.index.setValue(index)
+                        box.type.setValue(AudioUnitType.Aux)
+                        box.output.refer(this.#masterBusBox.input)
+                        box.collection.refer(this.#rootBox.audioUnits)
+                        readChannel(box, channel)
+                    })
+                    AudioBusBox.create(this.#boxGraph, UUID.generate(), box => {
+                        box.collection.refer(this.#rootBox.audioBusses)
+                        box.label.setValue(lane.name ?? "Aux")
+                        box.color.setValue("hsl(189, 100%, 65%)")
+                        box.output.refer(audioUnitBox.input)
+                    })
+                    const trackBox = TrackBox.create(this.#boxGraph, UUID.generate(), box => {
+                        box.type.setValue(TrackType.Undefined)
+                        box.index.setValue(0)
+                        box.tracks.refer(audioUnitBox.tracks)
+                        box.target.refer(audioUnitBox)
+                    })
+                    this.#mapTrackBoxes.set(asDefined(lane.id, "Track must have an id."), trackBox)
                 } else if (channel.role === "master") {
-                    // TODO
+                    readChannel(this.#masterAudioUnit, channel)
                 } else {
                     return panic(`Unknown channel role: ${channel.role}`)
                 }
+                index++
             }
         })
+        this.#masterAudioUnit.index.setValue(index)
     }
 
     #readArrangement(): Promise<unknown> {

@@ -15,6 +15,8 @@ import {AudioUnitInputAdapter} from "./AudioUnitInputAdapter"
 import {TrackBoxAdapter} from "../timeline/TrackBoxAdapter"
 
 export class AudioUnitBoxAdapter implements DeviceHost, BoxAdapter {
+    static VolumeMapper = ValueMapping.decibel(-96.0, -9.0, +6.0)
+
     readonly "class" = "device-host"
 
     readonly #terminator: Terminator = new Terminator()
@@ -100,7 +102,7 @@ export class AudioUnitBoxAdapter implements DeviceHost, BoxAdapter {
         return {
             volume: this.#parametric.createParameter(
                 box.volume,
-                ValueMapping.decibel(-96.0, -9.0, +6.0),
+                AudioUnitBoxAdapter.VolumeMapper,
                 StringMapping.decible, "volume"),
             panning: this.#parametric.createParameter(
                 box.panning,
