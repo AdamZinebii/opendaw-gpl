@@ -4,6 +4,7 @@ import * as path from "node:path"
 import * as fs from "node:fs"
 import {DawProjectIO} from "./DawProjectIO"
 import {DawProjectImporter} from "./DawProjectImporter"
+import {TrackSchema} from "@opendaw/lib-dawproject"
 
 describe("DawProjectImport", () => {
     it("import", async () => {
@@ -12,5 +13,6 @@ describe("DawProjectImport", () => {
         const {project, resources} = await DawProjectIO.decode(buffer)
         const importer = await DawProjectImporter.importProject(project, resources)
         console.debug(importer.skeleton)
+        console.dir((project.structure[1] as TrackSchema).channel?.devices, {depth: Number.MAX_SAFE_INTEGER})
     })
 })

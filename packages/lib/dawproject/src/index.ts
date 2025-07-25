@@ -1,7 +1,5 @@
-// noinspection JSUnusedGlobalSymbols
-
-import {Xml} from "@opendaw/lib-xml"
 import type {int} from "@opendaw/lib-std"
+import {Xml} from "@opendaw/lib-xml"
 
 interface Nameable {
     name?: string
@@ -13,6 +11,7 @@ interface Referenceable extends Nameable {
     id?: string
 }
 
+// noinspection JSUnusedGlobalSymbols
 export enum Unit {
     LINEAR = "linear",
     NORMALIZED = "normalized",
@@ -25,16 +24,19 @@ export enum Unit {
     BPM = "bpm"
 }
 
+// noinspection JSUnusedGlobalSymbols
 export enum Interpolation {
     HOLD = "hold",
     LINEAR = "linear"
 }
 
+// noinspection JSUnusedGlobalSymbols
 export enum TimeUnit {
     BEATS = "beats",
     SECONDS = "seconds"
 }
 
+// noinspection JSUnusedGlobalSymbols
 export enum SendType {
     PRE = "pre",
     POST = "post"
@@ -150,81 +152,6 @@ export class SendSchema {
     readonly enable?: BooleanParameterSchema
 }
 
-@Xml.Class("Plugin")
-export class PluginSchema implements Referenceable {
-    @Xml.Attribute("id")
-    readonly id?: string
-
-    @Xml.Attribute("deviceID")
-    readonly deviceID?: string
-
-    @Xml.Attribute("deviceName")
-    readonly deviceName?: string
-
-    @Xml.Attribute("deviceRole")
-    readonly deviceRole?: string
-
-    @Xml.Attribute("loaded", Xml.BoolOptional)
-    readonly loaded?: boolean
-
-    @Xml.Attribute("name")
-    readonly name?: string
-
-    @Xml.Element("Parameters", ParameterSchema)
-    readonly parameters?: ParameterSchema[]
-
-    @Xml.Element("State", StateSchema)
-    readonly state?: StateSchema
-
-    @Xml.Element("Enabled", BooleanParameterSchema)
-    readonly enabled?: BooleanParameterSchema
-}
-
-@Xml.Class("Devices")
-export class DevicesSchema {
-    @Xml.Element("Vst3Plugin", PluginSchema)
-    readonly vst3plugin?: PluginSchema
-
-    @Xml.Element("ClapPlugin", PluginSchema)
-    readonly clapplugin?: PluginSchema
-
-    @Xml.Element("AuPlugin", PluginSchema)
-    readonly auplugin?: PluginSchema
-}
-
-@Xml.Class("Channel")
-export class ChannelSchema implements Referenceable {
-    @Xml.Attribute("id")
-    readonly id?: string
-
-    @Xml.Attribute("role")
-    readonly role?: string
-
-    @Xml.Attribute("audioChannels", Xml.NumberOptional)
-    readonly audioChannels?: int
-
-    @Xml.Attribute("destination")
-    readonly destination?: string
-
-    @Xml.Attribute("solo", Xml.BoolOptional)
-    readonly solo?: boolean
-
-    @Xml.Element("Devices", DevicesSchema)
-    readonly devices?: DevicesSchema
-
-    @Xml.Element("Volume", RealParameterSchema)
-    readonly volume?: RealParameterSchema
-
-    @Xml.Element("Pan", RealParameterSchema)
-    readonly pan?: RealParameterSchema
-
-    @Xml.Element("Mute", BooleanParameterSchema)
-    readonly mute?: BooleanParameterSchema
-
-    @Xml.ElementRef(SendSchema, "Sends")
-    readonly sends?: SendSchema[]
-}
-
 @Xml.Class("Transport")
 export class TransportSchema {
     @Xml.Element("Tempo", RealParameterSchema)
@@ -238,27 +165,6 @@ export class TransportSchema {
 export class LaneSchema implements Referenceable {
     @Xml.Attribute("id")
     readonly id?: string
-}
-
-@Xml.Class("Track")
-export class TrackSchema extends LaneSchema {
-    @Xml.Attribute("contentType")
-    readonly contentType?: string
-
-    @Xml.Attribute("name")
-    readonly name?: string
-
-    @Xml.Attribute("color")
-    readonly color?: string
-
-    @Xml.Attribute("loaded", Xml.BoolOptional)
-    readonly loaded?: boolean
-
-    @Xml.Element("Channel", ChannelSchema)
-    readonly channel?: ChannelSchema
-
-    @Xml.Element("Track", Array)
-    readonly tracks?: ReadonlyArray<TrackSchema>
 }
 
 @Xml.Class("Timeline")
@@ -529,6 +435,129 @@ export class SceneSchema implements Referenceable {
 
     @Xml.ElementRef(TimelineSchema)
     readonly content?: ReadonlyArray<TimelineSchema>
+}
+
+@Xml.Class("Device")
+export class DeviceSchema implements Referenceable {
+    @Xml.Attribute("id")
+    readonly id?: string
+
+    @Xml.Element("Enabled", BooleanParameterSchema)
+    readonly enabled?: BooleanParameterSchema
+
+    @Xml.Attribute("deviceRole", Xml.StringRequired)
+    readonly deviceRole!: string
+
+    @Xml.Attribute("loaded", Xml.BoolOptional)
+    readonly loaded?: boolean
+
+    @Xml.Attribute("deviceName")
+    readonly deviceName?: string
+
+    @Xml.Attribute("deviceID")
+    readonly deviceID?: string
+
+    @Xml.Attribute("deviceVendor")
+    readonly deviceVendor?: string
+
+    @Xml.Element("State", FileReferenceSchema)
+    readonly state?: FileReferenceSchema
+
+    @Xml.Attribute("name")
+    readonly name?: string
+
+    @Xml.ElementRef(ParameterSchema, "Parameters")
+    readonly automatedParameters?: ReadonlyArray<ParameterSchema>
+}
+
+@Xml.Class("BuiltinDevice")
+export class BuiltinDeviceSchema extends DeviceSchema {}
+
+@Xml.Class("Band")
+export class BandSchema {
+    @Xml.Attribute("type")
+    readonly type!: string
+
+    @Xml.Attribute("order")
+    readonly order!: string
+
+    @Xml.Element("Freq", RealParameterSchema)
+    readonly freq!: RealParameterSchema
+
+    @Xml.Element("Gain", RealParameterSchema)
+    readonly gain?: RealParameterSchema
+
+    @Xml.Element("Q", RealParameterSchema)
+    readonly Q?: RealParameterSchema
+
+    @Xml.Element("Enabled", BooleanParameterSchema)
+    readonly enabled?: BooleanParameterSchema
+}
+
+@Xml.Class("Equalizer")
+export class Equalizer extends BuiltinDeviceSchema {
+    @Xml.Element("Band", Array)
+    readonly bands!: ReadonlyArray<BandSchema>
+}
+
+@Xml.Class("Plugin")
+export class PluginSchema extends DeviceSchema {
+    @Xml.Attribute("pluginVersion")
+    readonly pluginVersion?: string
+}
+
+@Xml.Class("Channel")
+export class ChannelSchema implements Referenceable {
+    @Xml.Attribute("id")
+    readonly id?: string
+
+    @Xml.Attribute("role")
+    readonly role?: string
+
+    @Xml.Attribute("audioChannels", Xml.NumberOptional)
+    readonly audioChannels?: int
+
+    @Xml.Attribute("destination")
+    readonly destination?: string
+
+    @Xml.Attribute("solo", Xml.BoolOptional)
+    readonly solo?: boolean
+
+    @Xml.ElementRef(DeviceSchema, "Devices")
+    readonly devices?: DeviceSchema
+
+    @Xml.Element("Volume", RealParameterSchema)
+    readonly volume?: RealParameterSchema
+
+    @Xml.Element("Pan", RealParameterSchema)
+    readonly pan?: RealParameterSchema
+
+    @Xml.Element("Mute", BooleanParameterSchema)
+    readonly mute?: BooleanParameterSchema
+
+    @Xml.ElementRef(SendSchema, "Sends")
+    readonly sends?: SendSchema[]
+}
+
+@Xml.Class("Track")
+export class TrackSchema extends LaneSchema {
+    @Xml.Attribute("contentType")
+    readonly contentType?: string
+
+    @Xml.Attribute("name")
+    readonly name?: string
+
+    @Xml.Attribute("color")
+    readonly color?: string
+
+    @Xml.Attribute("loaded", Xml.BoolOptional)
+    readonly loaded?: boolean
+
+    @Xml.Element("Channel", ChannelSchema)
+    readonly channel?: ChannelSchema
+
+    @Xml.Element("Track", Array)
+    readonly tracks?: ReadonlyArray<TrackSchema>
 }
 
 @Xml.Class("Project")

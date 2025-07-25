@@ -224,7 +224,8 @@ export namespace Xml {
                     if (isDefined(parent)) {
                         Object.defineProperty(instance, key, {
                             value: Array.from(parent.children).map(child => {
-                                const clazz = asDefined(ClassMap.get(child.nodeName))
+                                const clazz = asDefined(ClassMap.get(child.nodeName)
+                                    , `Could not find class for '${child.nodeName}'`)
                                 if (!(clazz === meta.clazz || clazz.prototype instanceof meta.clazz)) {
                                     return null
                                 }

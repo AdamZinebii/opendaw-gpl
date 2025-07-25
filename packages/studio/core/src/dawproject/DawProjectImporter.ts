@@ -149,7 +149,6 @@ export class DawProjectImporter {
             audioUnitBox.panning.setValue(ValueMapping.bipolar().y(channel.pan?.value ?? 0.5))
             audioUnitBox.mute.setValue(channel.mute?.value === true)
             audioUnitBox.solo.setValue(channel.solo === true)
-
             channel.sends?.forEach((send: SendSchema) => {
                 // bitwig does not set enabled if it is enabled 🤥
                 const enable = isUndefined(send?.enable?.value) || send.enable.value
@@ -173,6 +172,9 @@ export class DawProjectImporter {
             if (isInstanceOf(lane, TrackSchema)) {
                 const trackType = this.#contentToTrackType(lane.contentType)
                 const channel = asDefined(lane.channel, "Track has no Channel")
+
+                // TODO devices
+
                 if (channel.role === "regular") {
                     const audioUnitBox = AudioUnitBox.create(this.#boxGraph, UUID.generate(), box => {
                         box.index.setValue(audioUnitIndex)
