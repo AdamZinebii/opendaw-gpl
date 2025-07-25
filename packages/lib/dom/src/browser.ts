@@ -8,6 +8,7 @@ export namespace Browser {
     export const isWindows = () => hasNavigator && navigator.userAgent.includes("Windows")
     export const isFirefox = () => hasNavigator && navigator.userAgent.toLowerCase().includes("firefox")
     export const isWeb = () => !isTauriApp()
+    export const isVitest = typeof process !== "undefined" && process.env?.VITEST === "true"
     export const isTauriApp = () => "__TAURI__" in window
     export const userAgent = hasNavigator ? navigator.userAgent
         .replace(/^Mozilla\/[\d.]+\s*/, "")
