@@ -40,7 +40,9 @@ export const initAppMenu = (service: StudioService) => {
                     MenuItem.default({label: "Stems...", selectable: service.hasProjectSession})
                         .setTriggerProcedure(() => service.exportStems()),
                     MenuItem.default({label: "Project Bundle...", selectable: service.hasProjectSession})
-                        .setTriggerProcedure(() => service.exportZip())
+                        .setTriggerProcedure(() => service.exportZip()),
+                    MenuItem.default({label: "DAWproject...", selectable: service.hasProjectSession})
+                        .setTriggerProcedure(() => service.exportDawproject())
                 )),
             MenuItem.default({label: "Debug", separatorBefore: true})
                 .setRuntimeChildrenProcedure(parent => {

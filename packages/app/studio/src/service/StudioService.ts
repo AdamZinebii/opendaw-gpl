@@ -52,6 +52,7 @@ import {Address} from "@opendaw/lib-box"
 import {Recovery} from "@/Recovery.ts"
 import {MIDILearning} from "@/midi/devices/MIDILearning"
 import {
+    DawProjectExporter,
     DawProjectImporter,
     DawProjectIO,
     EngineFacade,
@@ -373,6 +374,13 @@ export class StudioService implements ProjectEnv {
                 arrayBuffer: resource.buffer
             })))
         this.sessionService.fromProject(Project.skeleton(this, skeleton), "Dawproject")
+    }
+
+    async exportDawproject() {
+        this.runIfProject(project => {
+            const exporter = DawProjectExporter.exportProject(project.skeleton)
+            console.debug(exporter.toProjectXml())
+        })
     }
 
     fromProject(project: Project, name: string): void {this.sessionService.fromProject(project, name)}

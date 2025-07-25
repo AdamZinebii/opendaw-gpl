@@ -146,6 +146,19 @@ export class Project implements BoxAdaptersContext, Terminable, TerminableOwner 
     get isMainThread(): boolean {return true}
     get liveStreamBroadcaster(): LiveStreamBroadcaster {return panic("Only available in audio context")}
 
+    get skeleton(): ProjectDecoder.Skeleton {
+        return {
+            boxGraph: this.boxGraph,
+            mandatoryBoxes: {
+                rootBox: this.rootBox,
+                timelineBox: this.timelineBox,
+                masterBusBox: this.masterBusBox,
+                masterAudioUnit: this.masterAudioUnit,
+                userInterfaceBox: this.userInterfaceBox
+            }
+        }
+    }
+
     toArrayBuffer(): ArrayBufferLike {
         const output = ByteArrayOutput.create()
         output.writeInt(ProjectDecoder.MAGIC_HEADER_OPEN)

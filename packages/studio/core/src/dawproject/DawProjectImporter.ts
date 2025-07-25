@@ -30,7 +30,7 @@ import {
     TrackSchema,
     WarpsSchema
 } from "@opendaw/lib-dawproject"
-import {AudioUnitType} from "@opendaw/studio-enums"
+import {AudioSendRouting, AudioUnitType} from "@opendaw/studio-enums"
 import {
     AudioBusBox,
     AudioFileBox,
@@ -47,7 +47,7 @@ import {
     TrackBox,
     UserInterfaceBox
 } from "@opendaw/studio-boxes"
-import {AudioSendRouting, IconSymbol, ProjectDecoder, TrackType} from "@opendaw/studio-adapters"
+import {IconSymbol, ProjectDecoder, TrackType} from "@opendaw/studio-adapters"
 import {DawProjectIO} from "./DawProjectIO"
 import {ColorCodes} from "../ColorCodes"
 import {InstrumentFactories} from "../InstrumentFactories"

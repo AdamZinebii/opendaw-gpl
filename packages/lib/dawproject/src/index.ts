@@ -560,6 +560,9 @@ export class TrackSchema extends LaneSchema {
     readonly tracks?: ReadonlyArray<TrackSchema>
 }
 
+@Xml.Class("ClapPlugin")
+export class ClapPluginSchema extends PluginSchema {}
+
 @Xml.Class("Project")
 export class ProjectSchema {
     @Xml.Attribute("version", Xml.StringRequired)
