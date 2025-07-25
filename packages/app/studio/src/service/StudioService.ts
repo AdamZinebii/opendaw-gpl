@@ -329,7 +329,7 @@ export class StudioService implements ProjectEnv {
         }
         progressDialog.close()
         if (rejected.length > 0) {
-            showInfoDialog({
+            await showInfoDialog({
                 headline: "Sample Import Issues",
                 message: `${rejected.join(", ")} could not be imported.`
             })
@@ -363,10 +363,15 @@ export class StudioService implements ProjectEnv {
         const file = value.at(0)
         if (!isDefined(file)) {return}
         const arrayBuffer = await file.arrayBuffer()
-        const {project: projectSchema, samples} = await DawProjectIO.decode(arrayBuffer)
-        const {skeleton, audioFiles} = await DawProjectImporter.importProject(projectSchema, samples)
-        await Promise.all(Array.from(audioFiles.entries()).map(([uuidString, arrayBuffer]) =>
-            this.importSample({uuid: UUID.parse(uuidString), arrayBuffer, name: ""}))) // TODO Name???
+        const {project: projectSchema, resources} = await DawProjectIO.decode(arrayBuffer)
+        const {skeleton, audioIDs} = await DawProjectImporter.importProject(projectSchema, resources)
+        await Promise.all(audioIDs.values()
+            .map(uuid => resources.fromUUID(uuid))
+            .map(resource => this.importSample({
+                uuid: resource.uuid,
+                name: resource.name,
+                arrayBuffer: resource.buffer
+            })))
         this.sessionService.fromProject(Project.skeleton(this, skeleton), "Dawproject")
     }
 

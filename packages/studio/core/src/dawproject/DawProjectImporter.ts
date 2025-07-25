@@ -10,7 +10,19 @@ import {
     TrackSchema,
     WarpsSchema
 } from "@opendaw/lib-dawproject"
-import {asDefined, assert, int, isInstanceOf, isUndefined, Nullish, Option, panic, UUID} from "@opendaw/lib-std"
+import {
+    asDefined,
+    assert,
+    identity,
+    int,
+    isInstanceOf,
+    isUndefined,
+    Nullish,
+    Option,
+    panic,
+    SortedSet,
+    UUID
+} from "@opendaw/lib-std"
 import {DawProjectIO} from "./DawProjectIO"
 import {
     AudioBusBox,
@@ -35,15 +47,15 @@ import {InstrumentFactories} from "../InstrumentFactories"
 
 export class DawProjectImporter {
     static async importProject(schema: ProjectSchema,
-                               samples: DawProjectIO.Samples): Promise<DawProjectImporter> {
-        return new DawProjectImporter(schema, samples).#read()
+                               resources: DawProjectIO.Resources): Promise<DawProjectImporter> {
+        return new DawProjectImporter(schema, resources).#read()
     }
 
     readonly #schema: ProjectSchema
-    readonly #samples: DawProjectIO.Samples
+    readonly #resources: DawProjectIO.Resources
 
     readonly #mapTrackBoxes: Map<string, TrackBox>
-    readonly #mapAudioFiles: Map<string, ArrayBuffer>
+    readonly #audioIDs: SortedSet<UUID.Format, UUID.Format>
 
     readonly #boxGraph: BoxGraph<BoxIO.TypeMap>
     readonly #rootBox: RootBox
@@ -52,12 +64,12 @@ export class DawProjectImporter {
     readonly #timelineBox: TimelineBox
     readonly #userInterfaceBox: UserInterfaceBox
 
-    private constructor(schema: ProjectSchema, samples: DawProjectIO.Samples) {
+    private constructor(schema: ProjectSchema, resources: DawProjectIO.Resources) {
         this.#schema = schema
-        this.#samples = samples
+        this.#resources = resources
 
         this.#mapTrackBoxes = new Map<string, TrackBox>()
-        this.#mapAudioFiles = new Map<string, ArrayBuffer>()
+        this.#audioIDs = UUID.newSet(identity)
 
         const isoString = new Date().toISOString()
         console.debug(`New Project imported on ${isoString}`)
@@ -103,8 +115,7 @@ export class DawProjectImporter {
         return this
     }
 
-    get audioFiles(): Map<string, ArrayBuffer> {return this.#mapAudioFiles}
-
+    get audioIDs(): SortedSet<UUID.Format, UUID.Format> {return this.#audioIDs}
     get skeleton(): ProjectDecoder.Skeleton {
         return {
             boxGraph: this.#boxGraph,
@@ -225,13 +236,10 @@ export class DawProjectImporter {
                 if (isUndefined(audio)) {return}
                 const {path, external} = audio.file
                 assert(external !== true, "File cannot be external")
-                const sample = this.#samples.load(path)
-                const fileUUID = await UUID.sha256(sample) // TODO Optimize. We are doing that for each occurrence, Let's do this earlier!
-                const audioFileBox: AudioFileBox = this.#boxGraph.findBox<AudioFileBox>(fileUUID)
-                    .unwrapOrElse(() => AudioFileBox.create(this.#boxGraph, fileUUID, box => {
-                        box.fileName.setValue(path.substring(path.lastIndexOf("/") + 1))
-                    }))
-                this.#mapAudioFiles.set(UUID.toString(fileUUID), sample)
+                const {uuid, name} = this.#resources.fromPath(path)
+                const audioFileBox: AudioFileBox = this.#boxGraph.findBox<AudioFileBox>(uuid)
+                    .unwrapOrElse(() => AudioFileBox.create(this.#boxGraph, uuid, box => box.fileName.setValue(name)))
+                this.#audioIDs.add(uuid, true)
                 AudioRegionBox.create(this.#boxGraph, UUID.generate(), box => {
                     const position = asDefined(clip.time, "Time not defined")
                     const duration = asDefined(clip.duration, "Duration not defined")
