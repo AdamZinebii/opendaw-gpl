@@ -1,19 +1,4 @@
 import {
-    AudioSchema,
-    ChannelSchema,
-    ClipSchema,
-    ClipsSchema,
-    LaneSchema,
-    LanesSchema,
-    NotesSchema,
-    ProjectSchema,
-    SendSchema,
-    SendType,
-    TimelineSchema,
-    TrackSchema,
-    WarpsSchema
-} from "@opendaw/lib-dawproject"
-import {
     asDefined,
     assert,
     Exec,
@@ -28,7 +13,24 @@ import {
     UUID,
     ValueMapping
 } from "@opendaw/lib-std"
-import {DawProjectIO} from "./DawProjectIO"
+import {BoxGraph} from "@opendaw/lib-box"
+import {gainToDb, PPQN} from "@opendaw/lib-dsp"
+import {
+    AudioSchema,
+    ChannelSchema,
+    ClipSchema,
+    ClipsSchema,
+    LaneSchema,
+    LanesSchema,
+    NotesSchema,
+    ProjectSchema,
+    SendSchema,
+    SendType,
+    TimelineSchema,
+    TrackSchema,
+    WarpsSchema
+} from "@opendaw/lib-dawproject"
+import {AudioUnitType} from "@opendaw/studio-enums"
 import {
     AudioBusBox,
     AudioFileBox,
@@ -45,12 +47,10 @@ import {
     TrackBox,
     UserInterfaceBox
 } from "@opendaw/studio-boxes"
-import {BoxGraph} from "@opendaw/lib-box"
-import {gainToDb, PPQN} from "@opendaw/lib-dsp"
-import {IconSymbol, ProjectDecoder, TrackType} from "@opendaw/studio-adapters"
-import {AudioUnitType} from "@opendaw/studio-enums"
-import {InstrumentFactories} from "../InstrumentFactories"
+import {AudioSendRouting, IconSymbol, ProjectDecoder, TrackType} from "@opendaw/studio-adapters"
+import {DawProjectIO} from "./DawProjectIO"
 import {ColorCodes} from "../ColorCodes"
+import {InstrumentFactories} from "../InstrumentFactories"
 
 export class DawProjectImporter {
     static async importProject(schema: ProjectSchema,
@@ -97,7 +97,7 @@ export class DawProjectImporter {
             box.collection.refer(this.#rootBox.audioBusses)
             box.label.setValue("Output")
             box.icon.setValue(IconSymbol.toName(IconSymbol.SpeakerHeadphone))
-            box.color.setValue(/*Colors.blue*/ "hsl(189, 100%, 65%)") // TODO
+            box.color.setValue("hsl(189, 100%, 65%)")
         })
         this.#masterAudioUnit = AudioUnitBox.create(this.#boxGraph, UUID.generate(), box => {
             box.type.setValue(AudioUnitType.Output)
@@ -142,35 +142,37 @@ export class DawProjectImporter {
     }
 
     #readStructure(): void {
+        const resolveSendTargets: Array<Exec> = []
         const effectTargetMap = new Map<string, AudioBusBox>()
-
-        const resolveExecs: Array<Exec> = []
-
         const readChannel = (audioUnitBox: AudioUnitBox, channel: ChannelSchema) => {
             audioUnitBox.volume.setValue(gainToDb(channel.volume?.value ?? 1.0))
             audioUnitBox.panning.setValue(ValueMapping.bipolar().y(channel.pan?.value ?? 0.5))
             audioUnitBox.mute.setValue(channel.mute?.value === true)
             audioUnitBox.solo.setValue(channel.solo === true)
 
-            resolveExecs.push(() =>
-                channel.sends?.forEach((send: SendSchema) => AuxSendBox.create(this.#boxGraph, UUID.generate(), box => {
-                    // TODO validate value or undefined and fallback
-                    const enable = send.enable?.value === true
-                    const type = send.type as Nullish<SendType>
-                    box.sendGain.setValue(gainToDb(channel.volume?.value ?? 1.0)) // TODO wrong mapping
-                    box.sendPan.setValue(ValueMapping.bipolar().y(channel.pan?.value ?? 0.5))
-                    box.targetBus.refer(effectTargetMap.get(send.destination!)?.input!) // TODO defined & timing
-                    box.audioUnit.refer(audioUnitBox.auxSends)
-                })))
+            channel.sends?.forEach((send: SendSchema) => {
+                // bitwig does not set enabled if it is enabled 🤥
+                const enable = isUndefined(send?.enable?.value) || send.enable.value
+                if (enable) {
+                    resolveSendTargets.push(() => AuxSendBox.create(this.#boxGraph, UUID.generate(), box => {
+                        const type = send.type as Nullish<SendType>
+                        const destination = asDefined(send.destination, "destination is undefined")
+                        box.routing.setValue(type === SendType.PRE ? AudioSendRouting.Pre : AudioSendRouting.Post)
+                        box.sendGain.setValue(gainToDb(send.volume?.value ?? 1.0))
+                        box.sendPan.setValue(ValueMapping.bipolar().y(send.pan?.value ?? 0.5))
+                        box.targetBus.refer(asDefined(effectTargetMap.get(destination),
+                            "Cannot find destination").input!)
+                        box.audioUnit.refer(audioUnitBox.auxSends)
+                    }))
+                }
+            })
         }
         const {structure} = this.#schema
-
         let audioUnitIndex: int = 0
         structure.forEach((lane: LaneSchema) => {
             if (isInstanceOf(lane, TrackSchema)) {
                 const trackType = this.#contentToTrackType(lane.contentType)
                 const channel = asDefined(lane.channel, "Track has no Channel")
-                console.debug(`#${audioUnitIndex}`, channel)
                 if (channel.role === "regular") {
                     const audioUnitBox = AudioUnitBox.create(this.#boxGraph, UUID.generate(), box => {
                         box.index.setValue(audioUnitIndex)
@@ -225,8 +227,8 @@ export class DawProjectImporter {
             }
         })
         this.#masterAudioUnit.index.setValue(audioUnitIndex)
-        resolveExecs.forEach(exec => exec())
-        resolveExecs.length = 0
+        resolveSendTargets.forEach(exec => exec())
+        resolveSendTargets.length = 0
     }
 
     #readArrangement(): Promise<unknown> {
@@ -284,9 +286,13 @@ export class DawProjectImporter {
                 return
             }
             const innerContent = contentClip.content?.at(0) as Nullish<TimelineSchema>
-            // TODO From which point is it guaranteed that this is an audio region?
+            // TODO Double-check: From which point is it guaranteed that this is an audio region?
             if (isInstanceOf(innerContent, WarpsSchema)) {
-                const audio = innerContent?.content?.at(0) as Nullish<AudioSchema>
+                const {warps, content} = innerContent
+                const audio = content?.at(0) as Nullish<AudioSchema>
+                const warp0 = warps.at(0)
+                const warpN = warps.at(-1)
+                const warpDistance = asDefined(warpN?.time) - asDefined(warp0?.time)
                 if (isUndefined(audio)) {return}
                 const {path, external} = audio.file
                 assert(external !== true, "File cannot be external")
@@ -297,10 +303,11 @@ export class DawProjectImporter {
                 AudioRegionBox.create(this.#boxGraph, UUID.generate(), box => {
                     const position = asDefined(clip.time, "Time not defined")
                     const duration = asDefined(clip.duration, "Duration not defined")
-                    const loopDuration = clip.loopEnd ?? duration
+                    const loopDuration = clip.loopEnd ?? warpDistance
                     box.position.setValue(position * PPQN.Quarter)
                     box.duration.setValue(duration * PPQN.Quarter)
                     box.label.setValue(clip.name ?? "")
+                    box.loopOffset.setValue((-(contentClip.time ?? 0.0)) * PPQN.Quarter)
                     box.loopDuration.setValue(loopDuration * PPQN.Quarter)
                     box.mute.setValue(clip.enable === false)
                     box.regions.refer(trackBox.regions)

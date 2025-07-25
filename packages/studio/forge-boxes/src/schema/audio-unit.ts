@@ -1,6 +1,7 @@
 import {AudioUnitType, Pointers} from "@opendaw/studio-enums"
 import {DefaultParameterPointerRules} from "./defaults"
 import {BoxSchema} from "@opendaw/lib-box-forge"
+import {AudioSendRouting} from "@opendaw/studio-adapters"
 
 export const AudioUnitBox: BoxSchema<Pointers> = {
     type: "box",
@@ -78,7 +79,7 @@ export const AuxSendBox: BoxSchema<Pointers> = {
             1: {type: "pointer", name: "audio-unit", pointerType: Pointers.AuxSend, mandatory: true},
             2: {type: "pointer", name: "target-bus", pointerType: Pointers.AudioOutput, mandatory: true},
             3: {type: "int32", name: "index"},
-            4: {type: "int32", name: "routing"},
+            4: {type: "int32", name: "routing", value: AudioSendRouting.Post},
             6: {type: "float32", name: "send-pan", pointerRules: DefaultParameterPointerRules},
             5: {type: "float32", name: "send-gain", pointerRules: DefaultParameterPointerRules}
         }
