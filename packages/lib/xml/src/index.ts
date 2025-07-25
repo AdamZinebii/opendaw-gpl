@@ -232,6 +232,8 @@ export namespace Xml {
                             }).filter(isDefined),
                             enumerable: true
                         })
+                    } else {
+                        Object.defineProperty(instance, key, {value: undefined, enumerable: true})
                     }
                 }
             }

@@ -21,6 +21,7 @@ export namespace DawProjectIO {
             ?.async("string"), "No metadata.xml found"), MetaDataSchema)
         const projectXml = asDefined(await zip.file("project.xml")
             ?.async("string"), "No project.xml found")
+        console.debug(projectXml)
         const project = Xml.parse(projectXml, ProjectSchema)
         const resourceFiles = Object.entries(zip.files).filter(([_, file]) =>
             !file.dir && !file.name.endsWith(".xml"))

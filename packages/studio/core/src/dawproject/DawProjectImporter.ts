@@ -7,6 +7,8 @@ import {
     LanesSchema,
     NotesSchema,
     ProjectSchema,
+    SendSchema,
+    SendType,
     TimelineSchema,
     TrackSchema,
     WarpsSchema
@@ -14,6 +16,7 @@ import {
 import {
     asDefined,
     assert,
+    Exec,
     identity,
     int,
     isInstanceOf,
@@ -31,6 +34,7 @@ import {
     AudioFileBox,
     AudioRegionBox,
     AudioUnitBox,
+    AuxSendBox,
     BoxIO,
     GrooveShuffleBox,
     NoteEventBox,
@@ -46,6 +50,7 @@ import {gainToDb, PPQN} from "@opendaw/lib-dsp"
 import {IconSymbol, ProjectDecoder, TrackType} from "@opendaw/studio-adapters"
 import {AudioUnitType} from "@opendaw/studio-enums"
 import {InstrumentFactories} from "../InstrumentFactories"
+import {ColorCodes} from "../ColorCodes"
 
 export class DawProjectImporter {
     static async importProject(schema: ProjectSchema,
@@ -137,22 +142,38 @@ export class DawProjectImporter {
     }
 
     #readStructure(): void {
-        const readChannel = (box: AudioUnitBox, channel: ChannelSchema) => {
-            box.volume.setValue(gainToDb(channel.volume?.value ?? 1.0))
-            box.panning.setValue(ValueMapping.bipolar().y(channel.pan?.value ?? 0.5))
-            box.mute.setValue(channel.mute?.value === true)
-            box.solo.setValue(channel.solo === true)
+        const effectTargetMap = new Map<string, AudioBusBox>()
+
+        const resolveExecs: Array<Exec> = []
+
+        const readChannel = (audioUnitBox: AudioUnitBox, channel: ChannelSchema) => {
+            audioUnitBox.volume.setValue(gainToDb(channel.volume?.value ?? 1.0))
+            audioUnitBox.panning.setValue(ValueMapping.bipolar().y(channel.pan?.value ?? 0.5))
+            audioUnitBox.mute.setValue(channel.mute?.value === true)
+            audioUnitBox.solo.setValue(channel.solo === true)
+
+            resolveExecs.push(() =>
+                channel.sends?.forEach((send: SendSchema) => AuxSendBox.create(this.#boxGraph, UUID.generate(), box => {
+                    // TODO validate value or undefined and fallback
+                    const enable = send.enable?.value === true
+                    const type = send.type as Nullish<SendType>
+                    box.sendGain.setValue(gainToDb(channel.volume?.value ?? 1.0)) // TODO wrong mapping
+                    box.sendPan.setValue(ValueMapping.bipolar().y(channel.pan?.value ?? 0.5))
+                    box.targetBus.refer(effectTargetMap.get(send.destination!)?.input!) // TODO defined & timing
+                    box.audioUnit.refer(audioUnitBox.auxSends)
+                })))
         }
         const {structure} = this.#schema
-        let index: int = 0
+
+        let audioUnitIndex: int = 0
         structure.forEach((lane: LaneSchema) => {
             if (isInstanceOf(lane, TrackSchema)) {
                 const trackType = this.#contentToTrackType(lane.contentType)
                 const channel = asDefined(lane.channel, "Track has no Channel")
-                console.debug(`#${index}`, channel)
+                console.debug(`#${audioUnitIndex}`, channel)
                 if (channel.role === "regular") {
                     const audioUnitBox = AudioUnitBox.create(this.#boxGraph, UUID.generate(), box => {
-                        box.index.setValue(index)
+                        box.index.setValue(audioUnitIndex)
                         box.type.setValue(AudioUnitType.Instrument)
                         box.output.refer(this.#masterBusBox.input)
                         box.collection.refer(this.#rootBox.audioUnits)
@@ -174,16 +195,17 @@ export class DawProjectImporter {
                     }
                 } else if (channel.role === "effect") {
                     const audioUnitBox = AudioUnitBox.create(this.#boxGraph, UUID.generate(), box => {
-                        box.index.setValue(index)
+                        box.index.setValue(audioUnitIndex)
                         box.type.setValue(AudioUnitType.Aux)
                         box.output.refer(this.#masterBusBox.input)
                         box.collection.refer(this.#rootBox.audioUnits)
                         readChannel(box, channel)
                     })
-                    AudioBusBox.create(this.#boxGraph, UUID.generate(), box => {
+                    const audioBusBox = AudioBusBox.create(this.#boxGraph, UUID.generate(), box => {
                         box.collection.refer(this.#rootBox.audioBusses)
                         box.label.setValue(lane.name ?? "Aux")
-                        box.color.setValue("hsl(189, 100%, 65%)")
+                        box.color.setValue(ColorCodes.forAudioType(AudioUnitType.Aux))
+                        box.icon.setValue(IconSymbol.toName(IconSymbol.Effects))
                         box.output.refer(audioUnitBox.input)
                     })
                     const trackBox = TrackBox.create(this.#boxGraph, UUID.generate(), box => {
@@ -192,16 +214,19 @@ export class DawProjectImporter {
                         box.tracks.refer(audioUnitBox.tracks)
                         box.target.refer(audioUnitBox)
                     })
+                    effectTargetMap.set(asDefined(channel.id, "Effect-channel must have id."), audioBusBox)
                     this.#mapTrackBoxes.set(asDefined(lane.id, "Track must have an id."), trackBox)
                 } else if (channel.role === "master") {
                     readChannel(this.#masterAudioUnit, channel)
                 } else {
                     return panic(`Unknown channel role: ${channel.role}`)
                 }
-                index++
+                audioUnitIndex++
             }
         })
-        this.#masterAudioUnit.index.setValue(index)
+        this.#masterAudioUnit.index.setValue(audioUnitIndex)
+        resolveExecs.forEach(exec => exec())
+        resolveExecs.length = 0
     }
 
     #readArrangement(): Promise<unknown> {

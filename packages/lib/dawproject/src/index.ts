@@ -2,7 +2,6 @@
 
 import {Xml} from "@opendaw/lib-xml"
 import type {int} from "@opendaw/lib-std"
-import StringRequired = Xml.StringRequired
 
 interface Nameable {
     name?: string
@@ -34,6 +33,11 @@ export enum Interpolation {
 export enum TimeUnit {
     BEATS = "beats",
     SECONDS = "seconds"
+}
+
+export enum SendType {
+    PRE = "pre",
+    POST = "post"
 }
 
 @Xml.Class("MetaData")
@@ -130,11 +134,20 @@ export class SendSchema {
     @Xml.Attribute("id")
     readonly id?: string
 
-    @Xml.Attribute("name")
-    readonly name?: string
+    @Xml.Attribute("destination")
+    readonly destination?: string
 
-    @Xml.Element("Value", RealParameterSchema)
-    readonly value!: RealParameterSchema
+    @Xml.Attribute("type")
+    readonly type?: string
+
+    @Xml.Element("Volume", RealParameterSchema)
+    readonly volume!: RealParameterSchema
+
+    @Xml.Element("Pan", RealParameterSchema)
+    readonly pan?: RealParameterSchema
+
+    @Xml.Element("Enable", BooleanParameterSchema)
+    readonly enable?: BooleanParameterSchema
 }
 
 @Xml.Class("Plugin")
@@ -208,7 +221,7 @@ export class ChannelSchema implements Referenceable {
     @Xml.Element("Mute", BooleanParameterSchema)
     readonly mute?: BooleanParameterSchema
 
-    @Xml.Element("Send", SendSchema)
+    @Xml.ElementRef(SendSchema, "Sends")
     readonly sends?: SendSchema[]
 }
 
@@ -388,7 +401,7 @@ export class WarpSchema {
 
 @Xml.Class("File")
 export class FileReferenceSchema {
-    @Xml.Attribute("path", StringRequired)
+    @Xml.Attribute("path", Xml.StringRequired)
     readonly path!: string
 
     @Xml.Attribute("external", Xml.BoolOptional)
