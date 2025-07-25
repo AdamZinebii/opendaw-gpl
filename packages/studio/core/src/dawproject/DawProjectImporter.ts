@@ -80,14 +80,12 @@ export class DawProjectImporter {
         const grooveShuffleBox = GrooveShuffleBox.create(this.#boxGraph, UUID.generate(), box => {
             box.label.setValue("Groove Shuffle")
         })
-
         this.#timelineBox = TimelineBox.create(this.#boxGraph, UUID.generate())
         this.#rootBox = RootBox.create(this.#boxGraph, UUID.generate(), box => {
             box.groove.refer(grooveShuffleBox)
             box.created.setValue(isoString)
             box.timeline.refer(this.#timelineBox.root)
         })
-
         this.#masterBusBox = AudioBusBox.create(this.#boxGraph, UUID.generate(), box => {
             box.collection.refer(this.#rootBox.audioBusses)
             box.label.setValue("Output")
@@ -100,7 +98,6 @@ export class DawProjectImporter {
             box.output.refer(this.#rootBox.outputDevice)
             box.index.setValue(0)
         })
-
         this.#masterBusBox.output.refer(this.#masterAudioUnit.input)
         this.#userInterfaceBox = UserInterfaceBox.create(this.#boxGraph, UUID.generate(),
             box => box.root.refer(this.#rootBox.users))

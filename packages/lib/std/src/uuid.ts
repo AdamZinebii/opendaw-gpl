@@ -18,7 +18,6 @@ export namespace UUID {
 
     export const sha256 = async (buffer: ArrayBuffer): Promise<Format> => {
         const isVitest = typeof process !== "undefined" && process.env?.VITEST === "true"
-        console.debug("isVitest", isVitest)
         return crypto.subtle.digest("SHA-256", isVitest ? new Uint8Array(buffer.slice(0)) : buffer)
             .then(buffer => fromUint8Array(new Uint8Array(buffer.slice(0, length))))
     }
