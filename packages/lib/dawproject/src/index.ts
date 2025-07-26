@@ -81,7 +81,10 @@ export class BooleanParameterSchema {
 }
 
 @Xml.Class("RealParameter")
-export class RealParameterSchema {
+export class RealParameterSchema implements Referenceable {
+    @Xml.Attribute("id")
+    readonly id?: string
+
     @Xml.Attribute("value", Xml.NumberOptional)
     readonly value?: number
 

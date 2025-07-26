@@ -157,8 +157,8 @@ export class DawProjectImporter {
                         const type = send.type as Nullish<SendType>
                         const destination = asDefined(send.destination, "destination is undefined")
                         box.routing.setValue(type === SendType.PRE ? AudioSendRouting.Pre : AudioSendRouting.Post)
-                        box.sendGain.setValue(gainToDb(send.volume?.value ?? 1.0))
-                        box.sendPan.setValue(ValueMapping.bipolar().y(send.pan?.value ?? 0.5))
+                        box.sendGain.setValue(gainToDb(send.volume?.value ?? 1.0)) // TODO Take unit into account
+                        box.sendPan.setValue(ValueMapping.bipolar().y(send.pan?.value ?? 0.5)) // TODO Take unit into account
                         box.targetBus.refer(asDefined(effectTargetMap.get(destination),
                             "Cannot find destination").input!)
                         box.audioUnit.refer(audioUnitBox.auxSends)

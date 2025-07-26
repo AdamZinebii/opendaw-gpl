@@ -15,7 +15,7 @@ export namespace Xml {
 
     export interface AttributeValidator<T> {
         required: boolean
-        parse(value: string): T
+        parse(value: string | T): T
     }
 
     export const StringRequired: AttributeValidator<string> = {required: true, parse: value => value}
@@ -23,11 +23,11 @@ export namespace Xml {
 
     export const BoolRequired: AttributeValidator<boolean> = {
         required: true,
-        parse: value => value?.toLowerCase() === "true"
+        parse: value => typeof value === "boolean" ? value : value?.toLowerCase() === "true"
     }
     export const BoolOptional: AttributeValidator<boolean> = {
         required: false,
-        parse: value => value?.toLowerCase() === "true"
+        parse: value => typeof value === "boolean" ? value : value?.toLowerCase() === "true"
     }
 
     export const NumberRequired: AttributeValidator<number> = {
@@ -48,10 +48,15 @@ export namespace Xml {
             WeakMaps.createIfAbsent(MetaClassMap, target.constructor, () => new Map<PropertyKey, Meta>())
                 .set(propertyKey, {type: "element", name, clazz})
 
-    export const ElementRef = (clazz: Class, wrapperName?: string): PropertyDecorator =>
+    /**
+     * Decorator to collect children.
+     * @param clazz The expected class
+     * @param nodeName optional. If undefined, all nodes will be read or written
+     */
+    export const ElementRef = (clazz: Class, nodeName?: string): PropertyDecorator =>
         (target: Object, propertyKey: PropertyKey) =>
             WeakMaps.createIfAbsent(MetaClassMap, target.constructor, () => new Map<PropertyKey, Meta>())
-                .set(propertyKey, {type: "element-ref", clazz, name: wrapperName ?? null})
+                .set(propertyKey, {type: "element-ref", clazz, name: nodeName ?? null})
 
     export const Class = (tagName: string): ClassDecorator => {
         return (constructor: Function): void => {
@@ -107,11 +112,20 @@ export namespace Xml {
                         : element
                     for (const item of value) {
                         const itemClass = item?.constructor
-                        const tagMeta = resolveMeta(itemClass, "class")
+                        const tagMeta = Xml.collectMeta(item.constructor)?.get("class")
                         if (!isDefined(tagMeta) || tagMeta.type !== "class") {
                             return panic(`Missing @Xml.Class decorator on ${itemClass?.name}`)
                         }
-                        const childElement = visit(tagMeta.name, item)
+                        const tagName = (() => {
+                            let current: Function = item.constructor
+                            while (isDefined(current)) {
+                                const meta = MetaClassMap.get(current)?.get("class")
+                                if (meta?.type === "class") return meta.name
+                                current = Object.getPrototypeOf(current)
+                            }
+                            return panic(`Missing @Xml.Class on ${item.constructor.name}`)
+                        })()
+                        const childElement = visit(tagName, item)
                         wrapper.appendChild(childElement)
                     }
                     if (wrapper !== element) {
