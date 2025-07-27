@@ -42,6 +42,13 @@ export enum SendType {
     POST = "post"
 }
 
+// noinspection JSUnusedGlobalSymbols
+export enum DeviceRole {
+    NOTE_FX = "noteFX",
+    INSTRUMENT = "instrument",
+    AUDIO_FX = "audioFX"
+}
+
 @Xml.Class("MetaData")
 export class MetaDataSchema {
     @Xml.Element("Title", String) readonly title?: string
@@ -88,7 +95,7 @@ export class RealParameterSchema implements Referenceable {
     @Xml.Attribute("value", Xml.NumberOptional)
     readonly value?: number
 
-    @Xml.Attribute("unit")
+    @Xml.Attribute("unit", Xml.StringRequired)
     readonly unit!: Unit
 
     @Xml.Attribute("min", Xml.NumberOptional)
@@ -527,7 +534,7 @@ export class ChannelSchema implements Referenceable {
     readonly solo?: boolean
 
     @Xml.ElementRef(DeviceSchema, "Devices")
-    readonly devices?: DeviceSchema
+    readonly devices?: ReadonlyArray<DeviceSchema>
 
     @Xml.Element("Volume", RealParameterSchema)
     readonly volume?: RealParameterSchema

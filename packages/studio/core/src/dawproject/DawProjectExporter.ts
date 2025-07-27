@@ -2,18 +2,24 @@ import {Xml} from "@opendaw/lib-xml"
 import {
     ApplicationSchema,
     ArrangementSchema,
+    BooleanParameterSchema,
+    BuiltinDeviceSchema,
     ChannelSchema,
+    DeviceRole,
+    DeviceSchema,
+    LanesSchema,
     ProjectSchema,
     RealParameterSchema,
+    TimelineSchema,
     TimeSignatureParameterSchema,
     TrackSchema,
     TransportSchema,
     Unit
 } from "@opendaw/lib-dawproject"
 import {ProjectDecoder, TrackType} from "@opendaw/studio-adapters"
-import {asInstanceOf, isDefined, isInstanceOf, Nullish} from "@opendaw/lib-std"
+import {asInstanceOf, isDefined, isInstanceOf, Nullable, Nullish} from "@opendaw/lib-std"
 import {AudioUnitBox} from "@opendaw/studio-boxes"
-import {StringField} from "@opendaw/lib-box"
+import {BooleanField, Box, Field, StringField} from "@opendaw/lib-box"
 import {dbToGain} from "@opendaw/lib-dsp"
 
 export class DawProjectExporter {
@@ -44,7 +50,11 @@ export class DawProjectExporter {
                 }, TimeSignatureParameterSchema)
             }, TransportSchema),
             structure: this.#writeStructure(),
-            arrangement: Xml.element({}, ArrangementSchema),
+            arrangement: Xml.element({
+                lanes: Xml.element({
+                    lanes: this.#writeLanes()
+                }, LanesSchema)
+            }, ArrangementSchema),
             scenes: []
         }, ProjectSchema))
         return Xml.pretty(element)
@@ -56,29 +66,67 @@ export class DawProjectExporter {
             .sort((a, b) => a.index.getValue() - b.index.getValue())
             .map(box => {
                 const inputBox = box.input.pointerHub.incoming().at(0)?.box
-                const name = isDefined(inputBox) && "label" in inputBox && isInstanceOf(inputBox?.label, StringField)
-                    ? inputBox?.label.getValue()
-                    : "Unknown"
+                const name = this.#readLabel(inputBox)
                 return Xml.element({
+                    id: box.address.toString(),
+                    name,
                     loaded: true,
-                    name: name,
+                    contentType: "audio notes", // TODO
                     channel: Xml.element({
+                        devices: [
+                            ...(this.#writeDevices(box.midiEffects, DeviceRole.NOTE_FX)),
+                            ...(this.#writeDevices(box.input, DeviceRole.INSTRUMENT)),
+                            ...(this.#writeDevices(box.audioEffects, DeviceRole.AUDIO_FX))
+                        ],
                         volume: Xml.element({
                             id: box.volume.address.toString(),
                             value: dbToGain(box.volume.getValue()),
                             unit: Unit.LINEAR // TODO min, max
                         }, RealParameterSchema),
                         pan: Xml.element({
-                            id: box.volume.address.toString(),
+                            id: box.panning.address.toString(),
                             value: (box.panning.getValue() + 1.0) / 2.0,
                             min: 0.0,
                             max: 1.0,
                             unit: Unit.NORMALIZED
                         }, RealParameterSchema)
                     }, ChannelSchema)
-
                 }, TrackSchema)
             })
+    }
+
+    #writeDevices(field: Field, deviceRole: string): ReadonlyArray<DeviceSchema> {
+        return field.pointerHub.incoming().map(({box}) => {
+            const deviceID = box.name
+            const deviceName = this.#readLabel(box)
+            const deviceVendor = "openDAW"
+            const deviceEnabled: Nullable<BooleanField> = "enabled" in box && isInstanceOf(box.enabled, BooleanField)
+                ? box.enabled : null
+            return Xml.element({
+                id: box.address.toString(),
+                name: deviceID,
+                deviceID,
+                deviceRole,
+                deviceName,
+                deviceVendor,
+                automatedParameters: [],
+                enabled: Xml.element({
+                    value: deviceEnabled?.getValue() === true,
+                    name: "On/Off",
+                    id: deviceEnabled?.address.toString()
+                }, BooleanParameterSchema)
+            }, BuiltinDeviceSchema)
+        })
+    }
+
+    #writeLanes(): ReadonlyArray<TimelineSchema> {
+        return []
+    }
+
+    #readLabel(box: Nullish<Box>): string {
+        return isDefined(box) && "label" in box && isInstanceOf(box.label, StringField)
+            ? box.label.getValue()
+            : "Unknown"
     }
 
     #trackToContentType(trackType: TrackType): Nullish<string> {
