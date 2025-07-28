@@ -6,7 +6,7 @@ import {MetaDataSchema, ProjectSchema} from "@opendaw/lib-dawproject"
 export namespace DawProjectIO {
     export type Resource = { uuid: UUID.Format, path: string, name: string, buffer: ArrayBuffer }
 
-    export interface Resources {
+    export interface ResourceProvider {
         fromPath(path: string): Resource
         fromUUID(uuid: UUID.Format): Resource
     }
@@ -14,7 +14,7 @@ export namespace DawProjectIO {
     export const decode = async (buffer: ArrayBuffer | NonSharedBuffer): Promise<{
         metaData: MetaDataSchema,
         project: ProjectSchema,
-        resources: Resources
+        resources: ResourceProvider
     }> => {
         const zip = await JSZip.loadAsync(buffer)
         const metaData = Xml.parse(asDefined(await zip.file("metadata.xml")

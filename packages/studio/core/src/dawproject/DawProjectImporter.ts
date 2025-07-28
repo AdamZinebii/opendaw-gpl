@@ -54,12 +54,12 @@ import {InstrumentFactories} from "../InstrumentFactories"
 
 export class DawProjectImporter {
     static async importProject(schema: ProjectSchema,
-                               resources: DawProjectIO.Resources): Promise<DawProjectImporter> {
+                               resources: DawProjectIO.ResourceProvider): Promise<DawProjectImporter> {
         return new DawProjectImporter(schema, resources).#read()
     }
 
     readonly #schema: ProjectSchema
-    readonly #resources: DawProjectIO.Resources
+    readonly #resources: DawProjectIO.ResourceProvider
 
     readonly #mapTrackBoxes: Map<string, TrackBox>
     readonly #audioIDs: SortedSet<UUID.Format, UUID.Format>
@@ -71,9 +71,11 @@ export class DawProjectImporter {
     readonly #timelineBox: TimelineBox
     readonly #userInterfaceBox: UserInterfaceBox
 
-    private constructor(schema: ProjectSchema, resources: DawProjectIO.Resources) {
+    private constructor(schema: ProjectSchema, resources: DawProjectIO.ResourceProvider) {
         this.#schema = schema
         this.#resources = resources
+
+        console.dir(schema, {depth: Number.MAX_SAFE_INTEGER})
 
         this.#mapTrackBoxes = new Map<string, TrackBox>()
         this.#audioIDs = UUID.newSet(identity)
@@ -170,6 +172,9 @@ export class DawProjectImporter {
         let audioUnitIndex: int = 0
         structure.forEach((lane: LaneSchema) => {
             if (isInstanceOf(lane, TrackSchema)) {
+                if (lane.tracks?.length ?? 0 > 0) {
+                    return panic(`Groups are not supported yet.`)
+                }
                 const trackType = this.#contentToTrackType(lane.contentType)
                 const channel = asDefined(lane.channel, "Track has no Channel")
 

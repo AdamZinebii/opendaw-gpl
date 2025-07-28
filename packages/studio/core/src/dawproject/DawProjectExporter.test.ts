@@ -9,7 +9,10 @@ import {DawProjectExporter} from "./DawProjectExporter"
 describe("DawProjectExport", () => {
     it("export", async () => {
         const __dirname = path.dirname(fileURLToPath(import.meta.url))
-        const buffer = fs.readFileSync(path.join(__dirname, "../../../../../packages/app/studio/public/templates/Fatso.od"))
+        const projectPath = "../../../../../packages/app/studio/public/templates/Fatso.od"
+        // const projectPath = "../../../../../test-files/project.od"
+        const buffer = fs.readFileSync(path.join(__dirname, projectPath))
+        console.error(buffer)
         const skeleton = ProjectDecoder.decode(buffer.buffer)
         ProjectMigration.migrate(skeleton)
         console.debug(DawProjectExporter.exportProject(skeleton).toProjectXml())

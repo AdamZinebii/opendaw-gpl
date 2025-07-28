@@ -365,7 +365,11 @@ export class StudioService implements ProjectEnv {
         if (!isDefined(file)) {return}
         const arrayBuffer = await file.arrayBuffer()
         const {project: projectSchema, resources} = await DawProjectIO.decode(arrayBuffer)
-        const {skeleton, audioIDs} = await DawProjectImporter.importProject(projectSchema, resources)
+        const importResult = await Promises.tryCatch(DawProjectImporter.importProject(projectSchema, resources))
+        if (importResult.status === "rejected") {
+            return showInfoDialog({headline: "Import Error", message: String(importResult.error)})
+        }
+        const {skeleton, audioIDs} = importResult.value
         await Promise.all(audioIDs.values()
             .map(uuid => resources.fromUUID(uuid))
             .map(resource => this.importSample({

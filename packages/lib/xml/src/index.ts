@@ -1,4 +1,4 @@
-import {asDefined, assert, Class, int, isDefined, Nullish, panic, WeakMaps} from "@opendaw/lib-std"
+import {asDefined, assert, Class, int, isDefined, isUndefined, Nullish, panic, WeakMaps} from "@opendaw/lib-std"
 
 export namespace Xml {
     type Meta =
@@ -48,11 +48,6 @@ export namespace Xml {
             WeakMaps.createIfAbsent(MetaClassMap, target.constructor, () => new Map<PropertyKey, Meta>())
                 .set(propertyKey, {type: "element", name, clazz})
 
-    /**
-     * Decorator to collect children.
-     * @param clazz The expected class
-     * @param nodeName optional. If undefined, all nodes will be read or written
-     */
     export const ElementRef = (clazz: Class, nodeName?: string): PropertyDecorator =>
         (target: Object, propertyKey: PropertyKey) =>
             WeakMaps.createIfAbsent(MetaClassMap, target.constructor, () => new Map<PropertyKey, Meta>())
@@ -75,12 +70,21 @@ export namespace Xml {
 
     export const toElement = (tagName: string, object: Record<string, any>): Element => {
         const doc = document.implementation.createDocument(null, null)
+
+        const getClassTagName = (constructor: Function): string => {
+            const tagMeta = MetaClassMap.get(constructor)?.get("class")
+            if (tagMeta?.type === "class") {
+                return tagMeta.name
+            }
+            return panic(`Missing @Xml.Class decorator on ${constructor.name}`)
+        }
+
         const visit = (tagName: string, object: Record<string, any>): Element => {
             const element = doc.createElement(tagName)
             Object.entries(object).forEach(([key, value]) => {
-                if (!isDefined(value)) {return}
+                if (!isDefined(value)) return
                 const meta = resolveMeta(object.constructor, key)
-                if (!isDefined(meta)) {return}
+                if (isUndefined(meta)) return
                 if (meta.type === "attribute") {
                     assert(typeof value === "number" || typeof value === "string" || typeof value === "boolean",
                         `Attribute value must be a primitive for ${key} = ${value}`)
@@ -88,16 +92,13 @@ export namespace Xml {
                     element.setAttribute(meta.name, String(value))
                 } else if (meta.type === "element") {
                     if (Array.isArray(value)) {
-                        console.debug("Array")
-                        const elements = doc.createElement(meta.name)
-                        elements.append(...value.map(item => {
-                            const tagMeta = resolveMeta(item.constructor, "class")
-                            if (!tagMeta || tagMeta.type !== "class") {
-                                return panic(`Missing or invalid @Xml.Class decorator for ${item.constructor.name}`)
-                            }
-                            return visit(tagMeta.name, item)
-                        }))
-                        element.appendChild(elements)
+                        if (value.length === 0) return
+                        const wrapper = doc.createElement(meta.name)
+                        value.forEach(item => {
+                            const itemTagName = getClassTagName(item.constructor)
+                            wrapper.appendChild(visit(itemTagName, item))
+                        })
+                        element.appendChild(wrapper)
                     } else if (typeof value === "string") {
                         const child = doc.createElement(meta.name)
                         child.textContent = value
@@ -106,33 +107,24 @@ export namespace Xml {
                         element.appendChild(visit(meta.name, value))
                     }
                 } else if (meta.type === "element-ref") {
-                    if (!Array.isArray(value)) {return panic("ElementRef must be an array of items.")}
-                    const wrapper = meta.name
-                        ? doc.createElement(meta.name)
-                        : element
-                    for (const item of value) {
-                        const itemClass = item?.constructor
-                        const tagMeta = Xml.collectMeta(item.constructor)?.get("class")
-                        if (!isDefined(tagMeta) || tagMeta.type !== "class") {
-                            return panic(`Missing @Xml.Class decorator on ${itemClass?.name}`)
+                    if (!Array.isArray(value)) return panic("ElementRef must be an array of items.")
+                    if (value.length === 0) return
+                    if (meta.name) {
+                        // Check if we need a wrapper or if meta.name is just overriding tag names
+                        const firstItemTagName = getClassTagName(value[0].constructor)
+                        if (meta.name === firstItemTagName) {
+                            // Direct elements case: meta.name matches class name, so use it for all items
+                            value.forEach(item => element.appendChild(visit(meta.name!, item)))
+                        } else {
+                            // Wrapper case: meta.name is different, so create wrapper with class-named children
+                            const wrapper = doc.createElement(meta.name)
+                            value.forEach(item => wrapper.appendChild(visit(getClassTagName(item.constructor), item)))
+                            element.appendChild(wrapper)
                         }
-                        const tagName = (() => {
-                            let current: Function = item.constructor
-                            while (isDefined(current)) {
-                                const meta = MetaClassMap.get(current)?.get("class")
-                                if (meta?.type === "class") return meta.name
-                                current = Object.getPrototypeOf(current)
-                            }
-                            return panic(`Missing @Xml.Class on ${item.constructor.name}`)
-                        })()
-                        const childElement = visit(tagName, item)
-                        wrapper.appendChild(childElement)
+                    } else {
+                        // No meta.name provided, use class tag names directly
+                        value.forEach(item => element.appendChild(visit(getClassTagName(item.constructor), item)))
                     }
-                    if (wrapper !== element) {
-                        element.appendChild(wrapper)
-                    }
-                } else {
-                    return panic(`Unknown meta type ${meta.type}`)
                 }
             })
             return element
@@ -206,20 +198,23 @@ export namespace Xml {
                 } else if (meta.type === "element") {
                     const {name, clazz: elementClazz} = meta
                     if (elementClazz === Array) {
-                        const arrayElements = element.querySelectorAll(`:scope > ${name}`)
-                        const items = Array.from(arrayElements).map(child =>
-                            deserialize(child, asDefined(ClassMap.get(child.nodeName),
-                                `Could not find class for '${child.nodeName}'`)))
-                        Object.defineProperty(instance, key, {
-                            value: items,
-                            enumerable: true
-                        })
+                        const wrapperElement = element.querySelector(`:scope > ${name}`)
+                        if (isDefined(wrapperElement)) {
+                            const items = Array.from(wrapperElement.children).map(child => {
+                                const clazz = ClassMap.get(child.nodeName)
+                                if (!clazz) {
+                                    console.warn(`Could not find class for '${child.nodeName}', skipping`)
+                                    return null
+                                }
+                                return deserialize(child, clazz)
+                            }).filter(item => item !== null)
+                            Object.defineProperty(instance, key, {value: items, enumerable: true})
+                        } else {
+                            Object.defineProperty(instance, key, {value: [], enumerable: true})
+                        }
                     } else if (elementClazz === String) {
                         const textContent = element.querySelector(`:scope > ${name}`)?.textContent
-                        Object.defineProperty(instance, key, {
-                            value: textContent,
-                            enumerable: true
-                        })
+                        Object.defineProperty(instance, key, {value: textContent, enumerable: true})
                     } else {
                         const child = element.querySelector(`:scope > ${name}`)
                         if (isDefined(child)) {
@@ -231,24 +226,44 @@ export namespace Xml {
                             Object.defineProperty(instance, key, {value: undefined, enumerable: true})
                         }
                     }
+
                 } else if (meta.type === "element-ref") {
-                    const parent = isDefined(meta.name)
-                        ? element.querySelector(`:scope > ${meta.name}`)
-                        : element
-                    if (isDefined(parent)) {
-                        Object.defineProperty(instance, key, {
-                            value: Array.from(parent.children).map(child => {
-                                const clazz = asDefined(ClassMap.get(child.nodeName)
-                                    , `Could not find class for '${child.nodeName}'`)
+                    if (isDefined(meta.name)) {
+                        // Check if this is a wrapper case or direct elements case
+                        const directElements = Array.from(element.querySelectorAll(`:scope > ${meta.name}`))
+                        const wrapperElement = element.querySelector(`:scope > ${meta.name}`)
+                        if (directElements.length > 0 && directElements[0].children.length === 0) {
+                            // Direct elements case: multiple elements with meta.name
+                            const items = directElements.map(child => {
+                                const clazz = ClassMap.get(child.nodeName)
+                                if (isUndefined(clazz)) return null
+                                return deserialize(child, clazz)
+                            }).filter(isDefined)
+                            Object.defineProperty(instance, key, {value: items, enumerable: true})
+                        } else if (isDefined(wrapperElement) && wrapperElement.children.length > 0) {
+                            const items = Array.from(wrapperElement.children).map(child => {
+                                const clazz = ClassMap.get(child.nodeName)
+                                if (isUndefined(clazz)) return null
                                 if (!(clazz === meta.clazz || clazz.prototype instanceof meta.clazz)) {
                                     return null
                                 }
                                 return deserialize(child, clazz)
-                            }).filter(isDefined),
-                            enumerable: true
-                        })
+                            }).filter(isDefined)
+                            Object.defineProperty(instance, key, {value: items, enumerable: true})
+                        } else {
+                            Object.defineProperty(instance, key, {value: [], enumerable: true})
+                        }
                     } else {
-                        Object.defineProperty(instance, key, {value: undefined, enumerable: true})
+                        // No meta.name, collect all matching children directly
+                        const items = Array.from(element.children).map(child => {
+                            const clazz = ClassMap.get(child.nodeName)
+                            if (isUndefined(clazz)) return null
+                            if (!(clazz === meta.clazz || clazz.prototype instanceof meta.clazz)) {
+                                return null
+                            }
+                            return deserialize(child, clazz)
+                        }).filter(isDefined)
+                        Object.defineProperty(instance, key, {value: items, enumerable: true})
                     }
                 }
             }

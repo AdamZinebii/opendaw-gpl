@@ -149,3 +149,19 @@ export namespace Addressable {
             .filter((addressable: A) => address.startsWith(addressable.address))
     }
 }
+
+export type ReferenceId = { address: Address, id: string }
+
+export class AddressReferenceId {
+    readonly #ids: SortedSet<Address, ReferenceId>
+    #idCount: int
+
+    constructor() {
+        this.#ids = Address.newSet(({address}) => address)
+        this.#idCount = 0
+    }
+
+    getOrCreate(address: Address): string {
+        return this.#ids.getOrCreate(address, () => ({address, id: `${++this.#idCount}`})).id
+    }
+}
