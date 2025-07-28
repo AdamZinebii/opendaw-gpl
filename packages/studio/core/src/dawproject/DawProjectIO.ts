@@ -2,6 +2,8 @@ import JSZip from "jszip"
 import {Xml} from "@opendaw/lib-xml"
 import {asDefined, panic, UUID} from "@opendaw/lib-std"
 import {MetaDataSchema, ProjectSchema} from "@opendaw/lib-dawproject"
+import {Project} from "../Project"
+import {DawProjectExporter} from "./DawProjectExporter"
 
 export namespace DawProjectIO {
     export type Resource = { uuid: UUID.Format, path: string, name: string, buffer: ArrayBuffer }
@@ -40,5 +42,13 @@ export namespace DawProjectIO {
                     .find(resource => UUID.equals(resource.uuid, uuid)) ?? panic("Resource not found")
             }
         }
+    }
+
+    export const encode = (project: Project, metaData: MetaDataSchema): Promise<ArrayBuffer> => {
+        const zip = new JSZip()
+        const projectSchema = DawProjectExporter.exportProject(project.skeleton).toProjectSchema()
+        zip.file("metadata.xml", Xml.pretty(Xml.toElement("MetaData", metaData)))
+        zip.file("project.xml", Xml.pretty(Xml.toElement("Project", projectSchema)))
+        return zip.generateAsync({type: "arraybuffer"})
     }
 }

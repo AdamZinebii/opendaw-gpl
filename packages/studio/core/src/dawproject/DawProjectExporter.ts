@@ -56,8 +56,8 @@ export class DawProjectExporter {
         this.#ids = new AddressReferenceId()
     }
 
-    toProjectXml(): string {
-        const element = Xml.toElement("Project", Xml.element({
+    toProjectSchema(): ProjectSchema {
+        return Xml.element({
             version: "1.0",
             application: Xml.element({
                 name: "openDAW",
@@ -72,8 +72,7 @@ export class DawProjectExporter {
                 }, LanesSchema)
             }, ArrangementSchema),
             scenes: []
-        }, ProjectSchema))
-        return Xml.pretty(element)
+        }, ProjectSchema)
     }
 
     #writeTransport(): TransportSchema {

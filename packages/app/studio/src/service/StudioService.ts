@@ -52,7 +52,6 @@ import {Address} from "@opendaw/lib-box"
 import {Recovery} from "@/Recovery.ts"
 import {MIDILearning} from "@/midi/devices/MIDILearning"
 import {
-    DawProjectExporter,
     DawProjectImporter,
     DawProjectIO,
     EngineFacade,
@@ -64,6 +63,9 @@ import {
 } from "@opendaw/studio-core"
 import {AudioOfflineRenderer} from "@/audio/AudioOfflineRenderer"
 import {FilePickerAcceptTypes} from "@/ui/FilePickerAcceptTypes"
+import {Xml} from "@opendaw/lib-xml"
+import {MetaDataSchema} from "@opendaw/lib-dawproject"
+import DawprojectFileType = FilePickerAcceptTypes.DawprojectFileType
 
 /**
  * I am just piling stuff after stuff in here to boot the environment.
@@ -381,10 +383,23 @@ export class StudioService implements ProjectEnv {
     }
 
     async exportDawproject() {
-        this.runIfProject(project => {
-            const exporter = DawProjectExporter.exportProject(project.skeleton)
-            console.debug(exporter.toProjectXml())
-        })
+        if (!this.hasProjectSession) {return}
+        const {project, meta} = this.session
+        const {status, error, value: zip} = await Promises.tryCatch(DawProjectIO.encode(project, Xml.element({
+            title: meta.name,
+            year: new Date().getFullYear().toString(),
+            website: "https://opendaw.studio"
+        }, MetaDataSchema)))
+        if (status === "rejected") {
+            return showInfoDialog({headline: "Export Error", message: String(error)})
+        } else {
+            const {status, error} = await Promises.tryCatch(Files.save(zip, {types: [DawprojectFileType]}))
+            if (status === "rejected" && !Errors.isAbort(error)) {
+                return error
+            } else {
+                return
+            }
+        }
     }
 
     fromProject(project: Project, name: string): void {this.sessionService.fromProject(project, name)}

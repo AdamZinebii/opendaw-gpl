@@ -15,6 +15,6 @@ describe("DawProjectExport", () => {
         console.error(buffer)
         const skeleton = ProjectDecoder.decode(buffer.buffer)
         ProjectMigration.migrate(skeleton)
-        console.debug(DawProjectExporter.exportProject(skeleton).toProjectXml())
+        console.debug(DawProjectExporter.exportProject(skeleton).toProjectSchema())
     })
 })
