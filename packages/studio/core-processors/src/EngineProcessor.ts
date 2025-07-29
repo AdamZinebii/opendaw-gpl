@@ -311,7 +311,7 @@ export class EngineProcessor extends AudioWorkletProcessor implements EngineCont
 
     get boxGraph(): BoxGraph<BoxIO.TypeMap> {return this.#boxGraph}
     get boxAdapters(): BoxAdapters {return this.#boxAdapters}
-    get audioManager(): SampleManager {return this.#audioManager}
+    get sampleManager(): SampleManager {return this.#audioManager}
     get rootBoxAdapter(): RootBoxAdapter {return this.#rootBoxAdapter}
     get timelineBoxAdapter(): TimelineBoxAdapter {return this.#timelineBoxAdapter}
     get bpm(): number {return this.#timelineBoxAdapter.box.bpm.getValue()}

@@ -2,6 +2,8 @@ import {Xml} from "@opendaw/lib-xml"
 import {
     ApplicationSchema,
     ArrangementSchema,
+    AudioAlgorithm,
+    AudioSchema,
     BuiltinDeviceSchema,
     ChannelRole,
     ChannelSchema,
@@ -9,6 +11,7 @@ import {
     ClipsSchema,
     DeviceRole,
     DeviceSchema,
+    FileReferenceSchema,
     LanesSchema,
     NoteSchema,
     NotesSchema,
@@ -20,11 +23,13 @@ import {
     TimeUnit,
     TrackSchema,
     TransportSchema,
-    Unit
+    Unit,
+    WarpSchema,
+    WarpsSchema
 } from "@opendaw/lib-dawproject"
-import {ProjectDecoder} from "@opendaw/studio-adapters"
-import {asDefined, asInstanceOf, isDefined, isInstanceOf, Nullish, Option} from "@opendaw/lib-std"
+import {asDefined, asInstanceOf, Color, isDefined, isInstanceOf, Nullish, Option} from "@opendaw/lib-std"
 import {
+    AudioFileBox,
     AudioRegionBox,
     AudioUnitBox,
     BoxVisitor,
@@ -38,20 +43,21 @@ import {
 import {AddressReferenceId, BooleanField, Box, Field, StringField} from "@opendaw/lib-box"
 import {dbToGain, PPQN} from "@opendaw/lib-dsp"
 import {AudioUnitType} from "@opendaw/studio-enums"
+import {Project} from "../Project"
 
 export class DawProjectExporter {
-    static exportProject(skeleton: ProjectDecoder.Skeleton): DawProjectExporter {
-        return new DawProjectExporter(skeleton)
+    static exportProject(project: Project): DawProjectExporter {
+        return new DawProjectExporter(project)
     }
 
     static readonly #CHANNEL_FIELD_KEY = 0x8001
 
     readonly #ids: AddressReferenceId
 
-    readonly #skeleton: ProjectDecoder.Skeleton
+    readonly #project: Project
 
-    constructor(skeleton: ProjectDecoder.Skeleton) {
-        this.#skeleton = skeleton
+    constructor(project: Project) {
+        this.#project = project
 
         this.#ids = new AddressReferenceId()
     }
@@ -76,7 +82,7 @@ export class DawProjectExporter {
     }
 
     #writeTransport(): TransportSchema {
-        const {timelineBox} = this.#skeleton.mandatoryBoxes
+        const {timelineBox} = this.#project
         return Xml.element({
             tempo: Xml.element({
                 value: timelineBox.bpm.getValue(),
@@ -169,17 +175,44 @@ export class DawProjectExporter {
     }
 
     #writeAudioRegion(region: AudioRegionBox): ClipsSchema {
+        const audioFileBox = asInstanceOf(region.file.targetVertex.unwrap("No file at region").box, AudioFileBox)
+        const audioElement = this.#project.sampleManager.getOrCreate(audioFileBox.address.uuid).data
+            .map(({numberOfFrames, sampleRate, numberOfChannels}) => Xml.element({
+                duration: numberOfFrames / sampleRate,
+                channels: numberOfChannels,
+                sampleRate,
+                algorithm: AudioAlgorithm.REPITCH,
+                file: Xml.element({
+                    path: `samples/${audioFileBox.fileName.getValue()}.wav`,
+                    external: false
+                }, FileReferenceSchema)
+            }, AudioSchema)).unwrap("Could not load sample.")
+        const duration = region.duration.getValue() / PPQN.Quarter
         return Xml.element({
             clips: [Xml.element({
                 time: region.position.getValue() / PPQN.Quarter,
-                duration: region.duration.getValue() / PPQN.Quarter,
+                duration,
                 contentTimeUnit: TimeUnit.BEATS,
                 playStart: 0.0,
                 loopStart: 0.0,
                 loopEnd: region.loopDuration.getValue() / PPQN.Quarter,
                 enable: !region.mute.getValue(),
                 name: region.label.getValue(),
-                content: []
+                color: this.#hueToColor(region.hue.getValue()),
+                content: [Xml.element({
+                    content: [audioElement],
+                    contentTimeUnit: "beats",
+                    warps: [
+                        Xml.element({
+                            time: 0.0,
+                            contentTime: 0.0
+                        }, WarpSchema),
+                        Xml.element({
+                            time: duration,
+                            contentTime: audioElement.duration
+                        }, WarpSchema)
+                    ]
+                }, WarpsSchema)]
             }, ClipSchema)]
         }, ClipsSchema)
     }
@@ -197,6 +230,7 @@ export class DawProjectExporter {
                 loopEnd: region.loopDuration.getValue() / PPQN.Quarter,
                 enable: !region.mute.getValue(),
                 name: region.label.getValue(),
+                color: this.#hueToColor(region.hue.getValue()),
                 content: [Xml.element({
                     notes: collectionBox.events.pointerHub.incoming()
                         .map(({box}) => asInstanceOf(box, NoteEventBox))
@@ -226,13 +260,14 @@ export class DawProjectExporter {
                 loopEnd: region.loopDuration.getValue() / PPQN.Quarter,
                 enable: !region.mute.getValue(),
                 name: region.label.getValue(),
+                color: this.#hueToColor(region.hue.getValue()),
                 content: [] // TODO
             }, ClipSchema)]
         }, ClipsSchema)
     }
 
     #collectAudioUnitBoxes(): ReadonlyArray<AudioUnitBox> {
-        return this.#skeleton.mandatoryBoxes.rootBox.audioUnits.pointerHub.incoming()
+        return this.#project.rootBox.audioUnits.pointerHub.incoming()
             .map(({box}) => asInstanceOf(box, AudioUnitBox))
             .sort((a, b) => a.index.getValue() - b.index.getValue())
     }
@@ -242,4 +277,6 @@ export class DawProjectExporter {
             ? box.label.getValue()
             : "Unknown"
     }
+
+    #hueToColor(hue: number): string {return Color.hslToHex(hue, 1.0, 0.60)}
 }

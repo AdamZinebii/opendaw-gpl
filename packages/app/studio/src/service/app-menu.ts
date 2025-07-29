@@ -48,10 +48,6 @@ export const initAppMenu = (service: StudioService) => {
                 .setRuntimeChildrenProcedure(parent => {
                     return parent.addMenuItem(
                         MenuItem.default({
-                            label: "Debug dawproject to console"
-                        }).setTriggerProcedure(() => service
-                            .runIfProject(project => console.debug(project.toDawProject()))),
-                        MenuItem.default({
                             label: "New SyncLog...",
                             selectable: isDefined(window.showSaveFilePicker)
                         }).setTriggerProcedure(() => SyncLogService.start(service)),

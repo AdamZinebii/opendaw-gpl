@@ -95,7 +95,7 @@ export namespace Projects {
         let boxIndex = 0
         const blob = await Promise.all(boxes
             .map(async ({address: {uuid}}) => {
-                const handler: MainThreadSampleLoader = project.audioManager.getOrCreate(uuid) as MainThreadSampleLoader // TODO get rid of cast
+                const handler: MainThreadSampleLoader = project.sampleManager.getOrCreate(uuid) as MainThreadSampleLoader // TODO get rid of cast
                 const folder: JSZip = asDefined(samples.folder(UUID.toString(uuid)), "Could not create folder for sample")
                 return handler.pipeFilesInto(folder).then(() => progress.setValue(++boxIndex / boxes.length * 0.75))
             })).then(() => zip.generateAsync({

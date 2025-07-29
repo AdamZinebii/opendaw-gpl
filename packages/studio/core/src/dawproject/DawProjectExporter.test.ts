@@ -2,9 +2,10 @@ import {describe, it} from "vitest"
 import {fileURLToPath} from "url"
 import * as path from "node:path"
 import * as fs from "node:fs"
-import {ProjectDecoder} from "@opendaw/studio-adapters"
-import {ProjectMigration} from "../ProjectMigration"
 import {DawProjectExporter} from "./DawProjectExporter"
+import {Project} from "../Project"
+import {SampleLoader, SampleManager} from "@opendaw/studio-adapters"
+import {panic, UUID} from "@opendaw/lib-std"
 
 describe("DawProjectExport", () => {
     it("export", async () => {
@@ -13,8 +14,16 @@ describe("DawProjectExport", () => {
         // const projectPath = "../../../../../test-files/project.od"
         const buffer = fs.readFileSync(path.join(__dirname, projectPath))
         console.error(buffer)
-        const skeleton = ProjectDecoder.decode(buffer.buffer)
-        ProjectMigration.migrate(skeleton)
-        console.debug(DawProjectExporter.exportProject(skeleton).toProjectSchema())
+        const project = Project.load({
+            sampleManager: new class implements SampleManager {
+                getOrCreate(_uuid: UUID.Format): SampleLoader {
+                    return panic("Method not implemented.")
+                }
+                invalidate(_uuid: UUID.Format): void {
+                    return panic("Method not implemented.")
+                }
+            }
+        }, buffer.buffer)
+        console.debug(DawProjectExporter.exportProject(project).toProjectSchema())
     })
 })

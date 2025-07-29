@@ -56,6 +56,12 @@ export enum ChannelRole {
     EFFECT = "effect"
 }
 
+// noinspection JSUnusedGlobalSymbols
+export enum AudioAlgorithm {
+    REPITCH = "repitch",
+    STRETCH = "stretch"
+}
+
 @Xml.Class("MetaData")
 export class MetaDataSchema {
     @Xml.Element("Title", String) readonly title?: string

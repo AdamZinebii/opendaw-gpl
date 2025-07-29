@@ -4,6 +4,8 @@ import {asDefined, panic, UUID} from "@opendaw/lib-std"
 import {MetaDataSchema, ProjectSchema} from "@opendaw/lib-dawproject"
 import {Project} from "../Project"
 import {DawProjectExporter} from "./DawProjectExporter"
+import {AudioFileBox, BoxVisitor} from "@opendaw/studio-boxes"
+import {encodeWavFloat} from "../Wav"
 
 export namespace DawProjectIO {
     export type Resource = { uuid: UUID.Format, path: string, name: string, buffer: ArrayBuffer }
@@ -46,9 +48,35 @@ export namespace DawProjectIO {
 
     export const encode = (project: Project, metaData: MetaDataSchema): Promise<ArrayBuffer> => {
         const zip = new JSZip()
-        const projectSchema = DawProjectExporter.exportProject(project.skeleton).toProjectSchema()
-        zip.file("metadata.xml", Xml.pretty(Xml.toElement("MetaData", metaData)))
-        zip.file("project.xml", Xml.pretty(Xml.toElement("Project", projectSchema)))
+        zipAllSamples(zip, project)
+        const projectSchema = DawProjectExporter.exportProject(project).toProjectSchema()
+        const metaDataXml = Xml.pretty(Xml.toElement("MetaData", metaData))
+        const projectXml = Xml.pretty(Xml.toElement("Project", projectSchema))
+        console.debug("encode")
+        console.debug(metaDataXml)
+        console.debug(projectXml)
+        zip.file("metadata.xml", metaDataXml)
+        zip.file("project.xml", projectXml)
         return zip.generateAsync({type: "arraybuffer"})
+    }
+
+    const zipAllSamples = (zip: JSZip, {boxGraph, sampleManager}: Project): void => {
+        const boxes = boxGraph.boxes()
+        boxes
+            .forEach(box => box.accept<BoxVisitor>({
+                visitAudioFileBox(box: AudioFileBox): void {
+                    const loader = sampleManager.getOrCreate(box.address.uuid)
+                    loader.data.ifSome(({frames, numberOfFrames, sampleRate, numberOfChannels}) => {
+                        const wav = encodeWavFloat({
+                            channels: frames,
+                            duration: numberOfFrames * sampleRate,
+                            numberOfChannels,
+                            sampleRate,
+                            numFrames: numberOfFrames
+                        })
+                        zip.file(`samples/${box.fileName.getValue()}.wav`, wav)
+                    })
+                }
+            }))
     }
 }

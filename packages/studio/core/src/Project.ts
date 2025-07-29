@@ -140,7 +140,7 @@ export class Project implements BoxAdaptersContext, Terminable, TerminableOwner 
     get bpm(): number {return this.timelineBox.bpm.getValue()}
     get rootBoxAdapter(): RootBoxAdapter {return this.boxAdapters.adapterFor(this.rootBox, RootBoxAdapter)}
     get timelineBoxAdapter(): TimelineBoxAdapter {return this.boxAdapters.adapterFor(this.timelineBox, TimelineBoxAdapter)}
-    get audioManager(): SampleManager {return this.#env.sampleManager}
+    get sampleManager(): SampleManager {return this.#env.sampleManager}
     get clipSequencing(): ClipSequencing {return panic("Only available in audio context")}
     get isAudioContext(): boolean {return false}
     get isMainThread(): boolean {return true}
@@ -179,6 +179,4 @@ export class Project implements BoxAdaptersContext, Terminable, TerminableOwner 
     copy(): Project {return Project.load(this.#env, this.toArrayBuffer() as ArrayBuffer)}
 
     terminate(): void {this.#terminator.terminate()}
-
-    toDawProject(): string {return panic("Not implemented") }
 }

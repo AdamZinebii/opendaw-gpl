@@ -11,7 +11,7 @@ import {SampleManager} from "./sample/SampleManager"
 export interface BoxAdaptersContext extends Terminable {
     get boxGraph(): BoxGraph
     get boxAdapters(): BoxAdapters
-    get audioManager(): SampleManager
+    get sampleManager(): SampleManager
     get rootBoxAdapter(): RootBoxAdapter
     get timelineBoxAdapter(): TimelineBoxAdapter
     get liveStreamReceiver(): LiveStreamReceiver
