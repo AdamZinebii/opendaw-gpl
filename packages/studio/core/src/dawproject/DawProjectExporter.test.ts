@@ -6,14 +6,16 @@ import {DawProjectExporter} from "./DawProjectExporter"
 import {Project} from "../Project"
 import {SampleLoader, SampleManager} from "@opendaw/studio-adapters"
 import {panic, UUID} from "@opendaw/lib-std"
+import {Xml} from "@opendaw/lib-xml"
+import {FileReferenceSchema} from "@opendaw/lib-dawproject"
 
 describe("DawProjectExport", () => {
     it("export", async () => {
         const __dirname = path.dirname(fileURLToPath(import.meta.url))
-        const projectPath = "../../../../../packages/app/studio/public/templates/Fatso.od"
-        // const projectPath = "../../../../../test-files/project.od"
+        // const projectPath = "../../../../../packages/app/studio/public/templates/Fatso.od"
+        const projectPath = "../../../../../test-files/project.od"
         const buffer = fs.readFileSync(path.join(__dirname, projectPath))
-        console.error(buffer)
+        const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)
         const project = Project.load({
             sampleManager: new class implements SampleManager {
                 getOrCreate(_uuid: UUID.Format): SampleLoader {
@@ -23,7 +25,14 @@ describe("DawProjectExport", () => {
                     return panic("Method not implemented.")
                 }
             }
-        }, buffer.buffer)
-        console.debug(DawProjectExporter.exportProject(project).toProjectSchema())
+        }, arrayBuffer)
+        const schema = DawProjectExporter.exportProject(project, {
+            write: (path: string, buffer: ArrayBufferLike): FileReferenceSchema => {
+                console.debug(`store ${buffer.byteLength} bytes at ${path}`)
+                return Xml.element({path, external: false}, FileReferenceSchema)
+            }
+        }).toProjectSchema()
+        console.dir(schema, {depth: Number.MAX_SAFE_INTEGER})
+        console.debug(Xml.pretty(Xml.toElement("Project", schema)))
     })
 })

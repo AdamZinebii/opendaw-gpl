@@ -27,7 +27,7 @@ import {
     WarpSchema,
     WarpsSchema
 } from "@opendaw/lib-dawproject"
-import {asDefined, asInstanceOf, Color, isDefined, isInstanceOf, Nullish, Option} from "@opendaw/lib-std"
+import {asDefined, asInstanceOf, Color, isInstanceOf, Option, UUID} from "@opendaw/lib-std"
 import {
     AudioFileBox,
     AudioRegionBox,
@@ -40,24 +40,31 @@ import {
     ValueEventCollectionBox,
     ValueRegionBox
 } from "@opendaw/studio-boxes"
-import {AddressReferenceId, BooleanField, Box, Field, StringField} from "@opendaw/lib-box"
+import {AddressReferenceId, BooleanField, Field} from "@opendaw/lib-box"
 import {dbToGain, PPQN} from "@opendaw/lib-dsp"
 import {AudioUnitType} from "@opendaw/studio-enums"
 import {Project} from "../Project"
+import {readLabel} from "./utils"
+
+export interface Resources {
+    write(path: string, buffer: ArrayBuffer): FileReferenceSchema
+}
 
 export class DawProjectExporter {
-    static exportProject(project: Project): DawProjectExporter {
-        return new DawProjectExporter(project)
+    static exportProject(project: Project, resources: Resources): DawProjectExporter {
+        return new DawProjectExporter(project, resources)
     }
 
     static readonly #CHANNEL_FIELD_KEY = 0x8001
 
+    readonly #project: Project
+    readonly #resources: Resources
+
     readonly #ids: AddressReferenceId
 
-    readonly #project: Project
-
-    constructor(project: Project) {
+    constructor(project: Project, resources: Resources) {
         this.#project = project
+        this.#resources = resources
 
         this.#ids = new AddressReferenceId()
     }
@@ -101,7 +108,7 @@ export class DawProjectExporter {
                 const inputBox = box.input.pointerHub.incoming().at(0)?.box
                 return Xml.element({
                     id: this.#ids.getOrCreate(box.address),
-                    name: this.#readLabel(inputBox),
+                    name: readLabel(inputBox),
                     loaded: true,
                     contentType: (() =>
                         // TODO Another location to remember to put devices in...?
@@ -141,18 +148,28 @@ export class DawProjectExporter {
 
     #writeDevices(field: Field, deviceRole: string): ReadonlyArray<DeviceSchema> {
         return field.pointerHub.incoming().map(({box}) => {
-            const enabledField: Option<BooleanField> = "enabled" in box && isInstanceOf(box.enabled, BooleanField)
-                ? Option.wrap(box.enabled) : Option.None
-            return Xml.element({
-                id: this.#ids.getOrCreate(box.address),
-                name: box.name,
-                deviceID: box.name,
-                deviceRole,
-                deviceName: this.#readLabel(box),
-                deviceVendor: "openDAW",
-                automatedParameters: [],
-                enabled: enabledField.mapOr(field => ParameterEncoder.bool(field.getValue(),
+            const enabled = ("enabled" in box && isInstanceOf(box.enabled, BooleanField)
+                ? Option.wrap(box.enabled)
+                : Option.None)
+                .mapOr(field => ParameterEncoder.bool(field.getValue(),
                     "On/Off", this.#ids.getOrCreate(field.address)), undefined)
+            const deviceID = UUID.toString(box.address.uuid)
+            const deviceName = box.name
+            const deviceVendor = "openDAW"
+            const id = this.#ids.getOrCreate(box.address)
+            const name = readLabel(box)
+            return Xml.element({
+                id,
+                name,
+                deviceID,
+                deviceRole,
+                deviceName,
+                deviceVendor,
+                enabled,
+                loaded: true,
+                automatedParameters: [],
+                state: this.#resources.write(`presets/${UUID.toString(box.address.uuid)}`,
+                    box.toArrayBuffer() as ArrayBuffer)
             }, BuiltinDeviceSchema)
         })
     }
@@ -270,12 +287,6 @@ export class DawProjectExporter {
         return this.#project.rootBox.audioUnits.pointerHub.incoming()
             .map(({box}) => asInstanceOf(box, AudioUnitBox))
             .sort((a, b) => a.index.getValue() - b.index.getValue())
-    }
-
-    #readLabel(box: Nullish<Box>): string {
-        return isDefined(box) && "label" in box && isInstanceOf(box.label, StringField)
-            ? box.label.getValue()
-            : "Unknown"
     }
 
     #hueToColor(hue: number): string {return Color.hslToHex(hue, 1.0, 0.60)}

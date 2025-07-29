@@ -1,7 +1,7 @@
 import JSZip from "jszip"
 import {Xml} from "@opendaw/lib-xml"
 import {asDefined, panic, UUID} from "@opendaw/lib-std"
-import {MetaDataSchema, ProjectSchema} from "@opendaw/lib-dawproject"
+import {FileReferenceSchema, MetaDataSchema, ProjectSchema} from "@opendaw/lib-dawproject"
 import {Project} from "../Project"
 import {DawProjectExporter} from "./DawProjectExporter"
 import {AudioFileBox, BoxVisitor} from "@opendaw/studio-boxes"
@@ -49,7 +49,12 @@ export namespace DawProjectIO {
     export const encode = (project: Project, metaData: MetaDataSchema): Promise<ArrayBuffer> => {
         const zip = new JSZip()
         zipAllSamples(zip, project)
-        const projectSchema = DawProjectExporter.exportProject(project).toProjectSchema()
+        const projectSchema = DawProjectExporter.exportProject(project, {
+            write: (path: string, buffer: ArrayBuffer): FileReferenceSchema => {
+                zip.file(path, buffer)
+                return Xml.element({path, external: false}, FileReferenceSchema)
+            }
+        }).toProjectSchema()
         const metaDataXml = Xml.pretty(Xml.toElement("MetaData", metaData))
         const projectXml = Xml.pretty(Xml.toElement("Project", projectSchema))
         console.debug("encode")
@@ -61,22 +66,20 @@ export namespace DawProjectIO {
     }
 
     const zipAllSamples = (zip: JSZip, {boxGraph, sampleManager}: Project): void => {
-        const boxes = boxGraph.boxes()
-        boxes
-            .forEach(box => box.accept<BoxVisitor>({
-                visitAudioFileBox(box: AudioFileBox): void {
-                    const loader = sampleManager.getOrCreate(box.address.uuid)
-                    loader.data.ifSome(({frames, numberOfFrames, sampleRate, numberOfChannels}) => {
-                        const wav = encodeWavFloat({
-                            channels: frames,
-                            duration: numberOfFrames * sampleRate,
-                            numberOfChannels,
-                            sampleRate,
-                            numFrames: numberOfFrames
-                        })
-                        zip.file(`samples/${box.fileName.getValue()}.wav`, wav)
+        boxGraph.boxes().forEach(box => box.accept<BoxVisitor>({
+            visitAudioFileBox(box: AudioFileBox): void {
+                const loader = sampleManager.getOrCreate(box.address.uuid)
+                loader.data.ifSome(({frames, numberOfFrames, sampleRate, numberOfChannels}) => {
+                    const wav = encodeWavFloat({
+                        channels: frames,
+                        duration: numberOfFrames * sampleRate,
+                        numberOfChannels,
+                        sampleRate,
+                        numFrames: numberOfFrames
                     })
-                }
-            }))
+                    zip.file(`samples/${box.fileName.getValue()}.wav`, wav)
+                })
+            }
+        }))
     }
 }

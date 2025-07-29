@@ -9,7 +9,7 @@ import {TrackSchema} from "@opendaw/lib-dawproject"
 describe("DawProjectImport", () => {
     it("import", async () => {
         const __dirname = path.dirname(fileURLToPath(import.meta.url))
-        const testFile = "../../../../../test-files/sample.dawproject"
+        const testFile = "../../../../../test-files/Untitled.dawproject"
         // const testFile = "../../../../../test-files/test.dawproject"
         const buffer = fs.readFileSync(path.join(__dirname, testFile))
         const {project, resources} = await DawProjectIO.decode(buffer)

@@ -1,4 +1,4 @@
-import {BooleanParameterSchema, RealParameterSchema, Unit} from "./schema"
+import {BooleanParameterSchema, RealParameterSchema, Unit} from "./defaults"
 import {Xml} from "@opendaw/lib-xml"
 
 export namespace ParameterEncoder {

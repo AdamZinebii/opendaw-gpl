@@ -1,13 +1,13 @@
 import type {int} from "@opendaw/lib-std"
 import {Xml} from "@opendaw/lib-xml"
 
-interface Nameable {
+export interface Nameable {
     name?: string
     color?: string
     comment?: string
 }
 
-interface Referenceable extends Nameable {
+export interface Referenceable extends Nameable {
     id?: string
 }
 
@@ -582,7 +582,7 @@ export class TrackSchema extends LaneSchema {
     @Xml.Element("Channel", ChannelSchema)
     readonly channel?: ChannelSchema
 
-    @Xml.Element("Track", Array)
+    @Xml.ElementRef(TrackSchema)
     readonly tracks?: ReadonlyArray<TrackSchema>
 }
 

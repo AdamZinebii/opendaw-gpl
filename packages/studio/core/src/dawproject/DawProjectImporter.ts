@@ -1,9 +1,11 @@
 import {
     asDefined,
     assert,
+    ByteArrayInput,
     Exec,
     identity,
     int,
+    isDefined,
     isInstanceOf,
     isUndefined,
     Nullish,
@@ -20,6 +22,7 @@ import {
     ChannelSchema,
     ClipSchema,
     ClipsSchema,
+    DeviceSchema,
     LaneSchema,
     LanesSchema,
     NotesSchema,
@@ -51,6 +54,7 @@ import {IconSymbol, ProjectDecoder, TrackType} from "@opendaw/studio-adapters"
 import {DawProjectIO} from "./DawProjectIO"
 import {ColorCodes} from "../ColorCodes"
 import {InstrumentFactories} from "../InstrumentFactories"
+import TypeMap = BoxIO.TypeMap
 
 export class DawProjectImporter {
     static async importProject(schema: ProjectSchema,
@@ -168,6 +172,19 @@ export class DawProjectImporter {
                 }
             })
         }
+
+        const createDevices = (audioUnitBox: AudioUnitBox, devices: ReadonlyArray<DeviceSchema>) => {
+            devices.forEach(device => {
+                const name = asDefined(device.deviceName) as keyof TypeMap
+                const uuidString = asDefined(device.deviceID)
+                const uuid = UUID.parse(uuidString)
+                this.#boxGraph.createBox(name, uuid, box => {
+                    const {buffer} = this.#resources.fromPath(`presets/${uuidString}`)
+                    box.read(new ByteArrayInput(buffer))
+                })
+            })
+        }
+
         const {structure} = this.#schema
         let audioUnitIndex: int = 0
         structure.forEach((lane: LaneSchema) => {
@@ -177,8 +194,6 @@ export class DawProjectImporter {
                 }
                 const trackType = this.#contentToTrackType(lane.contentType)
                 const channel = asDefined(lane.channel, "Track has no Channel")
-
-                // TODO devices
 
                 if (channel.role === "regular") {
                     const audioUnitBox = AudioUnitBox.create(this.#boxGraph, UUID.generate(), box => {
@@ -201,6 +216,9 @@ export class DawProjectImporter {
                     } else if (trackType === TrackType.Audio) {
                         InstrumentFactories.Tape
                             .create(this.#boxGraph, audioUnitBox.input, lane.name ?? "", IconSymbol.Waveform)
+                    }
+                    if (isDefined(channel.devices)) {
+                        // TODO createDevices(audioUnitBox, channel.devices)
                     }
                 } else if (channel.role === "effect") {
                     const audioUnitBox = AudioUnitBox.create(this.#boxGraph, UUID.generate(), box => {
