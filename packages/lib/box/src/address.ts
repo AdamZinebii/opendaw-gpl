@@ -14,9 +14,8 @@ import {
 } from "@opendaw/lib-std"
 import {FieldKey, FieldKeys} from "./field"
 
-export type AddressLayout = [UUID.Format, FieldKeys]
-
 export type AddressJSON = { uuid: Array<int>, fields: Array<int> }
+export type AddressLayout = [UUID.Format, FieldKeys]
 
 export class Address implements Comparable<Address> {
     static newSet<T>(keyExtractor: Func<T, Address>) {
@@ -150,10 +149,8 @@ export namespace Addressable {
     }
 }
 
-export type ReferenceId = { address: Address, id: string }
-
-export class AddressReferenceId {
-    readonly #ids: SortedSet<Address, ReferenceId>
+export class AddressIdEncoder {
+    readonly #ids: SortedSet<Address, { address: Address, id: string }>
     #idCount: int
 
     constructor() {

@@ -41,6 +41,7 @@ import {InstrumentOptions} from "./InstrumentOptions"
 import {EffectFactory} from "./EffectFactory"
 import {ColorCodes} from "./ColorCodes"
 import {EffectBox} from "./EffectBox"
+import {AudioUnitOrdering} from "./AudioUnitOrdering"
 
 export type ClipRegionOptions = {
     name?: string
@@ -72,13 +73,6 @@ export type NoteRegionParams = {
 
 // noinspection JSUnusedGlobalSymbols
 export class ProjectApi {
-    static readonly AudioUnitOrdering: Record<string, int> = {
-        [AudioUnitType.Instrument]: 0,
-        [AudioUnitType.Aux]: 1,
-        [AudioUnitType.Bus]: 2,
-        [AudioUnitType.Output]: 3
-    } as const
-
     readonly #project: Project
 
     constructor(project: Project) {this.#project = project}
@@ -300,7 +294,6 @@ export class ProjectApi {
     }
 
     #sortAudioUnitOrdering(type: AudioUnitType): int {
-        const {AudioUnitOrdering} = ProjectApi
         const {rootBox} = this.#project
         const boxes = IndexedBox.collectIndexedBoxes(rootBox.audioUnits, AudioUnitBox)
         const order: int = AudioUnitOrdering[type]

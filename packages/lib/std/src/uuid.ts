@@ -3,6 +3,7 @@ import {assert, Comparator, Func, int, panic} from "./lang"
 import {SortedSet} from "./sorted-set"
 import {DataInput, DataOutput} from "./data"
 import {Crypto} from "./crypto"
+import {Maps} from "./maps"
 
 declare const crypto: Crypto
 
@@ -81,6 +82,12 @@ export namespace UUID {
             result[i] = array[i]
         }
         return result
+    }
+
+    export class SimpleIdDecoder {
+        readonly #uuids: Map<string, UUID.Format>
+        constructor() {this.#uuids = new Map<string, UUID.Format>()}
+        getOrCreate(id: string): UUID.Format {return Maps.createIfAbsent(this.#uuids, id, () => UUID.generate())}
     }
 
     const fromUint8Array = (arr: Uint8Array): Uint8Array => {

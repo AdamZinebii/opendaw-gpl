@@ -1,4 +1,6 @@
-// Warning, those number types do not truncate decimal places and handle overflows.
+// noinspection JSUnusedGlobalSymbols
+
+// Warning, those number types do not truncate decimal places or handle overflows. They are just hints.
 export type byte = number
 export type short = number
 export type int = number

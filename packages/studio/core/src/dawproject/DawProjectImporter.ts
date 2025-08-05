@@ -54,7 +54,6 @@ import {IconSymbol, ProjectDecoder, TrackType} from "@opendaw/studio-adapters"
 import {DawProjectIO} from "./DawProjectIO"
 import {ColorCodes} from "../ColorCodes"
 import {InstrumentFactories} from "../InstrumentFactories"
-import TypeMap = BoxIO.TypeMap
 
 export class DawProjectImporter {
     static async importProject(schema: ProjectSchema,
@@ -64,6 +63,8 @@ export class DawProjectImporter {
 
     readonly #schema: ProjectSchema
     readonly #resources: DawProjectIO.ResourceProvider
+
+    readonly #uuids: UUID.SimpleIdDecoder
 
     readonly #mapTrackBoxes: Map<string, TrackBox>
     readonly #audioIDs: SortedSet<UUID.Format, UUID.Format>
@@ -79,7 +80,7 @@ export class DawProjectImporter {
         this.#schema = schema
         this.#resources = resources
 
-        console.dir(schema, {depth: Number.MAX_SAFE_INTEGER})
+        this.#uuids = new UUID.SimpleIdDecoder()
 
         this.#mapTrackBoxes = new Map<string, TrackBox>()
         this.#audioIDs = UUID.newSet(identity)
@@ -175,7 +176,7 @@ export class DawProjectImporter {
 
         const createDevices = (audioUnitBox: AudioUnitBox, devices: ReadonlyArray<DeviceSchema>) => {
             devices.forEach(device => {
-                const name = asDefined(device.deviceName) as keyof TypeMap
+                const name = asDefined(device.deviceName) as keyof BoxIO.TypeMap
                 const uuidString = asDefined(device.deviceID)
                 const uuid = UUID.parse(uuidString)
                 this.#boxGraph.createBox(name, uuid, box => {
@@ -187,16 +188,17 @@ export class DawProjectImporter {
 
         const {structure} = this.#schema
         let audioUnitIndex: int = 0
-        structure.forEach((lane: LaneSchema) => {
-            if (isInstanceOf(lane, TrackSchema)) {
-                if (lane.tracks?.length ?? 0 > 0) {
+        structure.forEach((track: LaneSchema) => {
+            if (isInstanceOf(track, TrackSchema)) {
+                if (track.tracks?.length ?? 0 > 0) {
                     return panic(`Groups are not supported yet.`)
                 }
-                const trackType = this.#contentToTrackType(lane.contentType)
-                const channel = asDefined(lane.channel, "Track has no Channel")
+                const trackType = this.#contentToTrackType(track.contentType)
+                const channel = asDefined(track.channel, "Track has no Channel")
 
                 if (channel.role === "regular") {
-                    const audioUnitBox = AudioUnitBox.create(this.#boxGraph, UUID.generate(), box => {
+                    const uuid = this.#uuids.getOrCreate(asDefined(track.id, "Track must have an id."))
+                    const audioUnitBox = AudioUnitBox.create(this.#boxGraph, uuid, box => {
                         box.index.setValue(audioUnitIndex)
                         box.type.setValue(AudioUnitType.Instrument)
                         box.output.refer(this.#masterBusBox.input)
@@ -209,13 +211,13 @@ export class DawProjectImporter {
                         box.tracks.refer(audioUnitBox.tracks)
                         box.target.refer(audioUnitBox)
                     })
-                    this.#mapTrackBoxes.set(asDefined(lane.id, "Track must have an id."), trackBox)
+                    this.#mapTrackBoxes.set(asDefined(track.id, "Track must have an id."), trackBox)
                     if (trackType === TrackType.Notes) {
                         InstrumentFactories.Vaporisateur
-                            .create(this.#boxGraph, audioUnitBox.input, lane.name ?? "", IconSymbol.Piano)
+                            .create(this.#boxGraph, audioUnitBox.input, track.name ?? "", IconSymbol.Piano)
                     } else if (trackType === TrackType.Audio) {
                         InstrumentFactories.Tape
-                            .create(this.#boxGraph, audioUnitBox.input, lane.name ?? "", IconSymbol.Waveform)
+                            .create(this.#boxGraph, audioUnitBox.input, track.name ?? "", IconSymbol.Waveform)
                     }
                     if (isDefined(channel.devices)) {
                         // TODO createDevices(audioUnitBox, channel.devices)
@@ -230,7 +232,7 @@ export class DawProjectImporter {
                     })
                     const audioBusBox = AudioBusBox.create(this.#boxGraph, UUID.generate(), box => {
                         box.collection.refer(this.#rootBox.audioBusses)
-                        box.label.setValue(lane.name ?? "Aux")
+                        box.label.setValue(track.name ?? "Aux")
                         box.color.setValue(ColorCodes.forAudioType(AudioUnitType.Aux))
                         box.icon.setValue(IconSymbol.toName(IconSymbol.Effects))
                         box.output.refer(audioUnitBox.input)
@@ -242,7 +244,7 @@ export class DawProjectImporter {
                         box.target.refer(audioUnitBox)
                     })
                     effectTargetMap.set(asDefined(channel.id, "Effect-channel must have id."), audioBusBox)
-                    this.#mapTrackBoxes.set(asDefined(lane.id, "Track must have an id."), trackBox)
+                    this.#mapTrackBoxes.set(asDefined(track.id, "Track must have an id."), trackBox)
                 } else if (channel.role === "master") {
                     readChannel(this.#masterAudioUnit, channel)
                 } else {

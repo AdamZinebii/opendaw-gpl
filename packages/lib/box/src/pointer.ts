@@ -1,4 +1,15 @@
-import {DataInput, DataOutput, Nullish, Observer, Option, panic, safeExecute, Subscription} from "@opendaw/lib-std"
+import {
+    assert,
+    DataInput,
+    DataOutput,
+    Exec,
+    Nullish,
+    Observer,
+    Option,
+    panic,
+    safeExecute,
+    Subscription
+} from "@opendaw/lib-std"
 import {Vertex, VertexVisitor} from "./vertex"
 import {Address} from "./address"
 import {PointerHub} from "./pointer-hub"
@@ -11,12 +22,26 @@ export type UnreferenceableType = typeof _Unreferenceable
 
 export type PointerTypes = number | string | UnreferenceableType
 
+export interface SerializationContext {
+    encode(address: Address): string
+    decode(id: string): Address
+}
+
 export class PointerField<P extends PointerTypes = PointerTypes> extends Field<UnreferenceableType, never> {
     static create<P extends PointerTypes>(construct: FieldConstruct<UnreferenceableType>,
                                           pointerType: P,
                                           mandatory: boolean): PointerField<P> {
         return new PointerField<P>(construct, pointerType, mandatory)
     }
+
+    static withContext(context: SerializationContext, exec: Exec): void {
+        assert(PointerField.context.isEmpty(), "SerializationContext already set.")
+        PointerField.context = Option.wrap(context)
+        exec()
+        PointerField.context = Option.None
+    }
+
+    static context: Option<SerializationContext> = Option.None
 
     readonly #pointerType: P
     readonly #mandatory: boolean
@@ -88,7 +113,12 @@ export class PointerField<P extends PointerTypes = PointerTypes> extends Field<U
     resolvedTo(newTarget: Option<Vertex>): void {this.#targetVertex = newTarget}
 
     read(input: DataInput) {
-        this.targetAddress = input.readBoolean() ? Option.wrap(Address.read(input)) : Option.None
+        this.targetAddress = input.readBoolean()
+            ? Option.wrap(PointerField.context.match({
+                none: () => Address.read(input),
+                some: context => context.decode(input.readString())
+            }))
+            : Option.None
     }
 
     write(output: DataOutput) {
@@ -96,7 +126,10 @@ export class PointerField<P extends PointerTypes = PointerTypes> extends Field<U
             none: () => output.writeBoolean(false),
             some: address => {
                 output.writeBoolean(true)
-                address.write(output)
+                PointerField.context.match({
+                    none: () => address.write(output),
+                    some: context => output.writeString(context.encode(address))
+                })
             }
         })
     }

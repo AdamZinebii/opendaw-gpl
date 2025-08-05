@@ -22,7 +22,7 @@ export interface Multimap<K, V> {
     forEach(callback: (key: K, values: Iterable<V>) => void): void
     keyCount(): number
     keys(): Iterable<K>
-    sortKeys(comparator: Comparator<K>): void
+    sortKeys(comparator: Comparator<K>): this
     clone(): Multimap<K, V>
 }
 
@@ -136,11 +136,12 @@ export class ArrayMultimap<K, V> implements Multimap<K, V>, Iterable<[K, Array<V
 
     keys(): Iterable<K> {return this.#map.keys()}
 
-    sortKeys(comparator: Comparator<K>): void {
+    sortKeys(comparator: Comparator<K>): this {
         const clone: Multimap<K, V> = this.clone()
         const keys: K[] = Array.from(this.keys()).sort(comparator)
         this.#map.clear()
         for (const key of keys) {this.addAll(key, clone.get(key))}
+        return this
     }
 
     clone(): ArrayMultimap<K, V> {
@@ -257,11 +258,12 @@ export class SetMultimap<K, V> implements Multimap<K, V> {
     keyCount(): number {return this.map.size}
     keys(): Iterable<K> {return this.map.keys()}
 
-    sortKeys(comparator: Comparator<K>): void {
+    sortKeys(comparator: Comparator<K>): this {
         const clone: Multimap<K, V> = this.clone()
         const keys: K[] = Array.from(this.keys()).sort(comparator)
         this.map.clear()
         for (const key of keys) {this.addAll(key, clone.get(key))}
+        return this
     }
 
     clone(): SetMultimap<K, V> {

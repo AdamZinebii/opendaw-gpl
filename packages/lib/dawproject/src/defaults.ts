@@ -53,7 +53,9 @@ export enum DeviceRole {
 export enum ChannelRole {
     REGULAR = "regular",
     MASTER = "master",
-    EFFECT = "effect"
+    EFFECT = "effect",
+    SUBMIX = "submix",
+    VCA = "vca"
 }
 
 // noinspection JSUnusedGlobalSymbols
@@ -89,7 +91,7 @@ export class ApplicationSchema {
 }
 
 @Xml.Class("BooleanParameter")
-export class BooleanParameterSchema {
+export class BooleanParameterSchema implements Referenceable{
     @Xml.Attribute("value", Xml.BoolRequired)
     readonly value?: boolean
 
@@ -103,7 +105,7 @@ export class BooleanParameterSchema {
 @Xml.Class("RealParameter")
 export class RealParameterSchema implements Referenceable {
     @Xml.Attribute("id")
-    readonly id?: string
+    readonly id!: string
 
     @Xml.Attribute("name")
     readonly name?: string

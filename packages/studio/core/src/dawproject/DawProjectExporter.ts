@@ -40,7 +40,7 @@ import {
     ValueEventCollectionBox,
     ValueRegionBox
 } from "@opendaw/studio-boxes"
-import {AddressReferenceId, BooleanField, Field} from "@opendaw/lib-box"
+import {AddressIdEncoder, BooleanField, Field} from "@opendaw/lib-box"
 import {dbToGain, PPQN} from "@opendaw/lib-dsp"
 import {AudioUnitType} from "@opendaw/studio-enums"
 import {Project} from "../Project"
@@ -55,18 +55,18 @@ export class DawProjectExporter {
         return new DawProjectExporter(project, resources)
     }
 
-    static readonly #CHANNEL_FIELD_KEY = 0x8001
+    static readonly #CHANNEL_FIELD_KEY = 0x8001 // TODO Does this actually work for alien dawformats?
 
     readonly #project: Project
     readonly #resources: Resources
 
-    readonly #ids: AddressReferenceId
+    readonly #ids: AddressIdEncoder
 
     constructor(project: Project, resources: Resources) {
         this.#project = project
         this.#resources = resources
 
-        this.#ids = new AddressReferenceId()
+        this.#ids = new AddressIdEncoder()
     }
 
     toProjectSchema(): ProjectSchema {
@@ -92,6 +92,7 @@ export class DawProjectExporter {
         const {timelineBox} = this.#project
         return Xml.element({
             tempo: Xml.element({
+                id: this.#ids.getOrCreate(timelineBox.bpm.address),
                 value: timelineBox.bpm.getValue(),
                 unit: Unit.BPM
             }, RealParameterSchema),
@@ -137,10 +138,12 @@ export class DawProjectExporter {
                             ...(this.#writeDevices(box.input, DeviceRole.INSTRUMENT)),
                             ...(this.#writeDevices(box.audioEffects, DeviceRole.AUDIO_FX))
                         ],
-                        volume: ParameterEncoder.linear(dbToGain(box.volume.getValue()), 0.0, 2.0,
-                            "Volume", this.#ids.getOrCreate(box.volume.address)),
-                        pan: ParameterEncoder.normalized((box.panning.getValue() + 1.0) / 2.0, 0.0, 1.0,
-                            "Pan", this.#ids.getOrCreate(box.panning.address))
+                        volume: ParameterEncoder.linear(this.#ids.getOrCreate(box.volume.address),
+                            dbToGain(box.volume.getValue()), 0.0, 2.0,
+                            "Volume"),
+                        pan: ParameterEncoder.normalized(this.#ids.getOrCreate(box.panning.address),
+                            (box.panning.getValue() + 1.0) / 2.0, 0.0, 1.0,
+                            "Pan")
                     }, ChannelSchema)
                 }, TrackSchema)
             })
@@ -151,8 +154,8 @@ export class DawProjectExporter {
             const enabled = ("enabled" in box && isInstanceOf(box.enabled, BooleanField)
                 ? Option.wrap(box.enabled)
                 : Option.None)
-                .mapOr(field => ParameterEncoder.bool(field.getValue(),
-                    "On/Off", this.#ids.getOrCreate(field.address)), undefined)
+                .mapOr(field => ParameterEncoder.bool(this.#ids.getOrCreate(field.address), field.getValue(),
+                    "On/Off"), undefined)
             const deviceID = UUID.toString(box.address.uuid)
             const deviceName = box.name
             const deviceVendor = "openDAW"
@@ -215,7 +218,7 @@ export class DawProjectExporter {
                 loopEnd: region.loopDuration.getValue() / PPQN.Quarter,
                 enable: !region.mute.getValue(),
                 name: region.label.getValue(),
-                color: this.#hueToColor(region.hue.getValue()),
+                color: Color.hslToHex(region.hue.getValue(), 1.0, 0.60),
                 content: [Xml.element({
                     content: [audioElement],
                     contentTimeUnit: "beats",
@@ -247,7 +250,7 @@ export class DawProjectExporter {
                 loopEnd: region.loopDuration.getValue() / PPQN.Quarter,
                 enable: !region.mute.getValue(),
                 name: region.label.getValue(),
-                color: this.#hueToColor(region.hue.getValue()),
+                color: Color.hslToHex(region.hue.getValue(), 1.0, 0.60),
                 content: [Xml.element({
                     notes: collectionBox.events.pointerHub.incoming()
                         .map(({box}) => asInstanceOf(box, NoteEventBox))
@@ -277,7 +280,7 @@ export class DawProjectExporter {
                 loopEnd: region.loopDuration.getValue() / PPQN.Quarter,
                 enable: !region.mute.getValue(),
                 name: region.label.getValue(),
-                color: this.#hueToColor(region.hue.getValue()),
+                color: Color.hslToHex(region.hue.getValue(), 1.0, 0.60),
                 content: [] // TODO
             }, ClipSchema)]
         }, ClipsSchema)
@@ -288,6 +291,4 @@ export class DawProjectExporter {
             .map(({box}) => asInstanceOf(box, AudioUnitBox))
             .sort((a, b) => a.index.getValue() - b.index.getValue())
     }
-
-    #hueToColor(hue: number): string {return Color.hslToHex(hue, 1.0, 0.60)}
 }
