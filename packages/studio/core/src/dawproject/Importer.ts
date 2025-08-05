@@ -15,32 +15,46 @@ import {
     ValueMapping
 } from "@opendaw/lib-std"
 import {BoxGraph, Field, PointerField} from "@opendaw/lib-box"
-import {gainToDb} from "@opendaw/lib-dsp"
+import {gainToDb, PPQN} from "@opendaw/lib-dsp"
 import {
+    ArrangementSchema,
+    AudioSchema,
     ChannelRole,
     ChannelSchema,
+    ClipSchema,
+    ClipsSchema,
     DeviceRole,
     DeviceSchema,
     LaneSchema,
+    LanesSchema,
+    NotesSchema,
     ProjectSchema,
     SendSchema,
     SendType,
+    TimelineSchema,
     TrackSchema,
-    TransportSchema
+    TransportSchema,
+    WarpsSchema
 } from "@opendaw/lib-dawproject"
 import {AudioSendRouting, AudioUnitType, Pointers} from "@opendaw/studio-enums"
 import {
     AudioBusBox,
+    AudioFileBox,
+    AudioRegionBox,
     AudioUnitBox,
     AuxSendBox,
     BoxIO,
     DelayDeviceBox,
     GrooveShuffleBox,
+    NoteEventBox,
+    NoteEventCollectionBox,
+    NoteRegionBox,
     RootBox,
     TimelineBox,
+    TrackBox,
     UserInterfaceBox
 } from "@opendaw/studio-boxes"
-import {IconSymbol, ProjectDecoder} from "@opendaw/studio-adapters"
+import {IconSymbol, ProjectDecoder, TrackType} from "@opendaw/studio-adapters"
 import {DawProjectIO} from "./DawProjectIO"
 import {InstrumentBox} from "../InstrumentBox"
 import {AudioUnitOrdering} from "../AudioUnitOrdering"
@@ -50,16 +64,19 @@ import {ColorCodes} from "../ColorCodes"
 export namespace Importer {
     type AudioBusUnit = { audioBusBox: AudioBusBox, audioUnitBox: AudioUnitBox }
     type InstrumentUnit = { instrumentBox: InstrumentBox, audioUnitBox: AudioUnitBox }
+    type PointerOutputType = Pointers.InstrumentHost | Pointers.AudioOutput
 
     export type Creation = {
         audioIDs: ReadonlyArray<UUID.Format>,
         skeleton: ProjectDecoder.Skeleton
     }
 
-    type PointerDestinations = Pointers.InstrumentHost | Pointers.AudioOutput
     export const construct = async (schema: ProjectSchema, resources: DawProjectIO.ResourceProvider): Promise<Creation> => {
         const boxGraph = new BoxGraph<BoxIO.TypeMap>(Option.wrap(BoxIO.create))
         boxGraph.beginTransaction()
+
+        // Create fundamental boxes
+        //
         const isoString = new Date().toISOString()
         console.debug(`New Project imported on ${isoString}`)
         const grooveShuffleBox = GrooveShuffleBox.create(boxGraph, UUID.generate(),
@@ -73,18 +90,23 @@ export namespace Importer {
         })
         const userInterfaceBox = UserInterfaceBox.create(boxGraph, UUID.generate(), box => box.root.refer(rootBox.users))
 
+        // <---
+
         let primaryAudioBusUnitOption: Option<AudioBusUnit> = Option.None
 
-        const destinations = new Map<string, Field<PointerDestinations>>()
-        const addDestination = (destination: string, target: Field<PointerDestinations>) => {
-            if (destinations.has(destination)) {return panic(`Destination '${destination}' is already defined`)}
-            destinations.set(destination, target)
+        const audioIDs = UUID.newSet<UUID.Format>(uuid => uuid)
+        const trackTargets = new Map<string, AudioUnitBox>()
+        const addTrackTarget = (trackId: string, target: AudioUnitBox) => {
+            if (trackTargets.has(trackId)) {return panic(`trackId '${trackId}' is already defined`)}
+            trackTargets.set(trackId, target)
+        }
+        const audioTargets = new Map<string, Field<PointerOutputType>>()
+        const addAudioTarget = (channelId: string, target: Field<PointerOutputType>) => {
+            if (audioTargets.has(channelId)) {return panic(`channelId '${channelId}' is already defined`)}
+            audioTargets.set(channelId, target)
         }
 
-        const pointers: Array<{
-            destination: string,
-            pointer: PointerField<PointerDestinations>
-        }> = []
+        const audioPointers: Array<{ destination: string, pointer: PointerField<PointerOutputType> }> = []
         const sortAudioUnits: Multimap<int, AudioUnitBox> = new ArrayMultimap<int, AudioUnitBox>()
 
         const createEffect = ({deviceRole, deviceVendor, deviceID, deviceName}: DeviceSchema,
@@ -120,7 +142,7 @@ export namespace Importer {
                         box.audioUnit.refer(audioUnitBox.auxSends)
                         box.index.setValue(index)
                     })
-                    pointers.push({destination, pointer: auxSendBox.targetBus})
+                    audioPointers.push({destination, pointer: auxSendBox.targetBus})
                     return auxSendBox
                 })
         }
@@ -198,13 +220,15 @@ export namespace Importer {
                 console.debug(depth, channel.id, channel.role, track.name, track.contentType)
                 if (channel.role === ChannelRole.REGULAR) {
                     const {audioUnitBox} = createInstrumentUnit(track, AudioUnitType.Instrument)
+                    addTrackTarget(asDefined(track.id, "Track must have an Id."), audioUnitBox)
                     ifDefined(channel.sends, sends => createSends(audioUnitBox, sends))
-                    pointers.push({destination: channel.destination!, pointer: audioUnitBox.output})
+                    audioPointers.push({destination: channel.destination!, pointer: audioUnitBox.output})
                 } else if (channel.role === ChannelRole.EFFECT) {
                     const {audioBusBox, audioUnitBox} = createAudioBusUnit(track, AudioUnitType.Aux, IconSymbol.Effects)
-                    addDestination(channelId, audioBusBox.input)
+                    addAudioTarget(channelId, audioBusBox.input)
+                    addTrackTarget(asDefined(track.id, "Track must have an Id."), audioUnitBox)
                     ifDefined(channel.sends, sends => createSends(audioUnitBox, sends))
-                    pointers.push({destination: channel.destination!, pointer: audioUnitBox.output})
+                    audioPointers.push({destination: channel.destination!, pointer: audioUnitBox.output})
                 } else if (channel.role === ChannelRole.MASTER) {
                     console.debug(`Found a master channel in '${track.name}' with destination '${channel.destination}' and contentType '${track.contentType}'`)
                     const isMostLikelyPrimaryOutput = primaryAudioBusUnitOption.isEmpty()
@@ -214,16 +238,18 @@ export namespace Importer {
                     if (isMostLikelyPrimaryOutput) {
                         const audioBusUnit = createAudioBusUnit(track, AudioUnitType.Output, IconSymbol.SpeakerHeadphone)
                         const {audioBusBox, audioUnitBox} = audioBusUnit
-                        addDestination(channelId, audioBusBox.input)
+                        addAudioTarget(channelId, audioBusBox.input)
+                        addTrackTarget(asDefined(track.id, "Track must have an Id."), audioUnitBox)
                         audioUnitBox.output.refer(rootBox.outputDevice)
                         primaryAudioBusUnitOption = Option.wrap(audioBusUnit)
                     } else {
                         console.debug("GROUP START", track.name, track.contentType)
                         const audioBusUnit = createAudioBusUnit(track, AudioUnitType.Bus, IconSymbol.AudioBus)
                         const {audioBusBox, audioUnitBox} = audioBusUnit
-                        addDestination(channelId, audioBusBox.input)
+                        addAudioTarget(channelId, audioBusBox.input)
+                        addTrackTarget(asDefined(track.id, "Track must have an Id."), audioUnitBox)
                         ifDefined(channel.destination, destination =>
-                            pointers.push({destination, pointer: audioUnitBox.output}))
+                            audioPointers.push({destination, pointer: audioUnitBox.output}))
                         ifDefined(channel.sends, sends => createSends(audioUnitBox, sends))
                         readTracks(track.tracks ?? [], depth + 1)
                     }
@@ -232,32 +258,115 @@ export namespace Importer {
                 }
             })
         readTracks(schema.structure, 0)
-        pointers.forEach(({destination, pointer}) =>
-            pointer.refer(asDefined(destinations.get(destination), `${destination} cannot be found.`)))
 
-        console.debug("=== SORTING ===")
-        let index = 0
-        sortAudioUnits
-            .sortKeys(NumberComparator)
-            .forEach((_index, boxes) => {for (const box of boxes) {box.index.setValue(index++)}})
-        console.debug("===============")
+        const readArrangement = (arrangement: ArrangementSchema): Promise<unknown> => {
+            const readRegions = ({clips}: ClipsSchema, track: string): Promise<unknown> =>
+                Promise.all(clips.map(clip => readAnyRegion(clip, track)))
+
+            const readLane = (lane: LanesSchema): Promise<unknown> => {
+                const track = lane.track // links to track in structure
+                return Promise.all(lane?.lanes?.filter(timeline => isInstanceOf(timeline, ClipsSchema))
+                    .map(clips => readRegions(clips, asDefined(track, "Region(Clips) must have an id."))) ?? [])
+            }
+
+            const readAnyRegion = (clip: ClipSchema, trackId: string): Promise<unknown> => {
+                const target = asDefined(trackTargets.get(trackId), `Cannot find track for '${trackId}'`)
+                const trackBox: TrackBox = TrackBox.create(boxGraph, UUID.generate(), box => {
+                    box.tracks.refer(target.tracks)
+                    box.target.refer(target)
+                    box.type.setValue(TrackType.Notes) // TODO How to determine the type?
+                })
+                return Promise.all(clip.content?.map(async (content: TimelineSchema) => {
+                    if (isInstanceOf(content, ClipsSchema)) {
+                        await readAnyRegionContent(clip, content, trackBox)
+                    } else if (isInstanceOf(content, NotesSchema)) {
+                        readNoteRegionContent(clip, content, trackBox)
+                    }
+                }) ?? [])
+            }
+
+            const readNoteRegionContent = (clip: ClipSchema, notes: NotesSchema, trackBox: TrackBox): void => {
+                const collectionBox = NoteEventCollectionBox.create(boxGraph, UUID.generate())
+                NoteRegionBox.create(boxGraph, UUID.generate(), box => {
+                    const position = asDefined(clip.time, "Time not defined")
+                    const duration = asDefined(clip.duration, "Duration not defined")
+                    const loopDuration = clip.loopEnd ?? duration
+                    box.position.setValue(position * PPQN.Quarter)
+                    box.duration.setValue(duration * PPQN.Quarter)
+                    box.label.setValue(clip.name ?? "")
+                    box.loopDuration.setValue(loopDuration * PPQN.Quarter)
+                    box.mute.setValue(clip.enable === false)
+                    box.events.refer(collectionBox.owners)
+                    box.regions.refer(trackBox.regions)
+                })
+                notes.notes?.forEach(note => {
+                    NoteEventBox.create(boxGraph, UUID.generate(), box => {
+                        box.position.setValue(note.time * PPQN.Quarter)
+                        box.duration.setValue(note.duration * PPQN.Quarter)
+                        box.pitch.setValue(note.key)
+                        box.velocity.setValue(note.vel ?? 1.0)
+                        box.events.refer(collectionBox.events)
+                    })
+                })
+            }
+
+            const readAnyRegionContent = async (clip: ClipSchema, content: ClipsSchema, trackBox: TrackBox): Promise<unknown> => {
+                const contentClip = content.clips.at(0)
+                if (isUndefined(contentClip)) {
+                    console.warn(clip, "audio-clip without content-clip?")
+                    return
+                }
+                const innerContent = contentClip.content?.at(0) as Nullish<TimelineSchema>
+                // TODO Double-check: From which point is it guaranteed that this is an audio region?
+                if (isInstanceOf(innerContent, WarpsSchema)) {
+                    const {warps, content} = innerContent
+                    const audio = content?.at(0) as Nullish<AudioSchema>
+                    const warp0 = warps.at(0)
+                    const warpN = warps.at(-1)
+                    const warpDistance = asDefined(warpN?.time) - asDefined(warp0?.time)
+                    if (isUndefined(audio)) {return}
+                    const {path, external} = audio.file
+                    assert(external !== true, "File cannot be external")
+                    const {uuid, name} = resources.fromPath(path)
+                    const audioFileBox: AudioFileBox = boxGraph.findBox<AudioFileBox>(uuid)
+                        .unwrapOrElse(() => AudioFileBox.create(boxGraph, uuid, box => box.fileName.setValue(name)))
+                    audioIDs.add(uuid, true)
+                    AudioRegionBox.create(boxGraph, UUID.generate(), box => {
+                        const position = asDefined(clip.time, "Time not defined")
+                        const duration = asDefined(clip.duration, "Duration not defined")
+                        const loopDuration = clip.loopEnd ?? warpDistance
+                        box.position.setValue(position * PPQN.Quarter)
+                        box.duration.setValue(duration * PPQN.Quarter)
+                        box.label.setValue(clip.name ?? "")
+                        box.loopOffset.setValue((-(contentClip.time ?? 0.0)) * PPQN.Quarter)
+                        box.loopDuration.setValue(loopDuration * PPQN.Quarter)
+                        box.mute.setValue(clip.enable === false)
+                        box.regions.refer(trackBox.regions)
+                        box.file.refer(audioFileBox)
+                    })
+                }
+            }
+            return Promise.all(arrangement?.lanes?.lanes?.filter(timeline => isInstanceOf(timeline, LanesSchema))
+                .map(readLane) ?? [])
+        }
+        await ifDefined(schema.arrangement, arrangement => readArrangement(arrangement))
+        audioPointers.forEach(({destination, pointer}) =>
+            pointer.refer(asDefined(audioTargets.get(destination), `${destination} cannot be found.`)))
+        {
+            let index = 0
+            sortAudioUnits
+                .sortKeys(NumberComparator)
+                .forEach((_, boxes) => {for (const box of boxes) {box.index.setValue(index++)}})
+        }
         boxGraph.endTransaction()
         boxGraph.verifyPointers()
-        const {
-            audioBusBox: primaryAudioBusBox,
-            audioUnitBox: primaryAudioUnitBox
-        } = primaryAudioBusUnitOption.unwrap("Did not find a primary output")
+        const {audioBusBox: masterBusBox, audioUnitBox: masterAudioUnit} =
+            primaryAudioBusUnitOption.unwrap("Did not find a primary output")
         return {
             audioIDs: [],
             skeleton: {
                 boxGraph,
-                mandatoryBoxes: {
-                    rootBox,
-                    timelineBox,
-                    masterBusBox: primaryAudioBusBox,
-                    masterAudioUnit: primaryAudioUnitBox,
-                    userInterfaceBox
-                }
+                mandatoryBoxes: {rootBox, timelineBox, masterBusBox, masterAudioUnit, userInterfaceBox}
             }
         }
     }
