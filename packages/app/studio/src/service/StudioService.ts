@@ -54,7 +54,7 @@ import {MIDILearning} from "@/midi/devices/MIDILearning"
 import {
     DawProjectIO,
     EngineFacade,
-    EngineWorklet, Importer,
+    EngineWorklet, DawProjectImporter,
     MainThreadSampleManager,
     Project,
     ProjectEnv,
@@ -366,7 +366,7 @@ export class StudioService implements ProjectEnv {
         if (!isDefined(file)) {return}
         const arrayBuffer = await file.arrayBuffer()
         const {project: projectSchema, resources} = await DawProjectIO.decode(arrayBuffer)
-        const importResult = await Promises.tryCatch(Importer.construct(projectSchema, resources))
+        const importResult = await Promises.tryCatch(DawProjectImporter.construct(projectSchema, resources))
         if (importResult.status === "rejected") {
             return showInfoDialog({headline: "Import Error", message: String(importResult.error)})
         }

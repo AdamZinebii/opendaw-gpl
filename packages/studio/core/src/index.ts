@@ -11,7 +11,7 @@ export * from "./samples/SampleProvider"
 export * from "./dawproject/DawProjectIO"
 export * from "./dawproject/DawProjectExporter"
 export * from "./dawproject/DawProjectImporter"
-export * from "./dawproject/Importer"
+export * from "./dawproject/DawProjectImporter"
 
 export * from "./ColorCodes"
 export * from "./Colors"

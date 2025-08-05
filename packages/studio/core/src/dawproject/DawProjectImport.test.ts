@@ -3,7 +3,7 @@ import {fileURLToPath} from "url"
 import * as path from "node:path"
 import * as fs from "node:fs"
 import {DawProjectIO} from "./DawProjectIO"
-import {Importer} from "./Importer"
+import {DawProjectImporter} from "./DawProjectImporter"
 
 describe("DawProjectImport", () => {
     it("import", async () => {
@@ -12,6 +12,6 @@ describe("DawProjectImport", () => {
         // const testFile = "../../../../../test-files/test.dawproject"
         const buffer = fs.readFileSync(path.join(__dirname, testFile))
         const {project, resources} = await DawProjectIO.decode(buffer)
-        const importer = await Importer.construct(project, resources)
+        const importer = await DawProjectImporter.construct(project, resources)
     })
 })

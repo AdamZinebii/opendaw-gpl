@@ -15,7 +15,7 @@ export namespace OpfsWorker {
                 return writeLimiter.add(() => this.#resolveFile(path, {create: true})
                     .then(handle => {
                         handle.truncate(data.length)
-                        handle.write(data, {at: 0})
+                        handle.write(data.buffer as ArrayBuffer, {at: 0})
                         handle.flush()
                         handle.close()
                     }))

@@ -1,27 +1,29 @@
 import {
+    ArrayMultimap,
     asDefined,
     assert,
-    ByteArrayInput,
-    Exec,
-    identity,
+    ifDefined,
     int,
-    isDefined,
     isInstanceOf,
     isUndefined,
+    Multimap,
     Nullish,
+    NumberComparator,
     Option,
     panic,
-    SortedSet,
     UUID,
     ValueMapping
 } from "@opendaw/lib-std"
-import {BoxGraph} from "@opendaw/lib-box"
+import {BoxGraph, Field, PointerField} from "@opendaw/lib-box"
 import {gainToDb, PPQN} from "@opendaw/lib-dsp"
 import {
+    ArrangementSchema,
     AudioSchema,
+    ChannelRole,
     ChannelSchema,
     ClipSchema,
     ClipsSchema,
+    DeviceRole,
     DeviceSchema,
     LaneSchema,
     LanesSchema,
@@ -31,9 +33,10 @@ import {
     SendType,
     TimelineSchema,
     TrackSchema,
+    TransportSchema,
     WarpsSchema
 } from "@opendaw/lib-dawproject"
-import {AudioSendRouting, AudioUnitType} from "@opendaw/studio-enums"
+import {AudioSendRouting, AudioUnitType, Pointers} from "@opendaw/studio-enums"
 import {
     AudioBusBox,
     AudioFileBox,
@@ -41,6 +44,7 @@ import {
     AudioUnitBox,
     AuxSendBox,
     BoxIO,
+    DelayDeviceBox,
     GrooveShuffleBox,
     NoteEventBox,
     NoteEventCollectionBox,
@@ -52,308 +56,325 @@ import {
 } from "@opendaw/studio-boxes"
 import {IconSymbol, ProjectDecoder, TrackType} from "@opendaw/studio-adapters"
 import {DawProjectIO} from "./DawProjectIO"
-import {ColorCodes} from "../ColorCodes"
+import {InstrumentBox} from "../InstrumentBox"
+import {AudioUnitOrdering} from "../AudioUnitOrdering"
 import {InstrumentFactories} from "../InstrumentFactories"
+import {ColorCodes} from "../ColorCodes"
 
-export class DawProjectImporter {
-    static async importProject(schema: ProjectSchema,
-                               resources: DawProjectIO.ResourceProvider): Promise<DawProjectImporter> {
-        return new DawProjectImporter(schema, resources).#read()
+export namespace DawProjectImporter {
+    type AudioBusUnit = { audioBusBox: AudioBusBox, audioUnitBox: AudioUnitBox }
+    type InstrumentUnit = { instrumentBox: InstrumentBox, audioUnitBox: AudioUnitBox }
+    type PointerOutputType = Pointers.InstrumentHost | Pointers.AudioOutput
+
+    export type Creation = {
+        audioIds: ReadonlyArray<UUID.Format>,
+        skeleton: ProjectDecoder.Skeleton
     }
 
-    readonly #schema: ProjectSchema
-    readonly #resources: DawProjectIO.ResourceProvider
+    export const construct = async (schema: ProjectSchema, resources: DawProjectIO.ResourceProvider): Promise<Creation> => {
+        const boxGraph = new BoxGraph<BoxIO.TypeMap>(Option.wrap(BoxIO.create))
+        boxGraph.beginTransaction()
 
-    readonly #uuids: UUID.SimpleIdDecoder
-
-    readonly #mapTrackBoxes: Map<string, TrackBox>
-    readonly #audioIDs: SortedSet<UUID.Format, UUID.Format>
-
-    readonly #boxGraph: BoxGraph<BoxIO.TypeMap>
-    readonly #rootBox: RootBox
-    readonly #masterBusBox: AudioBusBox
-    readonly #masterAudioUnit: AudioUnitBox
-    readonly #timelineBox: TimelineBox
-    readonly #userInterfaceBox: UserInterfaceBox
-
-    private constructor(schema: ProjectSchema, resources: DawProjectIO.ResourceProvider) {
-        this.#schema = schema
-        this.#resources = resources
-
-        this.#uuids = new UUID.SimpleIdDecoder()
-
-        this.#mapTrackBoxes = new Map<string, TrackBox>()
-        this.#audioIDs = UUID.newSet(identity)
-
+        // Create fundamental boxes
+        //
         const isoString = new Date().toISOString()
         console.debug(`New Project imported on ${isoString}`)
-
-        this.#boxGraph = new BoxGraph<BoxIO.TypeMap>(Option.wrap(BoxIO.create))
-        this.#boxGraph.beginTransaction()
-
-        const grooveShuffleBox = GrooveShuffleBox.create(this.#boxGraph, UUID.generate(), box => {
-            box.label.setValue("Groove Shuffle")
-        })
-        this.#timelineBox = TimelineBox.create(this.#boxGraph, UUID.generate())
-        this.#rootBox = RootBox.create(this.#boxGraph, UUID.generate(), box => {
+        const grooveShuffleBox = GrooveShuffleBox.create(boxGraph, UUID.generate(),
+            box => box.label.setValue("Groove Shuffle"))
+        const timelineBox = TimelineBox.create(boxGraph, UUID.generate(),
+            box => ifDefined(schema.transport, transport => readTransport(transport, box)))
+        const rootBox = RootBox.create(boxGraph, UUID.generate(), box => {
             box.groove.refer(grooveShuffleBox)
             box.created.setValue(isoString)
-            box.timeline.refer(this.#timelineBox.root)
+            box.timeline.refer(timelineBox.root)
         })
-        this.#masterBusBox = AudioBusBox.create(this.#boxGraph, UUID.generate(), box => {
-            box.collection.refer(this.#rootBox.audioBusses)
-            box.label.setValue("Output")
-            box.icon.setValue(IconSymbol.toName(IconSymbol.SpeakerHeadphone))
-            box.color.setValue("hsl(189, 100%, 65%)")
-        })
-        this.#masterAudioUnit = AudioUnitBox.create(this.#boxGraph, UUID.generate(), box => {
-            box.type.setValue(AudioUnitType.Output)
-            box.collection.refer(this.#rootBox.audioUnits)
-            box.output.refer(this.#rootBox.outputDevice)
-            box.index.setValue(0)
-        })
-        this.#masterBusBox.output.refer(this.#masterAudioUnit.input)
-        this.#userInterfaceBox = UserInterfaceBox.create(this.#boxGraph, UUID.generate(),
-            box => box.root.refer(this.#rootBox.users))
-    }
+        const userInterfaceBox = UserInterfaceBox.create(boxGraph, UUID.generate(), box => box.root.refer(rootBox.users))
 
-    async #read() {
-        this.#readTransport()
-        this.#readStructure()
-        await this.#readArrangement()
-        this.#boxGraph.endTransaction()
-        this.#boxGraph.verifyPointers()
-        return this
-    }
+        // <---
 
-    get audioIDs(): SortedSet<UUID.Format, UUID.Format> {return this.#audioIDs}
-    get skeleton(): ProjectDecoder.Skeleton {
-        return {
-            boxGraph: this.#boxGraph,
-            mandatoryBoxes: {
-                rootBox: this.#rootBox,
-                timelineBox: this.#timelineBox,
-                masterBusBox: this.#masterBusBox,
-                masterAudioUnit: this.#masterAudioUnit,
-                userInterfaceBox: this.#userInterfaceBox
-            }
+        let primaryAudioBusUnitOption: Option<AudioBusUnit> = Option.None
+
+        const audioIdSet = UUID.newSet<UUID.Format>(uuid => uuid)
+        const trackTargets = new Map<string, AudioUnitBox>()
+        const addTrackTarget = (trackId: string, target: AudioUnitBox) => {
+            if (trackTargets.has(trackId)) {return panic(`trackId '${trackId}' is already defined`)}
+            trackTargets.set(trackId, target)
         }
-    }
+        const audioTargets = new Map<string, Field<PointerOutputType>>()
+        const addAudioTarget = (channelId: string, target: Field<PointerOutputType>) => {
+            if (audioTargets.has(channelId)) {return panic(`channelId '${channelId}' is already defined`)}
+            audioTargets.set(channelId, target)
+        }
 
-    #readTransport(): void {
-        const {transport} = this.#schema
-        if (isUndefined(transport)) {return}
-        this.#timelineBox.bpm.setValue(transport.tempo?.value ?? 120.0)
-        this.#timelineBox.signature.nominator.setValue(transport.timeSignature?.numerator ?? 4)
-        this.#timelineBox.signature.denominator.setValue(transport.timeSignature?.denominator ?? 4)
-    }
+        const audioPointers: Array<{ destination: string, pointer: PointerField<PointerOutputType> }> = []
+        const sortAudioUnits: Multimap<int, AudioUnitBox> = new ArrayMultimap<int, AudioUnitBox>()
 
-    #readStructure(): void {
-        const resolveSendTargets: Array<Exec> = []
-        const effectTargetMap = new Map<string, AudioBusBox>()
-        const readChannel = (audioUnitBox: AudioUnitBox, channel: ChannelSchema) => {
-            audioUnitBox.volume.setValue(gainToDb(channel.volume?.value ?? 1.0))
-            audioUnitBox.panning.setValue(ValueMapping.bipolar().y(channel.pan?.value ?? 0.5))
-            audioUnitBox.mute.setValue(channel.mute?.value === true)
-            audioUnitBox.solo.setValue(channel.solo === true)
-            channel.sends?.forEach((send: SendSchema) => {
+        const createEffect = ({deviceRole, deviceVendor, deviceID, deviceName}: DeviceSchema,
+                              target: AudioUnitBox,
+                              key: keyof Pick<AudioUnitBox, "midiEffects" | "audioEffects">,
+                              index: int) => {
+            assert(deviceRole === DeviceRole.NOTE_FX || deviceRole === DeviceRole.AUDIO_FX, "Device is not an effect")
+            if (deviceVendor === "openDAW") {
+                // TODO Create openDAW effect device
+                console.debug(`Found openDAW effect device '${deviceName}' with id '${deviceID}'`)
+                const deviceKey = asDefined(deviceName) as keyof BoxIO.TypeMap
+            }
+            const field = target[key]
+            // TODO Create placeholder device
+            DelayDeviceBox.create(boxGraph, UUID.generate(), box => {
+                box.label.setValue(`${deviceName} (Placeholder #${index + 1})`)
+                box.index.setValue(index)
+                box.host.refer(field)
+            })
+        }
+
+        const createSends = (audioUnitBox: AudioUnitBox, sends: ReadonlyArray<SendSchema>) => {
+            sends
                 // bitwig does not set enabled if it is enabled 🤥
-                const enable = isUndefined(send?.enable?.value) || send.enable.value
-                if (enable) {
-                    resolveSendTargets.push(() => AuxSendBox.create(this.#boxGraph, UUID.generate(), box => {
+                .filter((send) => isUndefined(send?.enable?.value) || send.enable.value)
+                .forEach((send, index) => {
+                    const destination = asDefined(send.destination, "destination is undefined")
+                    const auxSendBox = AuxSendBox.create(boxGraph, UUID.generate(), box => {
                         const type = send.type as Nullish<SendType>
-                        const destination = asDefined(send.destination, "destination is undefined")
                         box.routing.setValue(type === SendType.PRE ? AudioSendRouting.Pre : AudioSendRouting.Post)
                         box.sendGain.setValue(gainToDb(send.volume?.value ?? 1.0)) // TODO Take unit into account
                         box.sendPan.setValue(ValueMapping.bipolar().y(send.pan?.value ?? 0.5)) // TODO Take unit into account
-                        box.targetBus.refer(asDefined(effectTargetMap.get(destination),
-                            "Cannot find destination").input!)
                         box.audioUnit.refer(audioUnitBox.auxSends)
-                    }))
-                }
-            })
-        }
-
-        const createDevices = (audioUnitBox: AudioUnitBox, devices: ReadonlyArray<DeviceSchema>) => {
-            devices.forEach(device => {
-                const name = asDefined(device.deviceName) as keyof BoxIO.TypeMap
-                const uuidString = asDefined(device.deviceID)
-                const uuid = UUID.parse(uuidString)
-                this.#boxGraph.createBox(name, uuid, box => {
-                    const {buffer} = this.#resources.fromPath(`presets/${uuidString}`)
-                    box.read(new ByteArrayInput(buffer))
+                        box.index.setValue(index)
+                    })
+                    audioPointers.push({destination, pointer: auxSendBox.targetBus})
+                    return auxSendBox
                 })
-            })
         }
 
-        const {structure} = this.#schema
-        let audioUnitIndex: int = 0
-        structure.forEach((track: LaneSchema) => {
-            if (isInstanceOf(track, TrackSchema)) {
-                if (track.tracks?.length ?? 0 > 0) {
-                    return panic(`Groups are not supported yet.`)
-                }
-                const trackType = this.#contentToTrackType(track.contentType)
+        const createInstrumentBox = (audioUnitBox: AudioUnitBox, track: TrackSchema, device: Nullish<DeviceSchema>): InstrumentBox => {
+            // TODO Create openDAW device, if available
+            if (track.contentType === "notes") {
+                return InstrumentFactories.Vaporisateur
+                    .create(boxGraph, audioUnitBox.input, track.name ?? "", IconSymbol.Piano)
+            } else if (track.contentType === "audio") {
+                return InstrumentFactories.Tape
+                    .create(boxGraph, audioUnitBox.input, track.name ?? "", IconSymbol.Waveform)
+            }
+            return panic(`Cannot create instrument box for track '${track.name}' with contentType '${track.contentType}' and device '${device?.deviceName}'`)
+        }
+
+        const createInstrumentUnit = (track: TrackSchema,
+                                      type: AudioUnitType): InstrumentUnit => {
+            const channel: ChannelSchema = asDefined(track.channel)
+            const audioUnitBox = AudioUnitBox.create(rootBox.graph, UUID.generate(), box => {
+                box.collection.refer(rootBox.audioUnits)
+                box.type.setValue(type)
+                box.volume.setValue(gainToDb(channel.volume?.value ?? 1.0))
+                box.panning.setValue(ValueMapping.bipolar().y(channel.pan?.value ?? 0.5))
+                box.mute.setValue(channel.mute?.value === true)
+                box.solo.setValue(channel.solo === true)
+            })
+            sortAudioUnits.add(AudioUnitOrdering[type], audioUnitBox)
+            const instrumentDevice: Nullish<DeviceSchema> = ifDefined(channel.devices, devices => {
+                devices
+                    .filter((device) => device.deviceRole === DeviceRole.NOTE_FX)
+                    .forEach((device, index) => createEffect(device, audioUnitBox, "midiEffects", index))
+                devices
+                    .filter((device) => device.deviceRole === DeviceRole.AUDIO_FX)
+                    .forEach((device, index) => createEffect(device, audioUnitBox, "audioEffects", index))
+                return devices
+                    .find((device) => device.deviceRole === DeviceRole.INSTRUMENT)
+            })
+            const instrumentBox = createInstrumentBox(audioUnitBox, track, instrumentDevice)
+            return {instrumentBox, audioUnitBox}
+        }
+
+        const createAudioBusUnit = (track: TrackSchema,
+                                    type: AudioUnitType,
+                                    icon: IconSymbol): AudioBusUnit => {
+            const channel: ChannelSchema = asDefined(track.channel)
+            const audioUnitBox = AudioUnitBox.create(rootBox.graph, UUID.generate(), box => {
+                box.collection.refer(rootBox.audioUnits)
+                box.type.setValue(type)
+                box.volume.setValue(gainToDb(channel.volume?.value ?? 1.0))
+                box.panning.setValue(ValueMapping.bipolar().y(channel.pan?.value ?? 0.5))
+                box.mute.setValue(channel.mute?.value === true)
+                box.solo.setValue(channel.solo === true)
+            })
+            sortAudioUnits.add(AudioUnitOrdering[type], audioUnitBox)
+            const audioBusBox = AudioBusBox.create(rootBox.graph, UUID.generate(), box => {
+                box.collection.refer(rootBox.audioBusses)
+                box.label.setValue(track.name ?? "")
+                box.icon.setValue(IconSymbol.toName(icon))
+                box.color.setValue(ColorCodes.forAudioType(type))
+                box.enabled.setValue(true)
+                box.output.refer(audioUnitBox.input)
+            })
+            ifDefined(channel.devices, devices => devices
+                .filter((device) => device.deviceRole === DeviceRole.AUDIO_FX)
+                .forEach((device, index) => createEffect(device, audioUnitBox, "audioEffects", index)))
+            return {audioBusBox, audioUnitBox}
+        }
+
+        const readTracks = (lanes: ReadonlyArray<LaneSchema>, depth: int): void => lanes
+            .filter((lane: LaneSchema) => isInstanceOf(lane, TrackSchema))
+            .forEach((track: TrackSchema) => {
                 const channel = asDefined(track.channel, "Track has no Channel")
-
-                if (channel.role === "regular") {
-                    const uuid = this.#uuids.getOrCreate(asDefined(track.id, "Track must have an id."))
-                    const audioUnitBox = AudioUnitBox.create(this.#boxGraph, uuid, box => {
-                        box.index.setValue(audioUnitIndex)
-                        box.type.setValue(AudioUnitType.Instrument)
-                        box.output.refer(this.#masterBusBox.input)
-                        box.collection.refer(this.#rootBox.audioUnits)
-                        readChannel(box, channel)
-                    })
-                    const trackBox = TrackBox.create(this.#boxGraph, UUID.generate(), box => {
-                        box.type.setValue(trackType)
-                        box.index.setValue(0)
-                        box.tracks.refer(audioUnitBox.tracks)
-                        box.target.refer(audioUnitBox)
-                    })
-                    this.#mapTrackBoxes.set(asDefined(track.id, "Track must have an id."), trackBox)
-                    if (trackType === TrackType.Notes) {
-                        InstrumentFactories.Vaporisateur
-                            .create(this.#boxGraph, audioUnitBox.input, track.name ?? "", IconSymbol.Piano)
-                    } else if (trackType === TrackType.Audio) {
-                        InstrumentFactories.Tape
-                            .create(this.#boxGraph, audioUnitBox.input, track.name ?? "", IconSymbol.Waveform)
+                const channelId = asDefined(channel.id, "Channel must have an Id")
+                console.debug(depth, channel.id, channel.role, track.name, track.contentType)
+                if (channel.role === ChannelRole.REGULAR) {
+                    const {audioUnitBox} = createInstrumentUnit(track, AudioUnitType.Instrument)
+                    addTrackTarget(asDefined(track.id, "Track must have an Id."), audioUnitBox)
+                    ifDefined(channel.sends, sends => createSends(audioUnitBox, sends))
+                    audioPointers.push({destination: channel.destination!, pointer: audioUnitBox.output})
+                } else if (channel.role === ChannelRole.EFFECT) {
+                    const {audioBusBox, audioUnitBox} = createAudioBusUnit(track, AudioUnitType.Aux, IconSymbol.Effects)
+                    addAudioTarget(channelId, audioBusBox.input)
+                    addTrackTarget(asDefined(track.id, "Track must have an Id."), audioUnitBox)
+                    ifDefined(channel.sends, sends => createSends(audioUnitBox, sends))
+                    audioPointers.push({destination: channel.destination!, pointer: audioUnitBox.output})
+                } else if (channel.role === ChannelRole.MASTER) {
+                    console.debug(`Found a master channel in '${track.name}' with destination '${channel.destination}' and contentType '${track.contentType}'`)
+                    const isMostLikelyPrimaryOutput = primaryAudioBusUnitOption.isEmpty()
+                        && depth === 0
+                        && isUndefined(channel.destination)
+                        && track.contentType !== "tracks"
+                    if (isMostLikelyPrimaryOutput) {
+                        const audioBusUnit = createAudioBusUnit(track, AudioUnitType.Output, IconSymbol.SpeakerHeadphone)
+                        const {audioBusBox, audioUnitBox} = audioBusUnit
+                        addAudioTarget(channelId, audioBusBox.input)
+                        addTrackTarget(asDefined(track.id, "Track must have an Id."), audioUnitBox)
+                        audioUnitBox.output.refer(rootBox.outputDevice)
+                        primaryAudioBusUnitOption = Option.wrap(audioBusUnit)
+                    } else {
+                        console.debug("GROUP START", track.name, track.contentType)
+                        const audioBusUnit = createAudioBusUnit(track, AudioUnitType.Bus, IconSymbol.AudioBus)
+                        const {audioBusBox, audioUnitBox} = audioBusUnit
+                        addAudioTarget(channelId, audioBusBox.input)
+                        addTrackTarget(asDefined(track.id, "Track must have an Id."), audioUnitBox)
+                        ifDefined(channel.destination, destination =>
+                            audioPointers.push({destination, pointer: audioUnitBox.output}))
+                        ifDefined(channel.sends, sends => createSends(audioUnitBox, sends))
+                        readTracks(track.tracks ?? [], depth + 1)
                     }
-                    if (isDefined(channel.devices)) {
-                        // TODO createDevices(audioUnitBox, channel.devices)
-                    }
-                } else if (channel.role === "effect") {
-                    const audioUnitBox = AudioUnitBox.create(this.#boxGraph, UUID.generate(), box => {
-                        box.index.setValue(audioUnitIndex)
-                        box.type.setValue(AudioUnitType.Aux)
-                        box.output.refer(this.#masterBusBox.input)
-                        box.collection.refer(this.#rootBox.audioUnits)
-                        readChannel(box, channel)
-                    })
-                    const audioBusBox = AudioBusBox.create(this.#boxGraph, UUID.generate(), box => {
-                        box.collection.refer(this.#rootBox.audioBusses)
-                        box.label.setValue(track.name ?? "Aux")
-                        box.color.setValue(ColorCodes.forAudioType(AudioUnitType.Aux))
-                        box.icon.setValue(IconSymbol.toName(IconSymbol.Effects))
-                        box.output.refer(audioUnitBox.input)
-                    })
-                    const trackBox = TrackBox.create(this.#boxGraph, UUID.generate(), box => {
-                        box.type.setValue(TrackType.Undefined)
-                        box.index.setValue(0)
-                        box.tracks.refer(audioUnitBox.tracks)
-                        box.target.refer(audioUnitBox)
-                    })
-                    effectTargetMap.set(asDefined(channel.id, "Effect-channel must have id."), audioBusBox)
-                    this.#mapTrackBoxes.set(asDefined(track.id, "Track must have an id."), trackBox)
-                } else if (channel.role === "master") {
-                    readChannel(this.#masterAudioUnit, channel)
                 } else {
-                    return panic(`Unknown channel role: ${channel.role}`)
+                    return panic(`Unknown channel role ('${channel.role}')`)
                 }
-                audioUnitIndex++
-            }
-        })
-        this.#masterAudioUnit.index.setValue(audioUnitIndex)
-        resolveSendTargets.forEach(exec => exec())
-        resolveSendTargets.length = 0
-    }
-
-    #readArrangement(): Promise<unknown> {
-        const {arrangement} = this.#schema
-
-        const readRegions = ({clips}: ClipsSchema, track: string): Promise<unknown> =>
-            Promise.all(clips.map(clip => readAnyRegion(clip, track)))
-
-        const readLane = (lane: LanesSchema): Promise<unknown> => {
-            const track = lane.track // links to track in structure
-            return Promise.all(lane?.lanes?.filter(timeline => isInstanceOf(timeline, ClipsSchema))
-                .map(clips => readRegions(clips, asDefined(track, "Region(Clips) must have an id."))) ?? [])
-        }
-
-        const readAnyRegion = (clip: ClipSchema, trackId: string): Promise<unknown> => {
-            const trackBox = asDefined(this.#mapTrackBoxes.get(trackId), `Could not find track for ${trackId}`)
-            return Promise.all(clip.content?.map(async (content: TimelineSchema) => {
-                if (isInstanceOf(content, ClipsSchema)) {
-                    await readAnyRegionContent(clip, content, trackBox)
-                } else if (isInstanceOf(content, NotesSchema)) {
-                    readNoteRegionContent(clip, content, trackBox)
-                }
-            }) ?? [])
-        }
-
-        const readNoteRegionContent = (clip: ClipSchema, notes: NotesSchema, trackBox: TrackBox): void => {
-            const collectionBox = NoteEventCollectionBox.create(this.#boxGraph, UUID.generate())
-            NoteRegionBox.create(this.#boxGraph, UUID.generate(), box => {
-                const position = asDefined(clip.time, "Time not defined")
-                const duration = asDefined(clip.duration, "Duration not defined")
-                const loopDuration = clip.loopEnd ?? duration
-                box.position.setValue(position * PPQN.Quarter)
-                box.duration.setValue(duration * PPQN.Quarter)
-                box.label.setValue(clip.name ?? "")
-                box.loopDuration.setValue(loopDuration * PPQN.Quarter)
-                box.mute.setValue(clip.enable === false)
-                box.events.refer(collectionBox.owners)
-                box.regions.refer(trackBox.regions)
             })
-            notes.notes?.forEach(note => {
-                NoteEventBox.create(this.#boxGraph, UUID.generate(), box => {
-                    box.position.setValue(note.time * PPQN.Quarter)
-                    box.duration.setValue(note.duration * PPQN.Quarter)
-                    box.pitch.setValue(note.key)
-                    box.velocity.setValue(note.vel ?? 1.0)
-                    box.events.refer(collectionBox.events)
+        readTracks(schema.structure, 0)
+
+        const readArrangement = (arrangement: ArrangementSchema): Promise<unknown> => {
+            const readRegions = ({clips}: ClipsSchema, track: string): Promise<unknown> =>
+                Promise.all(clips.map(clip => readAnyRegion(clip, track)))
+
+            const readLane = (lane: LanesSchema): Promise<unknown> => {
+                const track = lane.track // links to track in structure
+                return Promise.all(lane?.lanes?.filter(timeline => isInstanceOf(timeline, ClipsSchema))
+                    .map(clips => readRegions(clips, asDefined(track, "Region(Clips) must have an id."))) ?? [])
+            }
+
+            const readAnyRegion = (clip: ClipSchema, trackId: string): Promise<unknown> => {
+                const target = asDefined(trackTargets.get(trackId), `Cannot find track for '${trackId}'`)
+                const trackBox: TrackBox = TrackBox.create(boxGraph, UUID.generate(), box => {
+                    box.tracks.refer(target.tracks)
+                    box.target.refer(target)
+                    box.type.setValue(TrackType.Notes) // TODO How to determine the type?
                 })
-            })
-        }
-
-        const readAnyRegionContent = async (clip: ClipSchema, content: ClipsSchema, trackBox: TrackBox): Promise<unknown> => {
-            const contentClip = content.clips.at(0)
-            if (isUndefined(contentClip)) {
-                console.warn(clip, "audio-clip without content-clip?")
-                return
+                return Promise.all(clip.content?.map(async (content: TimelineSchema) => {
+                    if (isInstanceOf(content, ClipsSchema)) {
+                        await readAnyRegionContent(clip, content, trackBox)
+                    } else if (isInstanceOf(content, NotesSchema)) {
+                        readNoteRegionContent(clip, content, trackBox)
+                    }
+                }) ?? [])
             }
-            const innerContent = contentClip.content?.at(0) as Nullish<TimelineSchema>
-            // TODO Double-check: From which point is it guaranteed that this is an audio region?
-            if (isInstanceOf(innerContent, WarpsSchema)) {
-                const {warps, content} = innerContent
-                const audio = content?.at(0) as Nullish<AudioSchema>
-                const warp0 = warps.at(0)
-                const warpN = warps.at(-1)
-                const warpDistance = asDefined(warpN?.time) - asDefined(warp0?.time)
-                if (isUndefined(audio)) {return}
-                const {path, external} = audio.file
-                assert(external !== true, "File cannot be external")
-                const {uuid, name} = this.#resources.fromPath(path)
-                const audioFileBox: AudioFileBox = this.#boxGraph.findBox<AudioFileBox>(uuid)
-                    .unwrapOrElse(() => AudioFileBox.create(this.#boxGraph, uuid, box => box.fileName.setValue(name)))
-                this.#audioIDs.add(uuid, true)
-                AudioRegionBox.create(this.#boxGraph, UUID.generate(), box => {
+
+            const readNoteRegionContent = (clip: ClipSchema, notes: NotesSchema, trackBox: TrackBox): void => {
+                const collectionBox = NoteEventCollectionBox.create(boxGraph, UUID.generate())
+                NoteRegionBox.create(boxGraph, UUID.generate(), box => {
                     const position = asDefined(clip.time, "Time not defined")
                     const duration = asDefined(clip.duration, "Duration not defined")
-                    const loopDuration = clip.loopEnd ?? warpDistance
+                    const loopDuration = clip.loopEnd ?? duration
                     box.position.setValue(position * PPQN.Quarter)
                     box.duration.setValue(duration * PPQN.Quarter)
                     box.label.setValue(clip.name ?? "")
-                    box.loopOffset.setValue((-(contentClip.time ?? 0.0)) * PPQN.Quarter)
                     box.loopDuration.setValue(loopDuration * PPQN.Quarter)
                     box.mute.setValue(clip.enable === false)
+                    box.events.refer(collectionBox.owners)
                     box.regions.refer(trackBox.regions)
-                    box.file.refer(audioFileBox)
+                })
+                notes.notes?.forEach(note => {
+                    NoteEventBox.create(boxGraph, UUID.generate(), box => {
+                        box.position.setValue(note.time * PPQN.Quarter)
+                        box.duration.setValue(note.duration * PPQN.Quarter)
+                        box.pitch.setValue(note.key)
+                        box.velocity.setValue(note.vel ?? 1.0)
+                        box.events.refer(collectionBox.events)
+                    })
                 })
             }
+
+            const readAnyRegionContent = async (clip: ClipSchema, content: ClipsSchema, trackBox: TrackBox): Promise<unknown> => {
+                const contentClip = content.clips.at(0)
+                if (isUndefined(contentClip)) {
+                    console.warn(clip, "audio-clip without content-clip?")
+                    return
+                }
+                const innerContent = contentClip.content?.at(0) as Nullish<TimelineSchema>
+                // TODO Double-check: From which point is it guaranteed that this is an audio region?
+                if (isInstanceOf(innerContent, WarpsSchema)) {
+                    const {warps, content} = innerContent
+                    const audio = content?.at(0) as Nullish<AudioSchema>
+                    const warp0 = warps.at(0)
+                    const warpN = warps.at(-1)
+                    const warpDistance = asDefined(warpN?.time) - asDefined(warp0?.time)
+                    if (isUndefined(audio)) {return}
+                    const {path, external} = audio.file
+                    assert(external !== true, "File cannot be external")
+                    const {uuid, name} = resources.fromPath(path)
+                    const audioFileBox: AudioFileBox = boxGraph.findBox<AudioFileBox>(uuid)
+                        .unwrapOrElse(() => AudioFileBox.create(boxGraph, uuid, box => box.fileName.setValue(name)))
+                    audioIdSet.add(uuid, true)
+                    AudioRegionBox.create(boxGraph, UUID.generate(), box => {
+                        const position = asDefined(clip.time, "Time not defined")
+                        const duration = asDefined(clip.duration, "Duration not defined")
+                        const loopDuration = clip.loopEnd ?? warpDistance
+                        box.position.setValue(position * PPQN.Quarter)
+                        box.duration.setValue(duration * PPQN.Quarter)
+                        box.label.setValue(clip.name ?? "")
+                        box.loopOffset.setValue((-(contentClip.time ?? 0.0)) * PPQN.Quarter)
+                        box.loopDuration.setValue(loopDuration * PPQN.Quarter)
+                        box.mute.setValue(clip.enable === false)
+                        box.regions.refer(trackBox.regions)
+                        box.file.refer(audioFileBox)
+                    })
+                }
+            }
+            return Promise.all(arrangement?.lanes?.lanes?.filter(timeline => isInstanceOf(timeline, LanesSchema))
+                .map(readLane) ?? [])
         }
-        return Promise.all(arrangement?.lanes?.lanes?.filter(timeline => isInstanceOf(timeline, LanesSchema))
-            .map(readLane) ?? [])
+        await ifDefined(schema.arrangement, arrangement => readArrangement(arrangement))
+        audioPointers.forEach(({destination, pointer}) =>
+            pointer.refer(asDefined(audioTargets.get(destination), `${destination} cannot be found.`)))
+        {
+            let index = 0
+            sortAudioUnits
+                .sortKeys(NumberComparator)
+                .forEach((_, boxes) => {for (const box of boxes) {box.index.setValue(index++)}})
+        }
+        boxGraph.endTransaction()
+        boxGraph.verifyPointers()
+        const {audioBusBox: masterBusBox, audioUnitBox: masterAudioUnit} =
+            primaryAudioBusUnitOption.unwrap("Did not find a primary output")
+        return {
+            audioIds: audioIdSet.values(),
+            skeleton: {
+                boxGraph,
+                mandatoryBoxes: {rootBox, timelineBox, masterBusBox, masterAudioUnit, userInterfaceBox}
+            }
+        }
     }
 
-    #contentToTrackType(contentType?: string): TrackType {
-        switch (contentType) {
-            case "audio":
-                return TrackType.Audio
-            case "notes":
-                return TrackType.Notes
-            default:
-                return TrackType.Undefined
-        }
+    const readTransport = ({tempo, timeSignature}: TransportSchema,
+                           {bpm, signature: {nominator, denominator}}: TimelineBox) => {
+        ifDefined(tempo?.value, value => bpm.setValue(value))
+        ifDefined(timeSignature?.numerator, value => nominator.setValue(value))
+        ifDefined(timeSignature?.denominator, value => denominator.setValue(value))
     }
 }

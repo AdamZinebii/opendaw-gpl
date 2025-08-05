@@ -42,7 +42,7 @@ export namespace SampleApi {
                         const chunks: Array<Uint8Array> = []
                         const nextChunk = ({done, value}: ReadableStreamReadResult<Uint8Array>) => {
                             if (done) {
-                                resolve(new Blob(chunks).arrayBuffer())
+                                resolve(new Blob(chunks as Array<BlobPart>).arrayBuffer())
                             } else {
                                 chunks.push(value)
                                 loaded += value.length
