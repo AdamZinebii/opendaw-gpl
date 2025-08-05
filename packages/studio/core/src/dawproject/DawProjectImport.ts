@@ -14,7 +14,7 @@ import {
     UUID,
     ValueMapping
 } from "@opendaw/lib-std"
-import {BoxGraph, Field, PointerField} from "@opendaw/lib-box"
+import {BoxGraph, PointerField} from "@opendaw/lib-box"
 import {gainToDb, PPQN} from "@opendaw/lib-dsp"
 import {
     ArrangementSchema,
@@ -44,6 +44,7 @@ import {
     AudioUnitBox,
     AuxSendBox,
     BoxIO,
+    BoxVisitor,
     DelayDeviceBox,
     GrooveShuffleBox,
     NoteEventBox,
@@ -61,17 +62,23 @@ import {AudioUnitOrdering} from "../AudioUnitOrdering"
 import {InstrumentFactories} from "../InstrumentFactories"
 import {ColorCodes} from "../ColorCodes"
 
-export namespace DawProjectImporter {
+export namespace DawProjectImport {
     type AudioBusUnit = { audioBusBox: AudioBusBox, audioUnitBox: AudioUnitBox }
     type InstrumentUnit = { instrumentBox: InstrumentBox, audioUnitBox: AudioUnitBox }
-    type PointerOutputType = Pointers.InstrumentHost | Pointers.AudioOutput
 
-    export type Creation = {
+    const readTransport = ({tempo, timeSignature}: TransportSchema,
+                           {bpm, signature: {nominator, denominator}}: TimelineBox) => {
+        ifDefined(tempo?.value, value => bpm.setValue(value))
+        ifDefined(timeSignature?.numerator, value => nominator.setValue(value))
+        ifDefined(timeSignature?.denominator, value => denominator.setValue(value))
+    }
+
+    export type Result = {
         audioIds: ReadonlyArray<UUID.Format>,
         skeleton: ProjectDecoder.Skeleton
     }
 
-    export const construct = async (schema: ProjectSchema, resources: DawProjectIO.ResourceProvider): Promise<Creation> => {
+    export const read = async (schema: ProjectSchema, resources: DawProjectIO.ResourceProvider): Promise<Result> => {
         const boxGraph = new BoxGraph<BoxIO.TypeMap>(Option.wrap(BoxIO.create))
         boxGraph.beginTransaction()
 
@@ -95,20 +102,24 @@ export namespace DawProjectImporter {
         let primaryAudioBusUnitOption: Option<AudioBusUnit> = Option.None
 
         const audioIdSet = UUID.newSet<UUID.Format>(uuid => uuid)
-        const trackTargets = new Map<string, AudioUnitBox>()
-        const addTrackTarget = (trackId: string, target: AudioUnitBox) => {
-            if (trackTargets.has(trackId)) {return panic(`trackId '${trackId}' is already defined`)}
-            trackTargets.set(trackId, target)
+        const audioUnits = new Map<string, AudioUnitBox>()
+        const registerAudioUnit = (trackId: string, target: AudioUnitBox) => {
+            if (audioUnits.has(trackId)) {return panic(`trackId '${trackId}' is already defined`)}
+            audioUnits.set(trackId, target)
         }
-        const audioTargets = new Map<string, Field<PointerOutputType>>()
-        const addAudioTarget = (channelId: string, target: Field<PointerOutputType>) => {
-            if (audioTargets.has(channelId)) {return panic(`channelId '${channelId}' is already defined`)}
-            audioTargets.set(channelId, target)
+        const audioBusses = new Map<string, AudioBusBox>()
+        const registerAudioBus = (channelId: string, audioBusBox: AudioBusBox) => {
+            if (audioBusses.has(channelId)) {return panic(`channelId '${channelId}' is already defined`)}
+            audioBusses.set(channelId, audioBusBox)
         }
-
-        const audioPointers: Array<{ destination: string, pointer: PointerField<PointerOutputType> }> = []
+        const audioPointers: Array<{
+            destination: string,
+            pointer: PointerField<Pointers.InstrumentHost | Pointers.AudioOutput>
+        }> = []
         const sortAudioUnits: Multimap<int, AudioUnitBox> = new ArrayMultimap<int, AudioUnitBox>()
 
+        // Reading methods
+        //
         const createEffect = ({deviceRole, deviceVendor, deviceID, deviceName}: DeviceSchema,
                               target: AudioUnitBox,
                               key: keyof Pick<AudioUnitBox, "midiEffects" | "audioEffects">,
@@ -220,13 +231,13 @@ export namespace DawProjectImporter {
                 console.debug(depth, channel.id, channel.role, track.name, track.contentType)
                 if (channel.role === ChannelRole.REGULAR) {
                     const {audioUnitBox} = createInstrumentUnit(track, AudioUnitType.Instrument)
-                    addTrackTarget(asDefined(track.id, "Track must have an Id."), audioUnitBox)
+                    registerAudioUnit(asDefined(track.id, "Track must have an Id."), audioUnitBox)
                     ifDefined(channel.sends, sends => createSends(audioUnitBox, sends))
                     audioPointers.push({destination: channel.destination!, pointer: audioUnitBox.output})
                 } else if (channel.role === ChannelRole.EFFECT) {
                     const {audioBusBox, audioUnitBox} = createAudioBusUnit(track, AudioUnitType.Aux, IconSymbol.Effects)
-                    addAudioTarget(channelId, audioBusBox.input)
-                    addTrackTarget(asDefined(track.id, "Track must have an Id."), audioUnitBox)
+                    registerAudioBus(channelId, audioBusBox)
+                    registerAudioUnit(asDefined(track.id, "Track must have an Id."), audioUnitBox)
                     ifDefined(channel.sends, sends => createSends(audioUnitBox, sends))
                     audioPointers.push({destination: channel.destination!, pointer: audioUnitBox.output})
                 } else if (channel.role === ChannelRole.MASTER) {
@@ -238,16 +249,16 @@ export namespace DawProjectImporter {
                     if (isMostLikelyPrimaryOutput) {
                         const audioBusUnit = createAudioBusUnit(track, AudioUnitType.Output, IconSymbol.SpeakerHeadphone)
                         const {audioBusBox, audioUnitBox} = audioBusUnit
-                        addAudioTarget(channelId, audioBusBox.input)
-                        addTrackTarget(asDefined(track.id, "Track must have an Id."), audioUnitBox)
+                        registerAudioBus(channelId, audioBusBox)
+                        registerAudioUnit(asDefined(track.id, "Track must have an Id."), audioUnitBox)
                         audioUnitBox.output.refer(rootBox.outputDevice)
                         primaryAudioBusUnitOption = Option.wrap(audioBusUnit)
                     } else {
                         console.debug("GROUP START", track.name, track.contentType)
                         const audioBusUnit = createAudioBusUnit(track, AudioUnitType.Bus, IconSymbol.AudioBus)
                         const {audioBusBox, audioUnitBox} = audioBusUnit
-                        addAudioTarget(channelId, audioBusBox.input)
-                        addTrackTarget(asDefined(track.id, "Track must have an Id."), audioUnitBox)
+                        registerAudioBus(channelId, audioBusBox)
+                        registerAudioUnit(asDefined(track.id, "Track must have an Id."), audioUnitBox)
                         ifDefined(channel.destination, destination =>
                             audioPointers.push({destination, pointer: audioUnitBox.output}))
                         ifDefined(channel.sends, sends => createSends(audioUnitBox, sends))
@@ -270,11 +281,20 @@ export namespace DawProjectImporter {
             }
 
             const readAnyRegion = (clip: ClipSchema, trackId: string): Promise<unknown> => {
-                const target = asDefined(trackTargets.get(trackId), `Cannot find track for '${trackId}'`)
+                const audioUnitBox = asDefined(audioUnits.get(trackId), `Cannot find track for '${trackId}'`)
+                const inputBox = audioUnitBox.input.pointerHub.incoming().at(0)?.box
+                // TODO Can we find a better way to determine the track type?
+                //  Because this would be another location to update when adding new instruments.
+                const inputTrackType = asDefined(inputBox?.accept<BoxVisitor<TrackType>>({
+                    visitTapeDeviceBox: () => TrackType.Audio,
+                    visitNanoDeviceBox: () => TrackType.Notes,
+                    visitPlayfieldDeviceBox: () => TrackType.Notes,
+                    visitVaporisateurDeviceBox: () => TrackType.Notes
+                }), `Could not determine track type for input: '${inputBox}'`)
                 const trackBox: TrackBox = TrackBox.create(boxGraph, UUID.generate(), box => {
-                    box.tracks.refer(target.tracks)
-                    box.target.refer(target)
-                    box.type.setValue(TrackType.Notes) // TODO How to determine the type?
+                    box.tracks.refer(audioUnitBox.tracks)
+                    box.target.refer(audioUnitBox)
+                    box.type.setValue(inputTrackType)
                 })
                 return Promise.all(clip.content?.map(async (content: TimelineSchema) => {
                     if (isInstanceOf(content, ClipsSchema)) {
@@ -351,7 +371,7 @@ export namespace DawProjectImporter {
         }
         await ifDefined(schema.arrangement, arrangement => readArrangement(arrangement))
         audioPointers.forEach(({destination, pointer}) =>
-            pointer.refer(asDefined(audioTargets.get(destination), `${destination} cannot be found.`)))
+            pointer.refer(asDefined(audioBusses.get(destination), `${destination} cannot be found.`).input))
         {
             let index = 0
             sortAudioUnits
@@ -369,12 +389,5 @@ export namespace DawProjectImporter {
                 mandatoryBoxes: {rootBox, timelineBox, masterBusBox, masterAudioUnit, userInterfaceBox}
             }
         }
-    }
-
-    const readTransport = ({tempo, timeSignature}: TransportSchema,
-                           {bpm, signature: {nominator, denominator}}: TimelineBox) => {
-        ifDefined(tempo?.value, value => bpm.setValue(value))
-        ifDefined(timeSignature?.numerator, value => nominator.setValue(value))
-        ifDefined(timeSignature?.denominator, value => denominator.setValue(value))
     }
 }

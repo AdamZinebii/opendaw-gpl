@@ -10,8 +10,8 @@ export * from "./samples/SampleProvider"
 
 export * from "./dawproject/DawProjectIO"
 export * from "./dawproject/DawProjectExporter"
-export * from "./dawproject/DawProjectImporter"
-export * from "./dawproject/DawProjectImporter"
+export * from "./dawproject/DawProjectImport"
+export * from "./dawproject/DawProjectImport"
 
 export * from "./ColorCodes"
 export * from "./Colors"
