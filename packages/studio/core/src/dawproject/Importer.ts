@@ -23,13 +23,16 @@ import {
     DeviceSchema,
     LaneSchema,
     ProjectSchema,
+    SendSchema,
+    SendType,
     TrackSchema,
     TransportSchema
 } from "@opendaw/lib-dawproject"
-import {AudioUnitType, Pointers} from "@opendaw/studio-enums"
+import {AudioSendRouting, AudioUnitType, Pointers} from "@opendaw/studio-enums"
 import {
     AudioBusBox,
     AudioUnitBox,
+    AuxSendBox,
     BoxIO,
     DelayDeviceBox,
     GrooveShuffleBox,
@@ -78,7 +81,7 @@ export namespace Importer {
             destinations.set(destination, target)
         }
 
-        const links: Array<{
+        const pointers: Array<{
             destination: string,
             pointer: PointerField<PointerDestinations>
         }> = []
@@ -95,6 +98,7 @@ export namespace Importer {
                 const deviceKey = asDefined(deviceName) as keyof BoxIO.TypeMap
             }
             const field = target[key]
+            // TODO Create placeholder device
             DelayDeviceBox.create(boxGraph, UUID.generate(), box => {
                 box.label.setValue(`${deviceName} (Placeholder #${index + 1})`)
                 box.index.setValue(index)
@@ -102,7 +106,27 @@ export namespace Importer {
             })
         }
 
+        const createSends = (audioUnitBox: AudioUnitBox, sends: ReadonlyArray<SendSchema>) => {
+            sends
+                // bitwig does not set enabled if it is enabled 🤥
+                .filter((send) => isUndefined(send?.enable?.value) || send.enable.value)
+                .forEach((send, index) => {
+                    const destination = asDefined(send.destination, "destination is undefined")
+                    const auxSendBox = AuxSendBox.create(boxGraph, UUID.generate(), box => {
+                        const type = send.type as Nullish<SendType>
+                        box.routing.setValue(type === SendType.PRE ? AudioSendRouting.Pre : AudioSendRouting.Post)
+                        box.sendGain.setValue(gainToDb(send.volume?.value ?? 1.0)) // TODO Take unit into account
+                        box.sendPan.setValue(ValueMapping.bipolar().y(send.pan?.value ?? 0.5)) // TODO Take unit into account
+                        box.audioUnit.refer(audioUnitBox.auxSends)
+                        box.index.setValue(index)
+                    })
+                    pointers.push({destination, pointer: auxSendBox.targetBus})
+                    return auxSendBox
+                })
+        }
+
         const createInstrumentBox = (audioUnitBox: AudioUnitBox, track: TrackSchema, device: Nullish<DeviceSchema>): InstrumentBox => {
+            // TODO Create openDAW device, if available
             if (track.contentType === "notes") {
                 return InstrumentFactories.Vaporisateur
                     .create(boxGraph, audioUnitBox.input, track.name ?? "", IconSymbol.Piano)
@@ -174,11 +198,13 @@ export namespace Importer {
                 console.debug(depth, channel.id, channel.role, track.name, track.contentType)
                 if (channel.role === ChannelRole.REGULAR) {
                     const {audioUnitBox} = createInstrumentUnit(track, AudioUnitType.Instrument)
-                    links.push({destination: channel.destination!, pointer: audioUnitBox.output})
+                    ifDefined(channel.sends, sends => createSends(audioUnitBox, sends))
+                    pointers.push({destination: channel.destination!, pointer: audioUnitBox.output})
                 } else if (channel.role === ChannelRole.EFFECT) {
                     const {audioBusBox, audioUnitBox} = createAudioBusUnit(track, AudioUnitType.Aux, IconSymbol.Effects)
                     addDestination(channelId, audioBusBox.input)
-                    links.push({destination: channel.destination!, pointer: audioUnitBox.output})
+                    ifDefined(channel.sends, sends => createSends(audioUnitBox, sends))
+                    pointers.push({destination: channel.destination!, pointer: audioUnitBox.output})
                 } else if (channel.role === ChannelRole.MASTER) {
                     console.debug(`Found a master channel in '${track.name}' with destination '${channel.destination}' and contentType '${track.contentType}'`)
                     const isMostLikelyPrimaryOutput = primaryAudioBusUnitOption.isEmpty()
@@ -197,7 +223,8 @@ export namespace Importer {
                         const {audioBusBox, audioUnitBox} = audioBusUnit
                         addDestination(channelId, audioBusBox.input)
                         ifDefined(channel.destination, destination =>
-                            links.push({destination, pointer: audioUnitBox.output}))
+                            pointers.push({destination, pointer: audioUnitBox.output}))
+                        ifDefined(channel.sends, sends => createSends(audioUnitBox, sends))
                         readTracks(track.tracks ?? [], depth + 1)
                     }
                 } else {
@@ -205,8 +232,7 @@ export namespace Importer {
                 }
             })
         readTracks(schema.structure, 0)
-
-        links.forEach(({destination, pointer}) =>
+        pointers.forEach(({destination, pointer}) =>
             pointer.refer(asDefined(destinations.get(destination), `${destination} cannot be found.`)))
 
         console.debug("=== SORTING ===")
@@ -217,7 +243,10 @@ export namespace Importer {
         console.debug("===============")
         boxGraph.endTransaction()
         boxGraph.verifyPointers()
-        const {audioBusBox, audioUnitBox} = primaryAudioBusUnitOption.unwrap("Did not find a primary output")
+        const {
+            audioBusBox: primaryAudioBusBox,
+            audioUnitBox: primaryAudioUnitBox
+        } = primaryAudioBusUnitOption.unwrap("Did not find a primary output")
         return {
             audioIDs: [],
             skeleton: {
@@ -225,8 +254,8 @@ export namespace Importer {
                 mandatoryBoxes: {
                     rootBox,
                     timelineBox,
-                    masterBusBox: audioBusBox,
-                    masterAudioUnit: audioUnitBox,
+                    masterBusBox: primaryAudioBusBox,
+                    masterAudioUnit: primaryAudioUnitBox,
                     userInterfaceBox
                 }
             }
