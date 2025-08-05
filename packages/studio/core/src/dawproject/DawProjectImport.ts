@@ -1,6 +1,7 @@
 import {
     ArrayMultimap,
     asDefined,
+    asInstanceOf,
     assert,
     ifDefined,
     int,
@@ -112,9 +113,8 @@ export namespace DawProjectImport {
             if (audioBusses.has(channelId)) {return panic(`channelId '${channelId}' is already defined`)}
             audioBusses.set(channelId, audioBusBox)
         }
-        const audioPointers: Array<{
-            destination: string,
-            pointer: PointerField<Pointers.InstrumentHost | Pointers.AudioOutput>
+        const outputPointers: Array<{
+            target: string, pointer: PointerField<Pointers.InstrumentHost | Pointers.AudioOutput>
         }> = []
         const sortAudioUnits: Multimap<int, AudioUnitBox> = new ArrayMultimap<int, AudioUnitBox>()
 
@@ -153,7 +153,7 @@ export namespace DawProjectImport {
                         box.audioUnit.refer(audioUnitBox.auxSends)
                         box.index.setValue(index)
                     })
-                    audioPointers.push({destination, pointer: auxSendBox.targetBus})
+                    outputPointers.push({target: destination, pointer: auxSendBox.targetBus})
                     return auxSendBox
                 })
         }
@@ -233,13 +233,13 @@ export namespace DawProjectImport {
                     const {audioUnitBox} = createInstrumentUnit(track, AudioUnitType.Instrument)
                     registerAudioUnit(asDefined(track.id, "Track must have an Id."), audioUnitBox)
                     ifDefined(channel.sends, sends => createSends(audioUnitBox, sends))
-                    audioPointers.push({destination: channel.destination!, pointer: audioUnitBox.output})
+                    outputPointers.push({target: channel.destination!, pointer: audioUnitBox.output})
                 } else if (channel.role === ChannelRole.EFFECT) {
                     const {audioBusBox, audioUnitBox} = createAudioBusUnit(track, AudioUnitType.Aux, IconSymbol.Effects)
                     registerAudioBus(channelId, audioBusBox)
                     registerAudioUnit(asDefined(track.id, "Track must have an Id."), audioUnitBox)
                     ifDefined(channel.sends, sends => createSends(audioUnitBox, sends))
-                    audioPointers.push({destination: channel.destination!, pointer: audioUnitBox.output})
+                    outputPointers.push({target: channel.destination!, pointer: audioUnitBox.output})
                 } else if (channel.role === ChannelRole.MASTER) {
                     console.debug(`Found a master channel in '${track.name}' with destination '${channel.destination}' and contentType '${track.contentType}'`)
                     const isMostLikelyPrimaryOutput = primaryAudioBusUnitOption.isEmpty()
@@ -260,7 +260,7 @@ export namespace DawProjectImport {
                         registerAudioBus(channelId, audioBusBox)
                         registerAudioUnit(asDefined(track.id, "Track must have an Id."), audioUnitBox)
                         ifDefined(channel.destination, destination =>
-                            audioPointers.push({destination, pointer: audioUnitBox.output}))
+                            outputPointers.push({target: destination, pointer: audioUnitBox.output}))
                         ifDefined(channel.sends, sends => createSends(audioUnitBox, sends))
                         readTracks(track.tracks ?? [], depth + 1)
                     }
@@ -282,19 +282,13 @@ export namespace DawProjectImport {
 
             const readAnyRegion = (clip: ClipSchema, trackId: string): Promise<unknown> => {
                 const audioUnitBox = asDefined(audioUnits.get(trackId), `Cannot find track for '${trackId}'`)
-                const inputBox = audioUnitBox.input.pointerHub.incoming().at(0)?.box
-                // TODO Can we find a better way to determine the track type?
-                //  Because this would be another location to update when adding new instruments.
-                const inputTrackType = asDefined(inputBox?.accept<BoxVisitor<TrackType>>({
-                    visitTapeDeviceBox: () => TrackType.Audio,
-                    visitNanoDeviceBox: () => TrackType.Notes,
-                    visitPlayfieldDeviceBox: () => TrackType.Notes,
-                    visitVaporisateurDeviceBox: () => TrackType.Notes
-                }), `Could not determine track type for input: '${inputBox}'`)
+                const inputTrackType = readInputTrackType(audioUnitBox)
+                const index = audioUnitBox.tracks.pointerHub.incoming().length
                 const trackBox: TrackBox = TrackBox.create(boxGraph, UUID.generate(), box => {
                     box.tracks.refer(audioUnitBox.tracks)
                     box.target.refer(audioUnitBox)
                     box.type.setValue(inputTrackType)
+                    box.index.setValue(index)
                 })
                 return Promise.all(clip.content?.map(async (content: TimelineSchema) => {
                     if (isInstanceOf(content, ClipsSchema)) {
@@ -370,8 +364,23 @@ export namespace DawProjectImport {
                 .map(readLane) ?? [])
         }
         await ifDefined(schema.arrangement, arrangement => readArrangement(arrangement))
-        audioPointers.forEach(({destination, pointer}) =>
-            pointer.refer(asDefined(audioBusses.get(destination), `${destination} cannot be found.`).input))
+        outputPointers.forEach(({target, pointer}) =>
+            pointer.refer(asDefined(audioBusses.get(target), `${target} cannot be found.`).input))
+
+        rootBox.audioUnits.pointerHub.incoming().forEach(({box}) => {
+            const audioUnitBox = asInstanceOf(box, AudioUnitBox)
+            if (audioUnitBox.type.getValue() !== AudioUnitType.Output
+                && audioUnitBox.tracks.pointerHub.incoming().length === 0) {
+                const inputTrackType = readInputTrackType(audioUnitBox)
+                TrackBox.create(boxGraph, UUID.generate(), box => {
+                    box.tracks.refer(audioUnitBox.tracks)
+                    box.target.refer(audioUnitBox)
+                    box.type.setValue(inputTrackType)
+                    box.index.setValue(0)
+                })
+            }
+        })
+
         {
             let index = 0
             sortAudioUnits
@@ -389,5 +398,17 @@ export namespace DawProjectImport {
                 mandatoryBoxes: {rootBox, timelineBox, masterBusBox, masterAudioUnit, userInterfaceBox}
             }
         }
+    }
+
+    const readInputTrackType = (audioUnitBox: AudioUnitBox): TrackType => {
+        const inputBox = audioUnitBox.input.pointerHub.incoming().at(0)?.box
+        // TODO Can we find a better way to determine the track type?
+        //  Because this would be another location to update when adding new instruments.
+        return inputBox?.accept<BoxVisitor<TrackType>>({
+            visitTapeDeviceBox: () => TrackType.Audio,
+            visitNanoDeviceBox: () => TrackType.Notes,
+            visitPlayfieldDeviceBox: () => TrackType.Notes,
+            visitVaporisateurDeviceBox: () => TrackType.Notes
+        }) ?? TrackType.Undefined
     }
 }
