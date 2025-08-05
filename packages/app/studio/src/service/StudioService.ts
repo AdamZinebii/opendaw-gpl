@@ -52,10 +52,9 @@ import {Address} from "@opendaw/lib-box"
 import {Recovery} from "@/Recovery.ts"
 import {MIDILearning} from "@/midi/devices/MIDILearning"
 import {
-    DawProjectImporter,
     DawProjectIO,
     EngineFacade,
-    EngineWorklet,
+    EngineWorklet, Importer,
     MainThreadSampleManager,
     Project,
     ProjectEnv,
@@ -367,12 +366,12 @@ export class StudioService implements ProjectEnv {
         if (!isDefined(file)) {return}
         const arrayBuffer = await file.arrayBuffer()
         const {project: projectSchema, resources} = await DawProjectIO.decode(arrayBuffer)
-        const importResult = await Promises.tryCatch(DawProjectImporter.importProject(projectSchema, resources))
+        const importResult = await Promises.tryCatch(Importer.construct(projectSchema, resources))
         if (importResult.status === "rejected") {
             return showInfoDialog({headline: "Import Error", message: String(importResult.error)})
         }
         const {skeleton, audioIDs} = importResult.value
-        await Promise.all(audioIDs.values()
+        await Promise.all(audioIDs
             .map(uuid => resources.fromUUID(uuid))
             .map(resource => this.importSample({
                 uuid: resource.uuid,

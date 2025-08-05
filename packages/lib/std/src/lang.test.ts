@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest"
-import {isValidIdentifier} from "./lang"
+import {ifDefined, isValidIdentifier} from "./lang"
 
 describe("lang", () => {
     it("isValidIdentifier", () => {
@@ -12,5 +12,11 @@ describe("lang", () => {
         expect(isValidIdentifier("$")).true
         expect(isValidIdentifier("A")).true
         expect(isValidIdentifier("$0")).true
+    })
+    it("ifDefined", () => {
+        const abc = undefined
+        const def = "def"
+        expect(ifDefined(abc, value => value + "+")).toBeUndefined()
+        expect(ifDefined(def, value => value + "+")).toBe("def+")
     })
 })

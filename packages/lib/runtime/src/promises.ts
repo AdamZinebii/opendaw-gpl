@@ -29,13 +29,13 @@ export class IntervalRetryOption implements RetryOption {
 }
 
 export namespace Promises {
-    class ResolveResult<T> {
+    export class ResolveResult<T> {
         readonly status = "resolved"
         constructor(readonly value: T) {}
         error = InaccessibleProperty("Cannot access error when promise is resolved")
     }
 
-    class RejectedResult {
+    export class RejectedResult {
         readonly status = "rejected"
         constructor(readonly error: unknown) {}
         value = InaccessibleProperty("Cannot access value when promise is rejected")
