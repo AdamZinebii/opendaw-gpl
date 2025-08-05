@@ -370,8 +370,8 @@ export class StudioService implements ProjectEnv {
         if (importResult.status === "rejected") {
             return showInfoDialog({headline: "Import Error", message: String(importResult.error)})
         }
-        const {skeleton, audioIDs} = importResult.value
-        await Promise.all(audioIDs
+        const {skeleton, audioIds} = importResult.value
+        await Promise.all(audioIds
             .map(uuid => resources.fromUUID(uuid))
             .map(resource => this.importSample({
                 uuid: resource.uuid,

@@ -67,7 +67,7 @@ export namespace Importer {
     type PointerOutputType = Pointers.InstrumentHost | Pointers.AudioOutput
 
     export type Creation = {
-        audioIDs: ReadonlyArray<UUID.Format>,
+        audioIds: ReadonlyArray<UUID.Format>,
         skeleton: ProjectDecoder.Skeleton
     }
 
@@ -94,7 +94,7 @@ export namespace Importer {
 
         let primaryAudioBusUnitOption: Option<AudioBusUnit> = Option.None
 
-        const audioIDs = UUID.newSet<UUID.Format>(uuid => uuid)
+        const audioIdSet = UUID.newSet<UUID.Format>(uuid => uuid)
         const trackTargets = new Map<string, AudioUnitBox>()
         const addTrackTarget = (trackId: string, target: AudioUnitBox) => {
             if (trackTargets.has(trackId)) {return panic(`trackId '${trackId}' is already defined`)}
@@ -330,7 +330,7 @@ export namespace Importer {
                     const {uuid, name} = resources.fromPath(path)
                     const audioFileBox: AudioFileBox = boxGraph.findBox<AudioFileBox>(uuid)
                         .unwrapOrElse(() => AudioFileBox.create(boxGraph, uuid, box => box.fileName.setValue(name)))
-                    audioIDs.add(uuid, true)
+                    audioIdSet.add(uuid, true)
                     AudioRegionBox.create(boxGraph, UUID.generate(), box => {
                         const position = asDefined(clip.time, "Time not defined")
                         const duration = asDefined(clip.duration, "Duration not defined")
@@ -363,7 +363,7 @@ export namespace Importer {
         const {audioBusBox: masterBusBox, audioUnitBox: masterAudioUnit} =
             primaryAudioBusUnitOption.unwrap("Did not find a primary output")
         return {
-            audioIDs: [],
+            audioIds: audioIdSet.values(),
             skeleton: {
                 boxGraph,
                 mandatoryBoxes: {rootBox, timelineBox, masterBusBox, masterAudioUnit, userInterfaceBox}
