@@ -35,13 +35,13 @@ export class PointerField<P extends PointerTypes = PointerTypes> extends Field<U
     }
 
     static withContext(context: SerializationContext, exec: Exec): void {
-        assert(PointerField.context.isEmpty(), "SerializationContext already set.")
-        PointerField.context = Option.wrap(context)
+        assert(this.#context.isEmpty(), "SerializationContext already set.")
+        this.#context = Option.wrap(context)
         exec()
-        PointerField.context = Option.None
+        this.#context = Option.None
     }
 
-    static context: Option<SerializationContext> = Option.None
+    static #context: Option<SerializationContext> = Option.None
 
     readonly #pointerType: P
     readonly #mandatory: boolean
@@ -114,7 +114,7 @@ export class PointerField<P extends PointerTypes = PointerTypes> extends Field<U
 
     read(input: DataInput) {
         this.targetAddress = input.readBoolean()
-            ? Option.wrap(PointerField.context.match({
+            ? Option.wrap(PointerField.#context.match({
                 none: () => Address.read(input),
                 some: context => context.decode(input.readString())
             }))
@@ -126,7 +126,7 @@ export class PointerField<P extends PointerTypes = PointerTypes> extends Field<U
             none: () => output.writeBoolean(false),
             some: address => {
                 output.writeBoolean(true)
-                PointerField.context.match({
+                PointerField.#context.match({
                     none: () => address.write(output),
                     some: context => output.writeString(context.encode(address))
                 })

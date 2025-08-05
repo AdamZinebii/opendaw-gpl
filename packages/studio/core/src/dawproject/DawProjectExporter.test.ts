@@ -2,12 +2,12 @@ import {describe, it} from "vitest"
 import {fileURLToPath} from "url"
 import * as path from "node:path"
 import * as fs from "node:fs"
-import {DawProjectExporter} from "./DawProjectExporter"
 import {Project} from "../Project"
 import {SampleLoader, SampleManager} from "@opendaw/studio-adapters"
 import {panic, UUID} from "@opendaw/lib-std"
 import {Xml} from "@opendaw/lib-xml"
 import {FileReferenceSchema} from "@opendaw/lib-dawproject"
+import {DawProjectExporter} from "./DawProjectExporter"
 
 describe("DawProjectExport", () => {
     it("export", async () => {
@@ -26,12 +26,12 @@ describe("DawProjectExport", () => {
                 }
             }
         }, arrayBuffer)
-        const schema = DawProjectExporter.exportProject(project, {
+        const schema = DawProjectExporter.write(project, {
             write: (path: string, buffer: ArrayBufferLike): FileReferenceSchema => {
                 console.debug(`store ${buffer.byteLength} bytes at ${path}`)
                 return Xml.element({path, external: false}, FileReferenceSchema)
             }
-        }).toProjectSchema()
+        })
         console.dir(schema, {depth: Number.MAX_SAFE_INTEGER})
         console.debug(Xml.pretty(Xml.toElement("Project", schema)))
     })

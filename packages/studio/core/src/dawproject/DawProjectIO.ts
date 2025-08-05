@@ -49,12 +49,12 @@ export namespace DawProjectIO {
     export const encode = (project: Project, metaData: MetaDataSchema): Promise<ArrayBuffer> => {
         const zip = new JSZip()
         zipAllSamples(zip, project)
-        const projectSchema = DawProjectExporter.exportProject(project, {
+        const projectSchema = DawProjectExporter.write(project, {
             write: (path: string, buffer: ArrayBuffer): FileReferenceSchema => {
                 zip.file(path, buffer)
                 return Xml.element({path, external: false}, FileReferenceSchema)
             }
-        }).toProjectSchema()
+        })
         const metaDataXml = Xml.pretty(Xml.toElement("MetaData", metaData))
         const projectXml = Xml.pretty(Xml.toElement("Project", projectSchema))
         console.debug("encode")
