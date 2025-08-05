@@ -38,7 +38,6 @@ import {
     UserInterfaceBox
 } from "@opendaw/studio-boxes"
 import {IconSymbol, ProjectDecoder} from "@opendaw/studio-adapters"
-import {readLabel} from "./utils"
 import {DawProjectIO} from "./DawProjectIO"
 import {InstrumentBox} from "../InstrumentBox"
 import {AudioUnitOrdering} from "../AudioUnitOrdering"
@@ -157,7 +156,7 @@ export namespace Importer {
                 box.collection.refer(rootBox.audioBusses)
                 box.label.setValue(track.name ?? "")
                 box.icon.setValue(IconSymbol.toName(icon))
-                box.color.setValue(track.color ?? ColorCodes.forAudioType(type))
+                box.color.setValue(ColorCodes.forAudioType(type))
                 box.enabled.setValue(true)
                 box.output.refer(audioUnitBox.input)
             })
@@ -212,13 +211,9 @@ export namespace Importer {
 
         console.debug("=== SORTING ===")
         let index = 0
-        sortAudioUnits.sortKeys(NumberComparator).forEach((_index, boxes) => {
-            for (const box of boxes) {
-                box.index.setValue(index++)
-                const inputBox = box.input.pointerHub.incoming().at(0)?.box
-                console.debug(`#${box.index.getValue()} type: '${box.type.getValue()}', input: '${readLabel(inputBox)}'`)
-            }
-        })
+        sortAudioUnits
+            .sortKeys(NumberComparator)
+            .forEach((_index, boxes) => {for (const box of boxes) {box.index.setValue(index++)}})
         console.debug("===============")
         boxGraph.endTransaction()
         boxGraph.verifyPointers()
