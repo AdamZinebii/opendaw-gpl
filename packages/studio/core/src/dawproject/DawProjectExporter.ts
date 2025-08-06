@@ -1,4 +1,4 @@
-import {asDefined, asInstanceOf, Color, ifDefined, int, isInstanceOf, Nullish, Option, UUID} from "@opendaw/lib-std"
+import {asDefined, asInstanceOf, Color, ifDefined, isInstanceOf, Nullish, Option, UUID} from "@opendaw/lib-std"
 import {Xml} from "@opendaw/lib-xml"
 import {dbToGain, PPQN} from "@opendaw/lib-dsp"
 import {
@@ -41,27 +41,35 @@ import {
     NoteEventCollectionBox,
     NoteRegionBox,
     TrackBox,
-    ValueEventCollectionBox,
     ValueRegionBox
 } from "@opendaw/studio-boxes"
 import {readLabel} from "./utils"
 import {Project} from "../Project"
 import {AudioUnitExportLayout} from "./AudioUnitExportLayout"
-import {Colors} from "../Colors"
 import {ColorCodes} from "../ColorCodes"
 import {Html} from "@opendaw/lib-dom"
+import {encodeWavFloat} from "../Wav"
 
 export namespace DawProjectExporter {
-    export interface ResourcePacker {
-        write(path: string, buffer: ArrayBuffer): FileReferenceSchema
-    }
+    export interface ResourcePacker {write(path: string, buffer: ArrayBuffer): FileReferenceSchema}
 
-    export const write = (project: Project, resources: ResourcePacker) => {
+    export const write = (project: Project, resourcePacker: ResourcePacker) => {
         const ids = new AddressIdEncoder()
-        const {timelineBox, rootBox, boxGraph, sampleManager} = project
+        const {boxGraph, timelineBox, rootBox, sampleManager} = project
         const audioUnits: ReadonlyArray<AudioUnitBox> = rootBox.audioUnits.pointerHub.incoming()
             .map(({box}) => asInstanceOf(box, AudioUnitBox))
             .sort((a, b) => a.index.getValue() - b.index.getValue())
+        boxGraph.boxes().forEach(box => box.accept<BoxVisitor>({
+            visitAudioFileBox: (box: AudioFileBox): void => sampleManager.getOrCreate(box.address.uuid).data
+                .ifSome(({frames, numberOfFrames, sampleRate, numberOfChannels}) =>
+                    resourcePacker.write(`samples/${box.fileName.getValue()}.wav`, encodeWavFloat({
+                        channels: frames,
+                        duration: numberOfFrames * sampleRate,
+                        numberOfChannels,
+                        sampleRate,
+                        numFrames: numberOfFrames
+                    })))
+        }))
 
         const writeTransport = (): TransportSchema => Xml.element({
             tempo: Xml.element({
@@ -97,7 +105,7 @@ export namespace DawProjectExporter {
                     enabled,
                     loaded: true,
                     automatedParameters: [],
-                    state: undefined /*resources.write(`presets/${UUID.toString(box.address.uuid)}`, arrayBuffer as ArrayBuffer)*/
+                    state: undefined /*resourcePacker.write(`presets/${UUID.toString(box.address.uuid)}`, arrayBuffer as ArrayBuffer)*/
                 }, BuiltinDeviceSchema)
             })
 
@@ -105,9 +113,9 @@ export namespace DawProjectExporter {
             const cssColor = ColorCodes.forAudioType(unitType)
             if (cssColor === "") {return "red"}
             const [r, g, b] = Html.readCssVarColor(ColorCodes.forAudioType(unitType))[0]
-            const RR = Math.round(r * 255).toString(16)
-            const GG = Math.round(g * 255).toString(16)
-            const BB = Math.round(b * 255).toString(16)
+            const RR = Math.round(r * 255).toString(16).padStart(2, "0")
+            const GG = Math.round(g * 255).toString(16).padStart(2, "0")
+            const BB = Math.round(b * 255).toString(16).padStart(2, "0")
             return `#${RR}${GG}${BB}`
         }
 
@@ -117,17 +125,11 @@ export namespace DawProjectExporter {
                                        tracks?: ReadonlyArray<TrackSchema>): TrackSchema => {
                 const unitType = audioUnitBox.type.getValue() as AudioUnitType
                 const color = colorForAudioType(unitType)
-                console.debug("", unitType, color, Colors.orange)
                 const isPrimary = unitType === AudioUnitType.Output
+                const isAux = unitType === AudioUnitType.Aux
                 const inputBox = audioUnitBox.input.pointerHub.incoming().at(0)?.box
-                return Xml.element({
-                    id: ids.getOrCreate(audioUnitBox.address),
-                    name: readLabel(inputBox),
-                    loaded: true,
-                    color,
-                    contentType: isPrimary
-                        ? "audio notes" // we copied that value from bitwig
-                        : (() =>
+                const contentType = isPrimary ? "audio notes" // we copied that value from bitwig
+                    : isAux ? "audio" : (() =>
                         // TODO Another location to remember to put devices in...?
                         //  We could also read the first track type?
                         inputBox?.accept<BoxVisitor<string>>({
@@ -136,22 +138,29 @@ export namespace DawProjectExporter {
                             visitNanoDeviceBox: () => "notes",
                             visitPlayfieldDeviceBox: () => "notes",
                             visitAudioBusBox: () => "tracks"
-                        }))() ?? undefined,
+                        }))() ?? undefined
+                return Xml.element({
+                    id: ids.getOrCreate(audioUnitBox.address),
+                    name: readLabel(inputBox),
+                    loaded: true,
+                    color,
+                    contentType,
                     channel: Xml.element({
                         id: ifDefined(inputBox, ({address}) => ids.getOrCreate(address)),
                         destination: isPrimary
                             ? undefined
-                            : audioUnitBox.output.targetVertex.mapOr(({box}) => ids.getOrCreate(box.address), undefined),
+                            : audioUnitBox.output.targetVertex
+                                .mapOr(({box}) => ids.getOrCreate(box.address), undefined),
                         role: (() => {
                             switch (unitType) {
                                 case AudioUnitType.Instrument:
                                     return ChannelRole.REGULAR
                                 case AudioUnitType.Aux:
                                     return ChannelRole.EFFECT
+                                case AudioUnitType.Bus:
                                 case AudioUnitType.Output:
                                     return ChannelRole.MASTER
                             }
-                            return undefined
                         })(),
                         devices: [
                             ...(writeDevices(audioUnitBox.midiEffects, DeviceRole.NOTE_FX)),
@@ -168,13 +177,10 @@ export namespace DawProjectExporter {
                     tracks
                 }, TrackSchema)
             }
-            const writeTracks = (tracks: ReadonlyArray<AudioUnitExportLayout.Track>, depth: int): ReadonlyArray<TrackSchema> => {
-                return tracks.map((track: AudioUnitExportLayout.Track) => {
-                    console.debug(`${" ".repeat(depth)}write`, readLabel(track.audioUnit.input.pointerHub.incoming().at(0)?.box))
-                    return writeAudioUnitBox(track.audioUnit, writeTracks(track.children, depth + 1))
-                })
-            }
-            return writeTracks(tracks, 0)
+            const writeTracks = (tracks: ReadonlyArray<AudioUnitExportLayout.Track>): ReadonlyArray<TrackSchema> =>
+                tracks.map((track: AudioUnitExportLayout.Track) =>
+                    writeAudioUnitBox(track.audioUnit, writeTracks(track.children)))
+            return writeTracks(tracks)
         }
 
         const writeAudioRegion = (region: AudioRegionBox): ClipsSchema => {
@@ -189,7 +195,7 @@ export namespace DawProjectExporter {
                         path: `samples/${audioFileBox.fileName.getValue()}.wav`,
                         external: false
                     }, FileReferenceSchema)
-                }, AudioSchema)).unwrap("Could not load sample.")
+                }, AudioSchema))
             const duration = region.duration.getValue() / PPQN.Quarter
             return Xml.element({
                 clips: [Xml.element({
@@ -203,7 +209,7 @@ export namespace DawProjectExporter {
                     name: region.label.getValue(),
                     color: Color.hslToHex(region.hue.getValue(), 1.0, 0.60),
                     content: [Xml.element({
-                        content: [audioElement],
+                        content: audioElement.mapOr(element => [element], []),
                         contentTimeUnit: "beats",
                         warps: [
                             Xml.element({
@@ -212,7 +218,7 @@ export namespace DawProjectExporter {
                             }, WarpSchema),
                             Xml.element({
                                 time: duration,
-                                contentTime: audioElement.duration
+                                contentTime: audioElement.mapOr(element => element.duration, 0)
                             }, WarpSchema)
                         ]
                     }, WarpsSchema)]
@@ -250,10 +256,9 @@ export namespace DawProjectExporter {
             }, ClipsSchema)
         }
 
-        const writeValueRegion = (region: ValueRegionBox): ClipsSchema => {
-            const collectionBox = asInstanceOf(region.events.targetVertex
-                .unwrap("No event in region").box, ValueEventCollectionBox)
-            return Xml.element({
+        // TODO Implement!
+        const writeValueRegion = (region: ValueRegionBox): ClipsSchema =>
+            Xml.element({
                 clips: [Xml.element({
                     time: region.position.getValue() / PPQN.Quarter,
                     duration: region.duration.getValue() / PPQN.Quarter,
@@ -264,10 +269,9 @@ export namespace DawProjectExporter {
                     enable: !region.mute.getValue(),
                     name: region.label.getValue(),
                     color: Color.hslToHex(region.hue.getValue(), 1.0, 0.60),
-                    content: [] // TODO
+                    content: []
                 }, ClipSchema)]
             }, ClipsSchema)
-        }
 
         const writeLanes = (): ReadonlyArray<TimelineSchema> => {
             return audioUnits

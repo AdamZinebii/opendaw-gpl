@@ -48,7 +48,6 @@ export namespace DawProjectIO {
 
     export const encode = (project: Project, metaData: MetaDataSchema): Promise<ArrayBuffer> => {
         const zip = new JSZip()
-        zipAllSamples(zip, project)
         const projectSchema = DawProjectExporter.write(project, {
             write: (path: string, buffer: ArrayBuffer): FileReferenceSchema => {
                 zip.file(path, buffer)
@@ -63,23 +62,5 @@ export namespace DawProjectIO {
         zip.file("metadata.xml", metaDataXml)
         zip.file("project.xml", projectXml)
         return zip.generateAsync({type: "arraybuffer"})
-    }
-
-    const zipAllSamples = (zip: JSZip, {boxGraph, sampleManager}: Project): void => {
-        boxGraph.boxes().forEach(box => box.accept<BoxVisitor>({
-            visitAudioFileBox(box: AudioFileBox): void {
-                const loader = sampleManager.getOrCreate(box.address.uuid)
-                loader.data.ifSome(({frames, numberOfFrames, sampleRate, numberOfChannels}) => {
-                    const wav = encodeWavFloat({
-                        channels: frames,
-                        duration: numberOfFrames * sampleRate,
-                        numberOfChannels,
-                        sampleRate,
-                        numFrames: numberOfFrames
-                    })
-                    zip.file(`samples/${box.fileName.getValue()}.wav`, wav)
-                })
-            }
-        }))
     }
 }
