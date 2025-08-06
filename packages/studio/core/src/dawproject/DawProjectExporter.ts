@@ -1,4 +1,4 @@
-import {asDefined, asInstanceOf, Color, ifDefined, isInstanceOf, Option, UUID} from "@opendaw/lib-std"
+import {asDefined, asInstanceOf, Color, ifDefined, int, isInstanceOf, Nullish, Option, UUID} from "@opendaw/lib-std"
 import {Xml} from "@opendaw/lib-xml"
 import {dbToGain, PPQN} from "@opendaw/lib-dsp"
 import {
@@ -6,6 +6,7 @@ import {
     ArrangementSchema,
     AudioAlgorithm,
     AudioSchema,
+    BooleanParameterSchema,
     BuiltinDeviceSchema,
     ChannelRole,
     ChannelSchema,
@@ -45,6 +46,7 @@ import {
 } from "@opendaw/studio-boxes"
 import {readLabel} from "./utils"
 import {Project} from "../Project"
+import {AudioUnitExportLayout} from "./AudioUnitExportLayout"
 
 export namespace DawProjectExporter {
     export interface ResourcePacker {
@@ -53,27 +55,26 @@ export namespace DawProjectExporter {
 
     export const write = (project: Project, resources: ResourcePacker) => {
         const ids = new AddressIdEncoder()
-        const {timelineBox, rootBox, sampleManager} = project
-        const audioUnits = rootBox.audioUnits.pointerHub.incoming()
+        const {timelineBox, rootBox, boxGraph, sampleManager} = project
+        const audioUnits: ReadonlyArray<AudioUnitBox> = rootBox.audioUnits.pointerHub.incoming()
             .map(({box}) => asInstanceOf(box, AudioUnitBox))
             .sort((a, b) => a.index.getValue() - b.index.getValue())
-        const writeTransport = (): TransportSchema => {
-            return Xml.element({
-                tempo: Xml.element({
-                    id: ids.getOrCreate(timelineBox.bpm.address),
-                    value: timelineBox.bpm.getValue(),
-                    unit: Unit.BPM
-                }, RealParameterSchema),
-                timeSignature: Xml.element({
-                    numerator: timelineBox.signature.nominator.getValue(),
-                    denominator: timelineBox.signature.denominator.getValue()
-                }, TimeSignatureParameterSchema)
-            }, TransportSchema)
-        }
+
+        const writeTransport = (): TransportSchema => Xml.element({
+            tempo: Xml.element({
+                id: ids.getOrCreate(timelineBox.bpm.address),
+                value: timelineBox.bpm.getValue(),
+                unit: Unit.BPM
+            }, RealParameterSchema),
+            timeSignature: Xml.element({
+                numerator: timelineBox.signature.nominator.getValue(),
+                denominator: timelineBox.signature.denominator.getValue()
+            }, TimeSignatureParameterSchema)
+        }, TransportSchema)
 
         const writeDevices = (field: Field, deviceRole: string): ReadonlyArray<DeviceSchema> => field.pointerHub
             .incoming().map(({box}) => {
-                const enabled = ("enabled" in box && isInstanceOf(box.enabled, BooleanField)
+                const enabled: Nullish<BooleanParameterSchema> = ("enabled" in box && isInstanceOf(box.enabled, BooleanField)
                     ? Option.wrap(box.enabled)
                     : Option.None)
                     .mapOr(field => ParameterEncoder.bool(ids.getOrCreate(field.address), field.getValue(),
@@ -93,54 +94,71 @@ export namespace DawProjectExporter {
                     enabled,
                     loaded: true,
                     automatedParameters: [],
-                    state: resources.write(`presets/${UUID.toString(box.address.uuid)}`,
-                        box.toArrayBuffer() as ArrayBuffer)
+                    state: undefined /*resources.write(`presets/${UUID.toString(box.address.uuid)}`, arrayBuffer as ArrayBuffer)*/
                 }, BuiltinDeviceSchema)
             })
 
-        // TODO Write in nested fashion. We probably need to setup a graph for this
-        const writeStructure = (): ReadonlyArray<TrackSchema> => audioUnits.map(audioUnitBox => {
-            const inputBox = audioUnitBox.input.pointerHub.incoming().at(0)?.box
-            return Xml.element({
-                id: ids.getOrCreate(audioUnitBox.address),
-                name: readLabel(inputBox),
-                loaded: true,
-                contentType: (() =>
-                    // TODO Another location to remember to put devices in...?
-                    //  We could also read the first track type?
-                    inputBox?.accept<BoxVisitor<string>>({
-                        visitTapeDeviceBox: () => "audio",
-                        visitVaporisateurDeviceBox: () => "notes",
-                        visitNanoDeviceBox: () => "notes",
-                        visitPlayfieldDeviceBox: () => "notes"
-                    }))() ?? undefined,
-                channel: Xml.element({
-                    id: ifDefined(inputBox, ({address}) => ids.getOrCreate(address)),
-                    role: (() => {
-                        switch (audioUnitBox.type.getValue()) {
-                            case AudioUnitType.Instrument:
-                                return ChannelRole.REGULAR
-                            case AudioUnitType.Aux:
-                                return ChannelRole.EFFECT
-                            case AudioUnitType.Output:
-                                return ChannelRole.MASTER
-                        }
-                        return undefined
-                    })(),
-                    devices: [
-                        ...(writeDevices(audioUnitBox.midiEffects, DeviceRole.NOTE_FX)),
-                        ...(writeDevices(audioUnitBox.input, DeviceRole.INSTRUMENT)),
-                        ...(writeDevices(audioUnitBox.audioEffects, DeviceRole.AUDIO_FX))
-                    ],
-                    volume: ParameterEncoder.linear(ids.getOrCreate(audioUnitBox.volume.address),
-                        dbToGain(audioUnitBox.volume.getValue()), 0.0, 2.0,
-                        "Volume"),
-                    pan: ParameterEncoder.normalized(ids.getOrCreate(audioUnitBox.panning.address),
-                        (audioUnitBox.panning.getValue() + 1.0) / 2.0, 0.0, 1.0,
-                        "Pan")
-                }, ChannelSchema)
-            }, TrackSchema)
-        })
+        const writeStructure = (): ReadonlyArray<TrackSchema> => {
+            const tracks = AudioUnitExportLayout.layout(audioUnits)
+            const writeAudioUnitBox = (audioUnitBox: AudioUnitBox,
+                                       tracks?: ReadonlyArray<TrackSchema>): TrackSchema => {
+                const inputBox = audioUnitBox.input.pointerHub.incoming().at(0)?.box
+                const isPrimary = audioUnitBox.type.getValue() === AudioUnitType.Output
+                return Xml.element({
+                    id: ids.getOrCreate(audioUnitBox.address),
+                    name: readLabel(inputBox),
+                    loaded: true,
+                    contentType: isPrimary
+                        ? "audio notes" // we copied that value from bitwig
+                        : (() =>
+                        // TODO Another location to remember to put devices in...?
+                        //  We could also read the first track type?
+                        inputBox?.accept<BoxVisitor<string>>({
+                            visitTapeDeviceBox: () => "audio",
+                            visitVaporisateurDeviceBox: () => "notes",
+                            visitNanoDeviceBox: () => "notes",
+                            visitPlayfieldDeviceBox: () => "notes",
+                            visitAudioBusBox: () => "tracks"
+                        }))() ?? undefined,
+                    channel: Xml.element({
+                        id: ifDefined(inputBox, ({address}) => ids.getOrCreate(address)),
+                        destination: isPrimary
+                            ? undefined
+                            : audioUnitBox.output.targetVertex.mapOr(({box}) => ids.getOrCreate(box.address), undefined),
+                        role: (() => {
+                            switch (audioUnitBox.type.getValue()) {
+                                case AudioUnitType.Instrument:
+                                    return ChannelRole.REGULAR
+                                case AudioUnitType.Aux:
+                                    return ChannelRole.EFFECT
+                                case AudioUnitType.Output:
+                                    return ChannelRole.MASTER
+                            }
+                            return undefined
+                        })(),
+                        devices: [
+                            ...(writeDevices(audioUnitBox.midiEffects, DeviceRole.NOTE_FX)),
+                            ...(writeDevices(audioUnitBox.input, DeviceRole.INSTRUMENT)),
+                            ...(writeDevices(audioUnitBox.audioEffects, DeviceRole.AUDIO_FX))
+                        ],
+                        volume: ParameterEncoder.linear(ids.getOrCreate(audioUnitBox.volume.address),
+                            dbToGain(audioUnitBox.volume.getValue()), 0.0, 2.0,
+                            "Volume"),
+                        pan: ParameterEncoder.normalized(ids.getOrCreate(audioUnitBox.panning.address),
+                            (audioUnitBox.panning.getValue() + 1.0) / 2.0, 0.0, 1.0,
+                            "Pan")
+                    }, ChannelSchema),
+                    tracks
+                }, TrackSchema)
+            }
+            const writeTracks = (tracks: ReadonlyArray<AudioUnitExportLayout.Track>, depth: int): ReadonlyArray<TrackSchema> => {
+                return tracks.map((track: AudioUnitExportLayout.Track) => {
+                    console.debug(`${" ".repeat(depth)}write`, readLabel(track.audioUnit.input.pointerHub.incoming().at(0)?.box))
+                    return writeAudioUnitBox(track.audioUnit, writeTracks(track.children, depth + 1))
+                })
+            }
+            return writeTracks(tracks, 0)
+        }
 
         const writeAudioRegion = (region: AudioRegionBox): ClipsSchema => {
             const audioFileBox = asInstanceOf(region.file.targetVertex.unwrap("No file at region").box, AudioFileBox)
@@ -261,7 +279,7 @@ export namespace DawProjectExporter {
             structure: writeStructure(),
             arrangement: Xml.element({
                 lanes: Xml.element({
-                    lanes: writeLanes(),
+                    lanes: []/*writeLanes()*/,
                     timeUnit: TimeUnit.BEATS
                 }, LanesSchema)
             }, ArrangementSchema),

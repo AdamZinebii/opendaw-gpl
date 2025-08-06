@@ -2,11 +2,11 @@ import {
     assert,
     DataInput,
     DataOutput,
-    Exec,
     Nullish,
     Observer,
     Option,
     panic,
+    Provider,
     safeExecute,
     Subscription
 } from "@opendaw/lib-std"
@@ -22,10 +22,9 @@ export type UnreferenceableType = typeof _Unreferenceable
 
 export type PointerTypes = number | string | UnreferenceableType
 
-export interface SerializationContext {
-    encode(address: Address): string
-    decode(id: string): Address
-}
+export interface SpecialEncoder {encode(address: Address): string}
+
+export interface SpecialDecoder {decode(id: string): Address}
 
 export class PointerField<P extends PointerTypes = PointerTypes> extends Field<UnreferenceableType, never> {
     static create<P extends PointerTypes>(construct: FieldConstruct<UnreferenceableType>,
@@ -34,14 +33,26 @@ export class PointerField<P extends PointerTypes = PointerTypes> extends Field<U
         return new PointerField<P>(construct, pointerType, mandatory)
     }
 
-    static withContext(context: SerializationContext, exec: Exec): void {
-        assert(this.#context.isEmpty(), "SerializationContext already set.")
-        this.#context = Option.wrap(context)
-        exec()
-        this.#context = Option.None
+    static encodeWith<R>(encoder: SpecialEncoder, exec: Provider<R>): R {
+        assert(this.#encoder.isEmpty(), "SerializationEncoder already set.")
+        assert(this.#decoder.isEmpty(), "SerializationDecoder already set.")
+        this.#encoder = Option.wrap(encoder)
+        const result = exec()
+        this.#encoder = Option.None
+        return result
     }
 
-    static #context: Option<SerializationContext> = Option.None
+    static decodeWith<R>(decoder: SpecialDecoder, exec: Provider<R>): R {
+        assert(this.#encoder.isEmpty(), "SerializationEncoder already set.")
+        assert(this.#decoder.isEmpty(), "SerializationDecoder already set.")
+        this.#decoder = Option.wrap(decoder)
+        const result = exec()
+        this.#decoder = Option.None
+        return result
+    }
+
+    static #encoder: Option<SpecialEncoder> = Option.None
+    static #decoder: Option<SpecialDecoder> = Option.None
 
     readonly #pointerType: P
     readonly #mandatory: boolean
@@ -114,7 +125,7 @@ export class PointerField<P extends PointerTypes = PointerTypes> extends Field<U
 
     read(input: DataInput) {
         this.targetAddress = input.readBoolean()
-            ? Option.wrap(PointerField.#context.match({
+            ? Option.wrap(PointerField.#decoder.match({
                 none: () => Address.read(input),
                 some: context => context.decode(input.readString())
             }))
@@ -126,7 +137,7 @@ export class PointerField<P extends PointerTypes = PointerTypes> extends Field<U
             none: () => output.writeBoolean(false),
             some: address => {
                 output.writeBoolean(true)
-                PointerField.#context.match({
+                PointerField.#encoder.match({
                     none: () => address.write(output),
                     some: context => output.writeString(context.encode(address))
                 })

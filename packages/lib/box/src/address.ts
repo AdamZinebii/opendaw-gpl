@@ -159,6 +159,6 @@ export class AddressIdEncoder {
     }
 
     getOrCreate(address: Address): string {
-        return this.#ids.getOrCreate(address, () => ({address, id: `${++this.#idCount}`})).id
+        return `id${this.#ids.getOrCreate(address, () => ({address, id: `${++this.#idCount}`})).id}`
     }
 }
