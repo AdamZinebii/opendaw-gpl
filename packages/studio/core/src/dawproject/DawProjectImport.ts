@@ -3,6 +3,7 @@ import {
     asDefined,
     asInstanceOf,
     assert,
+    Color,
     ifDefined,
     int,
     isInstanceOf,
@@ -62,6 +63,7 @@ import {InstrumentBox} from "../InstrumentBox"
 import {AudioUnitOrdering} from "../AudioUnitOrdering"
 import {InstrumentFactories} from "../InstrumentFactories"
 import {ColorCodes} from "../ColorCodes"
+import {Colors} from "../Colors"
 
 export namespace DawProjectImport {
     type AudioBusUnit = { audioBusBox: AudioBusBox, audioUnitBox: AudioUnitBox }
@@ -228,7 +230,6 @@ export namespace DawProjectImport {
             .forEach((track: TrackSchema) => {
                 const channel = asDefined(track.channel, "Track has no Channel")
                 const channelId = asDefined(channel.id, "Channel must have an Id")
-                console.debug(depth, channel.id, channel.role, track.name, track.contentType)
                 if (channel.role === ChannelRole.REGULAR) {
                     const {audioUnitBox} = createInstrumentUnit(track, AudioUnitType.Instrument)
                     registerAudioUnit(asDefined(track.id, "Track must have an Id."), audioUnitBox)
@@ -241,7 +242,6 @@ export namespace DawProjectImport {
                     ifDefined(channel.sends, sends => createSends(audioUnitBox, sends))
                     outputPointers.push({target: channel.destination!, pointer: audioUnitBox.output})
                 } else if (channel.role === ChannelRole.MASTER) {
-                    console.debug(`Found a master channel in '${track.name}' with destination '${channel.destination}' and contentType '${track.contentType}'`)
                     const isMostLikelyPrimaryOutput = primaryAudioBusUnitOption.isEmpty()
                         && depth === 0
                         && isUndefined(channel.destination)
@@ -254,7 +254,6 @@ export namespace DawProjectImport {
                         audioUnitBox.output.refer(rootBox.outputDevice)
                         primaryAudioBusUnitOption = Option.wrap(audioBusUnit)
                     } else {
-                        console.debug("GROUP START", track.name, track.contentType)
                         const audioBusUnit = createAudioBusUnit(track, AudioUnitType.Bus, IconSymbol.AudioBus)
                         const {audioBusBox, audioUnitBox} = audioBusUnit
                         registerAudioBus(channelId, audioBusBox)
@@ -271,17 +270,9 @@ export namespace DawProjectImport {
         readTracks(schema.structure, 0)
 
         const readArrangement = (arrangement: ArrangementSchema): Promise<unknown> => {
-            const readRegions = ({clips}: ClipsSchema, track: string): Promise<unknown> =>
-                Promise.all(clips.map(clip => readAnyRegion(clip, track)))
-
-            const readLane = (lane: LanesSchema): Promise<unknown> => {
-                const track = lane.track // links to track in structure
-                return Promise.all(lane?.lanes?.filter(timeline => isInstanceOf(timeline, ClipsSchema))
-                    .map(clips => readRegions(clips, asDefined(track, "Region(Clips) must have an id."))) ?? [])
-            }
-
-            const readAnyRegion = (clip: ClipSchema, trackId: string): Promise<unknown> => {
+            const readTrackRegions = ({clips}: ClipsSchema, trackId: string): Promise<unknown> => {
                 const audioUnitBox = asDefined(audioUnits.get(trackId), `Cannot find track for '${trackId}'`)
+                if (audioUnitBox.type.getValue() === AudioUnitType.Output) {return Promise.resolve()}
                 const inputTrackType = readInputTrackType(audioUnitBox)
                 const index = audioUnitBox.tracks.pointerHub.incoming().length
                 const trackBox: TrackBox = TrackBox.create(boxGraph, UUID.generate(), box => {
@@ -290,6 +281,16 @@ export namespace DawProjectImport {
                     box.type.setValue(inputTrackType)
                     box.index.setValue(index)
                 })
+                return Promise.all(clips.map(clip => readAnyRegion(clip, trackBox)))
+            }
+
+            const readLane = (lane: LanesSchema): Promise<unknown> => {
+                const track = lane.track // links to track in structure
+                return Promise.all(lane?.lanes?.filter(timeline => isInstanceOf(timeline, ClipsSchema))
+                    .map(clips => readTrackRegions(clips, asDefined(track, "Region(Clips) must have an id."))) ?? [])
+            }
+
+            const readAnyRegion = (clip: ClipSchema, trackBox: TrackBox): Promise<unknown> => {
                 return Promise.all(clip.content?.map(async (content: TimelineSchema) => {
                     if (isInstanceOf(content, ClipsSchema)) {
                         await readAnyRegionContent(clip, content, trackBox)
@@ -310,6 +311,9 @@ export namespace DawProjectImport {
                     box.label.setValue(clip.name ?? "")
                     box.loopDuration.setValue(loopDuration * PPQN.Quarter)
                     box.mute.setValue(clip.enable === false)
+                    box.hue.setValue(isUndefined(clip.color)
+                        ? ColorCodes.forTrackType(trackBox.type.getValue())
+                        : Color.hexToHsl(clip.color).h)
                     box.events.refer(collectionBox.owners)
                     box.regions.refer(trackBox.regions)
                 })
@@ -366,7 +370,6 @@ export namespace DawProjectImport {
         await ifDefined(schema.arrangement, arrangement => readArrangement(arrangement))
         outputPointers.forEach(({target, pointer}) =>
             pointer.refer(asDefined(audioBusses.get(target), `${target} cannot be found.`).input))
-
         rootBox.audioUnits.pointerHub.incoming().forEach(({box}) => {
             const audioUnitBox = asInstanceOf(box, AudioUnitBox)
             if (audioUnitBox.type.getValue() !== AudioUnitType.Output
@@ -380,7 +383,6 @@ export namespace DawProjectImport {
                 })
             }
         })
-
         {
             let index = 0
             sortAudioUnits
