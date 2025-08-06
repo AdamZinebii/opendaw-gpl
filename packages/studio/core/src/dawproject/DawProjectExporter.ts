@@ -1,4 +1,4 @@
-import {asDefined, asInstanceOf, Color, ifDefined, isInstanceOf, Nullish, Option, UUID} from "@opendaw/lib-std"
+import {asDefined, asInstanceOf, Color, ifDefined, isInstanceOf, Nullish, Option} from "@opendaw/lib-std"
 import {Xml} from "@opendaw/lib-xml"
 import {dbToGain, PPQN} from "@opendaw/lib-dsp"
 import {
@@ -90,14 +90,12 @@ export namespace DawProjectExporter {
                     : Option.None)
                     .mapOr(field => ParameterEncoder.bool(ids.getOrCreate(field.address), field.getValue(),
                         "On/Off"), undefined)
-                const deviceID = UUID.toString(box.address.uuid)
-                const deviceName = box.name
+                const deviceID = box.name
+                const deviceName = readLabel(box)
                 const deviceVendor = "openDAW"
                 const id = ids.getOrCreate(box.address)
-                const name = readLabel(box)
                 return Xml.element({
                     id,
-                    name,
                     deviceID,
                     deviceRole,
                     deviceName,

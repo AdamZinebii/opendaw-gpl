@@ -57,7 +57,7 @@ import {
     TrackBox,
     UserInterfaceBox
 } from "@opendaw/studio-boxes"
-import {IconSymbol, ProjectDecoder, TrackType} from "@opendaw/studio-adapters"
+import {EffectDeviceBox, IconSymbol, ProjectDecoder, TrackType} from "@opendaw/studio-adapters"
 import {DawProjectIO} from "./DawProjectIO"
 import {InstrumentBox} from "../InstrumentBox"
 import {AudioUnitOrdering} from "../AudioUnitOrdering"
@@ -127,18 +127,27 @@ export namespace DawProjectImport {
                               key: keyof Pick<AudioUnitBox, "midiEffects" | "audioEffects">,
                               index: int) => {
             assert(deviceRole === DeviceRole.NOTE_FX || deviceRole === DeviceRole.AUDIO_FX, "Device is not an effect")
-            if (deviceVendor === "openDAW") {
-                // TODO Create openDAW effect device
-                console.debug(`Found openDAW effect device '${deviceName}' with id '${deviceID}'`)
-                const deviceKey = asDefined(deviceName) as keyof BoxIO.TypeMap
-            }
             const field = target[key]
-            // TODO Create placeholder device
-            DelayDeviceBox.create(boxGraph, UUID.generate(), box => {
-                box.label.setValue(`${deviceName} (Placeholder #${index + 1})`)
-                box.index.setValue(index)
-                box.host.refer(field)
-            })
+            if (deviceVendor === "openDAW") {
+                console.debug(`Found openDAW effect device '${deviceName}' with id '${deviceID}'`)
+                const deviceKey = asDefined(deviceID) as keyof BoxIO.TypeMap
+                if(deviceKey === "ZeitgeistDeviceBox") {
+                    return
+                }
+                boxGraph.createBox(deviceKey, UUID.generate(), box => {
+                    const typedBox = box as EffectDeviceBox
+                    typedBox.host.refer(field)
+                    typedBox.index.setValue(index)
+                    typedBox.label.setValue(deviceName ?? "")
+                })
+            } else {
+                // TODO Create placeholder device
+                DelayDeviceBox.create(boxGraph, UUID.generate(), box => {
+                    box.label.setValue(`${deviceName} (Placeholder #${index + 1})`)
+                    box.index.setValue(index)
+                    box.host.refer(field)
+                })
+            }
         }
 
         const createSends = (audioUnitBox: AudioUnitBox, sends: ReadonlyArray<SendSchema>) => {

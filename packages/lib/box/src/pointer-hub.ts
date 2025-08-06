@@ -16,8 +16,8 @@ export class PointerHub {
             return Option.wrap(`PointerField cannot point to itself: ${pointer}`)
         }
         if (!target.pointerRules.accepts.some((type: PointerTypes): boolean => type === pointer.pointerType)) {
-            console.warn(target.pointerRules)
-            return Option.wrap(`${pointer.toString()} does not satisfy any of the allowed types (${(target.pointerRules)}).`)
+            const accepting = target.pointerRules.accepts.join(", ")
+            return Option.wrap(`${String(pointer.pointerType)} does not satisfy any of the allowed types (${accepting}).`)
         }
         return Option.None
     }

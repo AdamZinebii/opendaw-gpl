@@ -13,8 +13,10 @@
 
 * Create the openDAW device if found
     * Read preset
+* Export automation
 
 ### Exporter
 
 * Export the openDAW device if found
     * Write instrument preset 
+* Read automation

@@ -13,7 +13,7 @@ import {Peaks} from "@opendaw/lib-fusion"
 describe("DawProjectExport", () => {
     it("export", async () => {
         const __dirname = path.dirname(fileURLToPath(import.meta.url))
-        const projectPath = "../../../../../test-files/project.od"
+        const projectPath = "../../../../../test-files/all-devices.od"
         const buffer = fs.readFileSync(path.join(__dirname, projectPath))
         const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)
         const project = Project.load({
