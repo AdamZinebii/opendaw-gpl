@@ -47,6 +47,9 @@ import {
 import {readLabel} from "./utils"
 import {Project} from "../Project"
 import {AudioUnitExportLayout} from "./AudioUnitExportLayout"
+import {Colors} from "../Colors"
+import {ColorCodes} from "../ColorCodes"
+import {Html} from "@opendaw/lib-dom"
 
 export namespace DawProjectExporter {
     export interface ResourcePacker {
@@ -98,16 +101,30 @@ export namespace DawProjectExporter {
                 }, BuiltinDeviceSchema)
             })
 
+        const colorForAudioType = (unitType: AudioUnitType): string => {
+            const cssColor = ColorCodes.forAudioType(unitType)
+            if (cssColor === "") {return "red"}
+            const [r, g, b] = Html.readCssVarColor(ColorCodes.forAudioType(unitType))[0]
+            const RR = Math.round(r * 255).toString(16)
+            const GG = Math.round(g * 255).toString(16)
+            const BB = Math.round(b * 255).toString(16)
+            return `#${RR}${GG}${BB}`
+        }
+
         const writeStructure = (): ReadonlyArray<TrackSchema> => {
             const tracks = AudioUnitExportLayout.layout(audioUnits)
             const writeAudioUnitBox = (audioUnitBox: AudioUnitBox,
                                        tracks?: ReadonlyArray<TrackSchema>): TrackSchema => {
+                const unitType = audioUnitBox.type.getValue() as AudioUnitType
+                const color = colorForAudioType(unitType)
+                console.debug("", unitType, color, Colors.orange)
+                const isPrimary = unitType === AudioUnitType.Output
                 const inputBox = audioUnitBox.input.pointerHub.incoming().at(0)?.box
-                const isPrimary = audioUnitBox.type.getValue() === AudioUnitType.Output
                 return Xml.element({
                     id: ids.getOrCreate(audioUnitBox.address),
                     name: readLabel(inputBox),
                     loaded: true,
+                    color,
                     contentType: isPrimary
                         ? "audio notes" // we copied that value from bitwig
                         : (() =>
@@ -126,7 +143,7 @@ export namespace DawProjectExporter {
                             ? undefined
                             : audioUnitBox.output.targetVertex.mapOr(({box}) => ids.getOrCreate(box.address), undefined),
                         role: (() => {
-                            switch (audioUnitBox.type.getValue()) {
+                            switch (unitType) {
                                 case AudioUnitType.Instrument:
                                     return ChannelRole.REGULAR
                                 case AudioUnitType.Aux:
@@ -279,7 +296,7 @@ export namespace DawProjectExporter {
             structure: writeStructure(),
             arrangement: Xml.element({
                 lanes: Xml.element({
-                    lanes: []/*writeLanes()*/,
+                    lanes: writeLanes(),
                     timeUnit: TimeUnit.BEATS
                 }, LanesSchema)
             }, ArrangementSchema),
