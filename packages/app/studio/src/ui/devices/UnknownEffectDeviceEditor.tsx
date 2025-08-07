@@ -1,5 +1,10 @@
-import css from "./UnknownMidiEffectDeviceEditor.sass?inline"
-import {DeviceHost, IconSymbol, UnknownMidiEffectDeviceBoxAdapter} from "@opendaw/studio-adapters"
+import css from "./UnknownEffectDeviceEditor.sass?inline"
+import {
+    DeviceHost,
+    IconSymbol,
+    UnknownAudioEffectDeviceBoxAdapter,
+    UnknownMidiEffectDeviceBoxAdapter
+} from "@opendaw/studio-adapters"
 import {Lifecycle} from "@opendaw/lib-std"
 import {DeviceEditor} from "@/ui/devices/DeviceEditor.tsx"
 import {MenuItems} from "@/ui/devices/menu-items.ts"
@@ -8,16 +13,16 @@ import {DeviceMidiMeter} from "@/ui/devices/panel/DeviceMidiMeter.tsx"
 import {Html} from "@opendaw/lib-dom"
 import {StudioService} from "@/service/StudioService"
 
-const className = Html.adoptStyleSheet(css, "UnknownMidiEffectDeviceEditor")
+const className = Html.adoptStyleSheet(css, "UnknownAudioEffectDeviceEditor")
 
 type Construct = {
     lifecycle: Lifecycle
     service: StudioService
-    adapter: UnknownMidiEffectDeviceBoxAdapter
+    adapter: UnknownMidiEffectDeviceBoxAdapter | UnknownAudioEffectDeviceBoxAdapter
     deviceHost: DeviceHost
 }
 
-export const UnknownMidiEffectDeviceEditor = ({lifecycle, service, adapter, deviceHost}: Construct) => {
+export const UnknownEffectDeviceEditor = ({lifecycle, service, adapter, deviceHost}: Construct) => {
     const {project} = service
     return (
         <DeviceEditor lifecycle={lifecycle}
@@ -32,6 +37,6 @@ export const UnknownMidiEffectDeviceEditor = ({lifecycle, service, adapter, devi
                                            receiver={project.liveStreamReceiver}
                                            address={adapter.address}/>
                       )}
-                      icon={IconSymbol.Note}/>
+                      icon={IconSymbol.Effects}/>
     )
 }

@@ -8,7 +8,7 @@ import {
     DeviceHost, Devices,
     InstrumentDeviceBoxAdapter,
     MidiEffectDeviceAdapter
-} from "../../../devices"
+} from "../../../DeviceAdapter"
 import {IndexedBoxAdapter, IndexedBoxAdapterCollection} from "../../../IndexedBoxAdapterCollection"
 import {BoxAdaptersContext} from "../../../BoxAdaptersContext"
 import {ParameterAdapterSet} from "../../../ParameterAdapterSet"

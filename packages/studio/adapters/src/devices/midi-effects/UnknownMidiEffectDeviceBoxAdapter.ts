@@ -3,7 +3,7 @@ import {Address, BooleanField, Int32Field, PointerField, StringField} from "@ope
 import {Pointers} from "@opendaw/studio-enums"
 import {UnknownMidiEffectDeviceBox} from "@opendaw/studio-boxes"
 import {BoxAdaptersContext} from "../../BoxAdaptersContext"
-import {DeviceHost, Devices, MidiEffectDeviceAdapter} from "../../devices"
+import {DeviceHost, Devices, MidiEffectDeviceAdapter} from "../../DeviceAdapter"
 import {AudioUnitBoxAdapter} from "../../audio-unit/AudioUnitBoxAdapter"
 
 export class UnknownMidiEffectDeviceBoxAdapter implements MidiEffectDeviceAdapter {

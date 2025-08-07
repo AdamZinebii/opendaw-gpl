@@ -1,22 +1,12 @@
 import {BooleanField, Box, Field, Int32Field, PointerField, StringField} from "@opendaw/lib-box"
-import {Arrays, asDefined, assert, AssertType, int, Option, panic, UUID} from "@opendaw/lib-std"
+import {Arrays, assert, AssertType, int, Option, panic, UUID} from "@opendaw/lib-std"
 import {Pointers} from "@opendaw/studio-enums"
-import {
-    ArpeggioDeviceBox,
-    BoxVisitor,
-    DelayDeviceBox,
-    ModularDeviceBox,
-    PitchDeviceBox,
-    RevampDeviceBox,
-    ReverbDeviceBox,
-    StereoToolDeviceBox,
-    ZeitgeistDeviceBox
-} from "@opendaw/studio-boxes"
 import {TrackType} from "./timeline/TrackType"
 import {IndexedBoxAdapterCollection} from "./IndexedBoxAdapterCollection"
 import {BoxAdapter} from "./BoxAdapter"
 import {AudioUnitInputAdapter} from "./audio-unit/AudioUnitInputAdapter"
 import {AudioUnitBoxAdapter} from "./audio-unit/AudioUnitBoxAdapter"
+import {DeviceBoxUtils} from "./DeviceBox"
 
 export type DeviceType = "midi-effect" | "bus" | "instrument" | "audio-effect"
 export type DeviceAccepts = "midi" | "audio" | false
@@ -108,17 +98,6 @@ export namespace Devices {
     export const isHost: AssertType<DeviceHost> = (value: unknown): value is DeviceHost =>
         value !== null && typeof value === "object" && "class" in value && value.class === "device-host"
 
-    export const fetchEffectIndex = (box: Box) => asDefined(box.accept<BoxVisitor<Int32Field<any>>>({
-        visitArpeggioDeviceBox: (box: ArpeggioDeviceBox) => box.index,
-        visitPitchDeviceBox: (box: PitchDeviceBox) => box.index,
-        visitStereoToolDeviceBox: (box: StereoToolDeviceBox) => box.index,
-        visitDelayDeviceBox: (box: DelayDeviceBox) => box.index,
-        visitModularDeviceBox: (box: ModularDeviceBox) => box.index,
-        visitRevampDeviceBox: (box: RevampDeviceBox) => box.index,
-        visitReverbDeviceBox: (box: ReverbDeviceBox) => box.index,
-        visitZeitgeistDeviceBox: (box: ZeitgeistDeviceBox) => box.index
-    }), `No index-field found for ${box}`)
-
     export const deleteEffectDevices = (devices: ReadonlyArray<EffectDeviceBoxAdapter>): void => {
         if (devices.length === 0) {return}
         assert(Arrays.satisfy(devices, (a, b) => a.deviceHost().address.equals(b.deviceHost().address)),
@@ -129,7 +108,7 @@ export namespace Devices {
             : device.accepts === "midi"
                 ? device.deviceHost().midiEffects.field().pointerHub.filter(Pointers.MidiEffectHost)
                 : panic("unknown type")
-        targets.map(({box}) => fetchEffectIndex(box))
+        targets.map(({box}) => DeviceBoxUtils.lookupIndexField(box))
             .filter(index => devices.some(device => UUID.Comparator(device.uuid, index.address.uuid) !== 0))
             .sort((a, b) => a.getValue() - b.getValue())
             .forEach((indexField, index: int) => indexField.setValue(index))

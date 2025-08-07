@@ -4,7 +4,7 @@ import {Pointers} from "@opendaw/studio-enums"
 import {UnknownAudioEffectDeviceBox} from "@opendaw/studio-boxes"
 import {BoxAdaptersContext} from "../../BoxAdaptersContext"
 import {AudioUnitBoxAdapter} from "../../audio-unit/AudioUnitBoxAdapter"
-import {AudioEffectDeviceAdapter, DeviceHost, Devices} from "../../devices"
+import {AudioEffectDeviceAdapter, DeviceHost, Devices} from "../../DeviceAdapter"
 
 export class UnknownAudioEffectDeviceBoxAdapter implements AudioEffectDeviceAdapter {
     readonly type = "audio-effect"

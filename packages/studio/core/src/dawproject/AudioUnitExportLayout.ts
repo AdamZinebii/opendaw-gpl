@@ -1,7 +1,7 @@
 import {AudioBusBox, AudioUnitBox} from "@opendaw/studio-boxes"
 import {ArrayMultimap, asInstanceOf, isInstanceOf, Nullable, Option} from "@opendaw/lib-std"
 import {AudioUnitType} from "@opendaw/studio-enums"
-import {readLabel} from "./utils"
+import {DeviceBoxUtils} from "@opendaw/studio-adapters"
 
 export namespace AudioUnitExportLayout {
     export interface Track {
@@ -60,7 +60,7 @@ export namespace AudioUnitExportLayout {
     export const printTrackStructure = (tracks: ReadonlyArray<Track>, indent = 0): void => {
         const spaces = " ".repeat(indent)
         tracks.forEach(track => {
-            const label = readLabel(track.audioUnit.input.pointerHub.incoming().at(0)?.box)
+            const label = DeviceBoxUtils.lookupLabelField(track.audioUnit.input.pointerHub.incoming().at(0)?.box).getValue()
             console.debug(`${spaces}⌙ ${label} (${track.audioUnit.address.toString()})`)
             if (track.children.length > 0) {
                 printTrackStructure(track.children, indent + 2)

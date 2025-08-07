@@ -43,12 +43,12 @@ import {
     TrackBox,
     ValueRegionBox
 } from "@opendaw/studio-boxes"
-import {readLabel} from "./utils"
 import {Project} from "../Project"
 import {AudioUnitExportLayout} from "./AudioUnitExportLayout"
 import {ColorCodes} from "../ColorCodes"
 import {Html} from "@opendaw/lib-dom"
 import {encodeWavFloat} from "../Wav"
+import {DeviceBoxUtils} from "@opendaw/studio-adapters"
 
 export namespace DawProjectExporter {
     export interface ResourcePacker {write(path: string, buffer: ArrayBuffer): FileReferenceSchema}
@@ -91,7 +91,7 @@ export namespace DawProjectExporter {
                     .mapOr(field => ParameterEncoder.bool(ids.getOrCreate(field.address), field.getValue(),
                         "On/Off"), undefined)
                 const deviceID = box.name
-                const deviceName = readLabel(box)
+                const deviceName = DeviceBoxUtils.lookupLabelField(box).getValue()
                 const deviceVendor = "openDAW"
                 const id = ids.getOrCreate(box.address)
                 return Xml.element({
@@ -139,7 +139,7 @@ export namespace DawProjectExporter {
                         }))() ?? undefined
                 return Xml.element({
                     id: ids.getOrCreate(audioUnitBox.address),
-                    name: readLabel(inputBox),
+                    name: DeviceBoxUtils.lookupLabelField(inputBox).getValue(),
                     loaded: true,
                     color,
                     contentType,

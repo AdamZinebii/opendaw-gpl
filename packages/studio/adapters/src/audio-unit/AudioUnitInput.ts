@@ -16,7 +16,7 @@ import {IconSymbol} from "../IconSymbol"
 import {AudioUnitInputAdapter} from "./AudioUnitInputAdapter"
 import {BoxAdapters} from "../BoxAdapters"
 import {AudioBusBoxAdapter} from "./AudioBusBoxAdapter"
-import {Devices} from "../devices"
+import {Devices} from "../DeviceAdapter"
 
 export class AudioUnitInput implements ObservableValue<Option<AudioUnitInputAdapter>>, Terminable {
     readonly #terminator: Terminator

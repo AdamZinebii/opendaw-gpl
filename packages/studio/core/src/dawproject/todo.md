@@ -11,12 +11,13 @@
 
 ### Importer
 
+* Auto select the first audio-unit
 * Create the openDAW device if found
     * Read preset
-* Export automation
+* Create automation
 
 ### Exporter
 
 * Export the openDAW device if found
     * Write instrument preset 
-* Read automation
+* Write automation

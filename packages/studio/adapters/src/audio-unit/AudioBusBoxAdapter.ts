@@ -1,7 +1,7 @@
 import {Address, BooleanField, Propagation, StringField} from "@opendaw/lib-box"
 import {Observer, Subscription, UUID} from "@opendaw/lib-std"
 import {AudioBusBox} from "@opendaw/studio-boxes"
-import {DeviceBoxAdapter, DeviceHost, Devices} from "../devices"
+import {DeviceBoxAdapter, DeviceHost, Devices} from "../DeviceAdapter"
 import {BoxAdaptersContext} from "../BoxAdaptersContext"
 import {AudioUnitBoxAdapter} from "./AudioUnitBoxAdapter"
 import {IconSymbol} from "../IconSymbol"

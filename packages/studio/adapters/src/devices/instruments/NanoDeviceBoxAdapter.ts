@@ -1,7 +1,7 @@
 import {NanoDeviceBox} from "@opendaw/studio-boxes"
 import {StringMapping, UUID, ValueMapping} from "@opendaw/lib-std"
 import {Address, BooleanField, FieldKeys, StringField} from "@opendaw/lib-box"
-import {DeviceHost, Devices, InstrumentDeviceBoxAdapter} from "../../devices"
+import {DeviceHost, Devices, InstrumentDeviceBoxAdapter} from "../../DeviceAdapter"
 import {BoxAdaptersContext} from "../../BoxAdaptersContext"
 import {ParameterAdapterSet} from "../../ParameterAdapterSet"
 import {TrackType} from "../../timeline/TrackType"

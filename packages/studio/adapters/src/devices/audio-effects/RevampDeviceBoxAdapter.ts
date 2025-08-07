@@ -2,7 +2,7 @@ import {RevampBell, RevampDeviceBox, RevampPass, RevampShelf} from "@opendaw/stu
 import {int, StringMapping, UUID, ValueMapping} from "@opendaw/lib-std"
 import {Address, BooleanField, FieldKeys, Int32Field, PointerField, StringField} from "@opendaw/lib-box"
 import {Pointers} from "@opendaw/studio-enums"
-import {AudioEffectDeviceAdapter, DeviceHost, Devices} from "../../devices"
+import {AudioEffectDeviceAdapter, DeviceHost, Devices} from "../../DeviceAdapter"
 import {BoxAdaptersContext} from "../../BoxAdaptersContext"
 import {ParameterAdapterSet} from "../../ParameterAdapterSet"
 import {AudioUnitBoxAdapter} from "../../audio-unit/AudioUnitBoxAdapter"

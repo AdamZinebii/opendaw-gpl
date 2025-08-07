@@ -6,6 +6,7 @@ import {
     Color,
     ifDefined,
     int,
+    isDefined,
     isInstanceOf,
     isUndefined,
     Multimap,
@@ -133,20 +134,21 @@ export namespace DawProjectImport {
                 console.debug(`Found openDAW effect device '${deviceName}' with id '${deviceID}'`)
                 // TODO const deviceKey = asDefined(deviceID) as keyof BoxIO.TypeMap
             }
+            const comment = isDefined(deviceVendor) ? `${deviceID} from ${deviceVendor} ⚠️` : `${deviceID} ⚠️`
             switch (deviceRole) {
                 case DeviceRole.NOTE_FX:
                     return UnknownMidiEffectDeviceBox.create(boxGraph, UUID.generate(), box => {
                         box.host.refer(field)
                         box.index.setValue(index)
                         box.label.setValue(deviceName ?? "")
-                        box.comment.setValue(`Unknown ${deviceID}`)
+                        box.comment.setValue(comment)
                     })
                 case DeviceRole.AUDIO_FX:
                     return UnknownAudioEffectDeviceBox.create(boxGraph, UUID.generate(), box => {
                         box.host.refer(field)
                         box.index.setValue(index)
                         box.label.setValue(deviceName ?? "")
-                        box.comment.setValue(`Unknown ${deviceID}`)
+                        box.comment.setValue(comment)
                     })
             }
         }
@@ -397,7 +399,14 @@ export namespace DawProjectImport {
             let index = 0
             sortAudioUnits
                 .sortKeys(NumberComparator)
-                .forEach((_, boxes) => {for (const box of boxes) {box.index.setValue(index++)}})
+                .forEach((_, boxes) => {
+                    for (const box of boxes) {
+                        if (index === 0) {
+                            userInterfaceBox.editingDeviceChain.refer(box.editing)
+                        }
+                        box.index.setValue(index++)
+                    }
+                })
         }
         boxGraph.endTransaction()
         boxGraph.verifyPointers()
