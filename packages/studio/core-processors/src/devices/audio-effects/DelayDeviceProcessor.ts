@@ -1,4 +1,4 @@
-import {AudioEffectDeviceBoxAdapter, DelayDeviceBoxAdapter} from "@opendaw/studio-adapters"
+import {AudioEffectDeviceAdapter, DelayDeviceBoxAdapter} from "@opendaw/studio-adapters"
 import {Bits, int, Option, Terminable, UUID} from "@opendaw/lib-std"
 import {dbToGain, Event, Fraction, PPQN, StereoMatrix} from "@opendaw/lib-dsp"
 import {EngineContext} from "../../EngineContext"
@@ -74,7 +74,7 @@ export class DelayDeviceProcessor extends AudioProcessor implements AudioEffectD
     }
 
     index(): int {return this.#adapter.indexField.getValue()}
-    adapter(): AudioEffectDeviceBoxAdapter {return this.#adapter}
+    adapter(): AudioEffectDeviceAdapter {return this.#adapter}
 
     handleEvent(_event: Event): void {}
 

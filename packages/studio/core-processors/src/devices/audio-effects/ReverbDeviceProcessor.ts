@@ -1,6 +1,6 @@
 import {int, Option, Terminable, UUID} from "@opendaw/lib-std"
 import {dbToGain} from "@opendaw/lib-dsp"
-import {AudioEffectDeviceBoxAdapter, ReverbDeviceBoxAdapter} from "@opendaw/studio-adapters"
+import {AudioEffectDeviceAdapter, ReverbDeviceBoxAdapter} from "@opendaw/studio-adapters"
 import {EngineContext} from "../../EngineContext"
 import {AudioBuffer} from "../../AudioBuffer"
 import {PeakBroadcaster} from "../../PeakBroadcaster"
@@ -66,7 +66,7 @@ export class ReverbDeviceProcessor extends AudioProcessor implements AudioEffect
     }
 
     index(): int {return this.#adapter.indexField.getValue()}
-    adapter(): AudioEffectDeviceBoxAdapter {return this.#adapter}
+    adapter(): AudioEffectDeviceAdapter {return this.#adapter}
 
     processAudio(_block: Readonly<{}>, fromIndex: number, toIndex: number) {
         if (this.#source.isEmpty()) {return}

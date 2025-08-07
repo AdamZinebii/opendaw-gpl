@@ -1,4 +1,15 @@
-import {asDefined, assert, AssertType, Class, isDefined, panic, SortedSet, Subscription, Terminable, UUID} from "@opendaw/lib-std"
+import {
+    asDefined,
+    assert,
+    AssertType,
+    Class,
+    isDefined,
+    panic,
+    SortedSet,
+    Subscription,
+    Terminable,
+    UUID
+} from "@opendaw/lib-std"
 import {Box, Update} from "@opendaw/lib-box"
 import {
     ArpeggioDeviceBox,
@@ -36,6 +47,8 @@ import {
     TapeDeviceBox,
     TimelineBox,
     TrackBox,
+    UnknownAudioEffectDeviceBox,
+    UnknownMidiEffectDeviceBox,
     ValueClipBox,
     ValueEventBox,
     ValueEventCollectionBox,
@@ -65,14 +78,10 @@ import {AuxSendBoxAdapter} from "./audio-unit/AuxSendBoxAdapter"
 import {RootBoxAdapter} from "./RootBoxAdapter"
 import {NoteEventBoxAdapter} from "./timeline/event/NoteEventBoxAdapter"
 import {NoteRegionBoxAdapter} from "./timeline/region/NoteRegionBoxAdapter"
-import {
-    NoteEventCollectionBoxAdapter
-} from "./timeline/collection/NoteEventCollectionBoxAdapter"
+import {NoteEventCollectionBoxAdapter} from "./timeline/collection/NoteEventCollectionBoxAdapter"
 import {ValueEventBoxAdapter} from "./timeline/event/ValueEventBoxAdapter"
 import {ValueRegionBoxAdapter} from "./timeline/region/ValueRegionBoxAdapter"
-import {
-    ValueEventCollectionBoxAdapter
-} from "./timeline/collection/ValueEventCollectionBoxAdapter"
+import {ValueEventCollectionBoxAdapter} from "./timeline/collection/ValueEventCollectionBoxAdapter"
 import {NoteClipBoxAdapter} from "./timeline/clip/NoteClipBoxAdapter"
 import {AudioClipBoxAdapter} from "./timeline/clip/AudioClipBoxAdapter"
 import {ValueClipBoxAdapter} from "./timeline/clip/ValueClipBoxAdapter"
@@ -84,13 +93,13 @@ import {PitchDeviceBoxAdapter} from "./devices/midi-effects/PitchDeviceBoxAdapte
 import {NanoDeviceBoxAdapter} from "./devices/instruments/NanoDeviceBoxAdapter"
 import {PlayfieldDeviceBoxAdapter} from "./devices/instruments/PlayfieldDeviceBoxAdapter"
 import {StereoToolDeviceBoxAdapter} from "./devices/audio-effects/StereoToolDeviceBoxAdapter"
-import {
-    PlayfieldSampleBoxAdapter
-} from "./devices/instruments/Playfield/PlayfieldSampleBoxAdapter"
+import {PlayfieldSampleBoxAdapter} from "./devices/instruments/Playfield/PlayfieldSampleBoxAdapter"
 import {BoxAdaptersContext} from "./BoxAdaptersContext"
 import {BoxAdapter} from "./BoxAdapter"
 import {ZeitgeistDeviceBoxAdapter} from "./devices/midi-effects/ZeitgeistDeviceBoxAdapter"
 import {GrooveShuffleBoxAdapter} from "./grooves/GrooveShuffleBoxAdapter"
+import {UnknownAudioEffectDeviceBoxAdapter} from "./devices/audio-effects/UnknownAudioEffectDeviceBoxAdapter"
+import {UnknownMidiEffectDeviceBoxAdapter} from "./devices/midi-effects/UnknownMidiEffectDeviceBoxAdapter"
 
 export class BoxAdapters implements Terminable {
     readonly #context: BoxAdaptersContext
@@ -150,6 +159,7 @@ export class BoxAdapters implements Terminable {
             visitDelayDeviceBox: (box: DelayDeviceBox) => new DelayDeviceBoxAdapter(this.#context, box),
             visitReverbDeviceBox: (box: ReverbDeviceBox) => new ReverbDeviceBoxAdapter(this.#context, box),
             visitRevampDeviceBox: (box: RevampDeviceBox) => new RevampDeviceBoxAdapter(this.#context, box),
+            visitUnknownAudioEffectDeviceBox: (box: UnknownAudioEffectDeviceBox) => new UnknownAudioEffectDeviceBoxAdapter(this.#context, box),
             visitPlayfieldDeviceBox: (box: PlayfieldDeviceBox) => new PlayfieldDeviceBoxAdapter(this.#context, box),
             visitPlayfieldSampleBox: (box: PlayfieldSampleBox) => new PlayfieldSampleBoxAdapter(this.#context, box),
             visitModularDeviceBox: (box: ModularDeviceBox) => new ModularDeviceBoxAdapter(this.#context, box),
@@ -182,6 +192,7 @@ export class BoxAdapters implements Terminable {
             visitTimelineBox: (box: TimelineBox) => new TimelineBoxAdapter(this.#context, box),
             visitMarkerBox: (box: MarkerBox) => new MarkerBoxAdapter(this.#context, box),
             visitZeitgeistDeviceBox: (box: ZeitgeistDeviceBox) => new ZeitgeistDeviceBoxAdapter(this.#context, box),
+            visitUnknownMidiEffectDeviceBox: (box: UnknownMidiEffectDeviceBox) => new UnknownMidiEffectDeviceBoxAdapter(this.#context, box),
             visitGrooveShuffleBox: (box: GrooveShuffleBox) => new GrooveShuffleBoxAdapter(this.#context, box)
         }), `Could not find factory for ${unknownBox}`)
     }

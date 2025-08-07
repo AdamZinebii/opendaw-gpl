@@ -1,7 +1,7 @@
 import {Arrays, assert, SortedSet, Subscription, Terminator, UUID} from "@opendaw/lib-std"
 import {AuxSendProcessor} from "./AuxSendProcessor"
 import {ChannelStripProcessor} from "./ChannelStripProcessor"
-import {AudioEffectDeviceBoxAdapter} from "@opendaw/studio-adapters"
+import {AudioEffectDeviceAdapter} from "@opendaw/studio-adapters"
 import {AudioEffectDeviceProcessorFactory} from "./DeviceProcessorFactory"
 import {AuxSendBoxAdapter} from "@opendaw/studio-adapters"
 import {ProcessPhase} from "./processing"
@@ -41,7 +41,7 @@ export class AudioDeviceChain implements DeviceChain {
 
         this.#terminator.ownAll(
             this.#audioUnit.adapter.audioEffects.catchupAndSubscribe({
-                onAdd: (adapter: AudioEffectDeviceBoxAdapter) => {
+                onAdd: (adapter: AudioEffectDeviceAdapter) => {
                     this.invalidateWiring()
                     const device = AudioEffectDeviceProcessorFactory.create(this.#audioUnit.context, adapter.box)
                     const added = this.#effects.add({
@@ -49,13 +49,13 @@ export class AudioDeviceChain implements DeviceChain {
                     })
                     assert(added, "Could not add.")
                 },
-                onRemove: (adapter: AudioEffectDeviceBoxAdapter) => {
+                onRemove: (adapter: AudioEffectDeviceAdapter) => {
                     this.invalidateWiring()
                     const {device, subscription} = this.#effects.removeByKey(adapter.uuid)
                     subscription.terminate()
                     device.terminate()
                 },
-                onReorder: (_adapter: AudioEffectDeviceBoxAdapter) => this.invalidateWiring()
+                onReorder: (_adapter: AudioEffectDeviceAdapter) => this.invalidateWiring()
             }),
             this.#audioUnit.adapter.auxSends.catchupAndSubscribe({
                 onAdd: (adapter: AuxSendBoxAdapter) => {

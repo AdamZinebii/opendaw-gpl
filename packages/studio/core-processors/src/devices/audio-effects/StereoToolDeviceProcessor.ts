@@ -1,6 +1,6 @@
 import {int, Option, Terminable, UUID} from "@opendaw/lib-std"
 import {dbToGain, Ramp, StereoMatrix} from "@opendaw/lib-dsp"
-import {AudioEffectDeviceBoxAdapter, StereoToolDeviceBoxAdapter} from "@opendaw/studio-adapters"
+import {AudioEffectDeviceAdapter, StereoToolDeviceBoxAdapter} from "@opendaw/studio-adapters"
 import {EngineContext} from "../../EngineContext"
 import {Block, Processor} from "../../processing"
 import {AudioBuffer} from "../../AudioBuffer"
@@ -79,7 +79,7 @@ export class StereoToolDeviceProcessor extends AudioProcessor implements AudioEf
     }
 
     index(): int {return this.#adapter.indexField.getValue()}
-    adapter(): AudioEffectDeviceBoxAdapter {return this.#adapter}
+    adapter(): AudioEffectDeviceAdapter {return this.#adapter}
 
     processAudio(_block: Readonly<Block>, fromIndex: number, toIndex: number): void {
         if (this.#source.isEmpty()) {return}

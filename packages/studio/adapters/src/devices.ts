@@ -39,7 +39,7 @@ export interface MidiEffectDeviceAdapter extends EffectDeviceBoxAdapter<Pointers
     readonly accepts: "midi"
 }
 
-export interface AudioEffectDeviceBoxAdapter extends EffectDeviceBoxAdapter<Pointers.AudioEffectHost> {
+export interface AudioEffectDeviceAdapter extends EffectDeviceBoxAdapter<Pointers.AudioEffectHost> {
     readonly type: "audio-effect"
     readonly accepts: "audio"
 }
@@ -68,7 +68,7 @@ export interface DeviceHost extends BoxAdapter {
 
     get midiEffects(): IndexedBoxAdapterCollection<MidiEffectDeviceAdapter, Pointers.MidiEffectHost>
     get inputAdapter(): Option<AudioUnitInputAdapter>
-    get audioEffects(): IndexedBoxAdapterCollection<AudioEffectDeviceBoxAdapter, Pointers.AudioEffectHost>
+    get audioEffects(): IndexedBoxAdapterCollection<AudioEffectDeviceAdapter, Pointers.AudioEffectHost>
     get inputField(): Field<Pointers.InstrumentHost | Pointers.AudioOutput>
     get tracksField(): Field<Pointers.TrackCollection>
     get minimizedField(): BooleanField
@@ -103,7 +103,7 @@ export namespace Devices {
         adapter !== null && typeof adapter === "object" && "type" in adapter && adapter.type === "instrument"
     export const isMidiEffect: AssertType<MidiEffectDeviceAdapter> = (adapter: unknown): adapter is MidiEffectDeviceAdapter =>
         adapter !== null && typeof adapter === "object" && "type" in adapter && adapter.type === "midi-effect"
-    export const isAudioEffect: AssertType<AudioEffectDeviceBoxAdapter> = (adapter: unknown): adapter is AudioEffectDeviceBoxAdapter =>
+    export const isAudioEffect: AssertType<AudioEffectDeviceAdapter> = (adapter: unknown): adapter is AudioEffectDeviceAdapter =>
         adapter !== null && typeof adapter === "object" && "type" in adapter && adapter.type === "audio-effect"
     export const isHost: AssertType<DeviceHost> = (value: unknown): value is DeviceHost =>
         value !== null && typeof value === "object" && "class" in value && value.class === "device-host"

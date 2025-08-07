@@ -58,7 +58,7 @@ import {
     UserInterfaceBox
 } from "@opendaw/studio-boxes"
 import {EffectDeviceBox, IconSymbol, ProjectDecoder, TrackType} from "@opendaw/studio-adapters"
-import {DawProjectIO} from "./DawProjectIO"
+import {DawProject} from "./DawProject"
 import {InstrumentBox} from "../InstrumentBox"
 import {AudioUnitOrdering} from "../AudioUnitOrdering"
 import {InstrumentFactories} from "../InstrumentFactories"
@@ -81,7 +81,7 @@ export namespace DawProjectImport {
         skeleton: ProjectDecoder.Skeleton
     }
 
-    export const read = async (schema: ProjectSchema, resources: DawProjectIO.ResourceProvider): Promise<Result> => {
+    export const read = async (schema: ProjectSchema, resources: DawProject.ResourceProvider): Promise<Result> => {
         const boxGraph = new BoxGraph<BoxIO.TypeMap>(Option.wrap(BoxIO.create))
         boxGraph.beginTransaction()
 

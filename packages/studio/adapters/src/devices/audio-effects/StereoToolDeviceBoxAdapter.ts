@@ -2,12 +2,12 @@ import {StringMapping, UUID, ValueMapping} from "@opendaw/lib-std"
 import {Address, BooleanField, Int32Field, PointerField, StringField} from "@opendaw/lib-box"
 import {StereoToolDeviceBox} from "@opendaw/studio-boxes"
 import {Pointers} from "@opendaw/studio-enums"
-import {AudioEffectDeviceBoxAdapter, DeviceHost, Devices} from "../../devices"
+import {AudioEffectDeviceAdapter, DeviceHost, Devices} from "../../devices"
 import {BoxAdaptersContext} from "../../BoxAdaptersContext"
 import {ParameterAdapterSet} from "../../ParameterAdapterSet"
 import {AudioUnitBoxAdapter} from "../../audio-unit/AudioUnitBoxAdapter"
 
-export class StereoToolDeviceBoxAdapter implements AudioEffectDeviceBoxAdapter {
+export class StereoToolDeviceBoxAdapter implements AudioEffectDeviceAdapter {
     readonly type = "audio-effect"
     readonly accepts = "audio"
 

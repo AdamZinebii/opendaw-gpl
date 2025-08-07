@@ -1,6 +1,6 @@
 import {Arrays, int, Option, Terminable, UUID} from "@opendaw/lib-std"
 import {BiquadCoeff, BiquadMono, BiquadProcessor, BiquadStack} from "@opendaw/lib-dsp"
-import {AudioEffectDeviceBoxAdapter, RevampDeviceBoxAdapter} from "@opendaw/studio-adapters"
+import {AudioEffectDeviceAdapter, RevampDeviceBoxAdapter} from "@opendaw/studio-adapters"
 import {EngineContext} from "../../EngineContext"
 import {Block, Processor} from "../../processing"
 import {AudioBuffer} from "../../AudioBuffer"
@@ -133,7 +133,7 @@ export class RevampDeviceProcessor extends AudioProcessor implements AudioEffect
     }
 
     index(): int {return this.#adapter.indexField.getValue()}
-    adapter(): AudioEffectDeviceBoxAdapter {return this.#adapter}
+    adapter(): AudioEffectDeviceAdapter {return this.#adapter}
 
     processAudio(_block: Block, fromIndex: int, toIndex: int) {
         if (this.#source.isEmpty()) {return}

@@ -2,7 +2,7 @@ import {describe, it} from "vitest"
 import {fileURLToPath} from "url"
 import * as path from "node:path"
 import * as fs from "node:fs"
-import {DawProjectIO} from "./DawProjectIO"
+import {DawProject} from "./DawProject"
 import {DawProjectImport} from "./DawProjectImport"
 
 describe("DawProjectImport", () => {
@@ -11,7 +11,7 @@ describe("DawProjectImport", () => {
         // const testFile = "../../../../../test-files/groups-bw.dawproject"
         const testFile = "../../../../../test-files/all-od-devices.dawproject"
         const buffer = fs.readFileSync(path.join(__dirname, testFile))
-        const {project, resources} = await DawProjectIO.decode(buffer)
+        const {project, resources} = await DawProject.decode(buffer)
         const {skeleton} = await DawProjectImport.read(project, resources)
     })
 })

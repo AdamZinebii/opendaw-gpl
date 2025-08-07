@@ -4,10 +4,8 @@ import {asDefined, panic, UUID} from "@opendaw/lib-std"
 import {FileReferenceSchema, MetaDataSchema, ProjectSchema} from "@opendaw/lib-dawproject"
 import {Project} from "../Project"
 import {DawProjectExporter} from "./DawProjectExporter"
-import {AudioFileBox, BoxVisitor} from "@opendaw/studio-boxes"
-import {encodeWavFloat} from "../Wav"
 
-export namespace DawProjectIO {
+export namespace DawProject {
     export type Resource = { uuid: UUID.Format, path: string, name: string, buffer: ArrayBuffer }
 
     export interface ResourceProvider {

@@ -11,8 +11,12 @@ import {NanoDeviceBox} from "./instruments/NanoDeviceBox"
 import {PlayfieldDeviceBox, PlayfieldSampleBox} from "./instruments/PlayfieldDeviceBox"
 import {StereoToolDeviceBox} from "./audio-effects/StereoToolDeviceBox"
 import {ZeitgeistDeviceBox} from "./midi-effects/ZeitGeistDeviceBox"
+import {UnknownAudioEffectDevice} from "./audio-effects/UnknownAudioEffectDevice"
+import {UnknownMidiEffectDevice} from "./midi-effects/UnknownMidiEffectDevice"
 
 export const DeviceDefinitions = [
+    UnknownAudioEffectDevice,
+    UnknownMidiEffectDevice,
     DeviceInterfaceKnobBox,
     ModularDeviceBox,
     DeviceClashBox,

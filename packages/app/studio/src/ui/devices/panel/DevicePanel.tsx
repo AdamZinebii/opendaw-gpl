@@ -4,7 +4,7 @@ import {appendChildren, createElement} from "@opendaw/lib-jsx"
 import {Session, StudioService} from "@/service/StudioService"
 import {AudioUnitBox, BoxVisitor, PlayfieldSampleBox} from "@opendaw/studio-boxes"
 import {
-    AudioEffectDeviceBoxAdapter,
+    AudioEffectDeviceAdapter,
     AudioUnitInputAdapter,
     DeviceHost,
     Devices,
@@ -130,7 +130,7 @@ export const DevicePanel = ({lifecycle, service}: Construct) => {
     const subscribeChain = ({midiEffects, instrument, audioEffects, host}: {
         midiEffects: IndexedBoxAdapterCollection<MidiEffectDeviceAdapter, Pointers.MidiEffectHost>,
         instrument: ObservableValue<Option<AudioUnitInputAdapter>>,
-        audioEffects: IndexedBoxAdapterCollection<AudioEffectDeviceBoxAdapter, Pointers.AudioEffectHost>,
+        audioEffects: IndexedBoxAdapterCollection<AudioEffectDeviceAdapter, Pointers.AudioEffectHost>,
         host: DeviceHost
     }): Terminable => {
         const terminator = new Terminator()
@@ -161,15 +161,15 @@ export const DevicePanel = ({lifecycle, service}: Construct) => {
                 updateDom.request()
             }),
             audioEffects.catchupAndSubscribe({
-                onAdd: (adapter: AudioEffectDeviceBoxAdapter) => {
+                onAdd: (adapter: AudioEffectDeviceAdapter) => {
                     mounts.add(DeviceMount.forAudioEffect(service, adapter, host, updateDom.request))
                     updateDom.request()
                 },
-                onRemove: (adapter: AudioEffectDeviceBoxAdapter) => {
+                onRemove: (adapter: AudioEffectDeviceAdapter) => {
                     mounts.removeByKey(adapter.uuid).terminate()
                     updateDom.request()
                 },
-                onReorder: (_adapter: AudioEffectDeviceBoxAdapter) => updateDom.request()
+                onReorder: (_adapter: AudioEffectDeviceAdapter) => updateDom.request()
             }),
             {
                 terminate: () => {

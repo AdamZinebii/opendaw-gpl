@@ -8,7 +8,7 @@ export * from "./samples/MainThreadSampleLoader"
 export * from "./samples/MainThreadSampleManager"
 export * from "./samples/SampleProvider"
 
-export * from "./dawproject/DawProjectIO"
+export * from "./dawproject/DawProject"
 export * from "./dawproject/DawProjectExporter"
 export * from "./dawproject/DawProjectImport"
 export * from "./dawproject/DawProjectImport"

@@ -3,7 +3,7 @@ import {PlayfieldSampleBox} from "@opendaw/studio-boxes"
 import {int, Option, StringMapping, Terminator, UUID, ValueMapping} from "@opendaw/lib-std"
 import {Address, BooleanField, Field, Int32Field, StringField} from "@opendaw/lib-box"
 import {
-    AudioEffectDeviceBoxAdapter,
+    AudioEffectDeviceAdapter,
     DeviceAccepts,
     DeviceHost, Devices,
     InstrumentDeviceBoxAdapter,
@@ -30,7 +30,7 @@ export class PlayfieldSampleBoxAdapter implements DeviceHost, InstrumentDeviceBo
     readonly #box: PlayfieldSampleBox
 
     readonly #midiEffects: IndexedBoxAdapterCollection<MidiEffectDeviceAdapter, Pointers.MidiEffectHost>
-    readonly #audioEffects: IndexedBoxAdapterCollection<AudioEffectDeviceBoxAdapter, Pointers.AudioEffectHost>
+    readonly #audioEffects: IndexedBoxAdapterCollection<AudioEffectDeviceAdapter, Pointers.AudioEffectHost>
 
     readonly #parametric: ParameterAdapterSet
     readonly namedParameter // let typescript infer the type
@@ -116,7 +116,7 @@ export class PlayfieldSampleBoxAdapter implements DeviceHost, InstrumentDeviceBo
     get inputAdapter(): Option<AudioUnitInputAdapter> {
         return Option.wrap(this)
     }
-    get audioEffects(): IndexedBoxAdapterCollection<AudioEffectDeviceBoxAdapter, Pointers.AudioEffectHost> {
+    get audioEffects(): IndexedBoxAdapterCollection<AudioEffectDeviceAdapter, Pointers.AudioEffectHost> {
         return this.#audioEffects
     }
 

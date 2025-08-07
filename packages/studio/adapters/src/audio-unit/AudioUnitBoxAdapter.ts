@@ -2,7 +2,7 @@ import {AudioUnitBox} from "@opendaw/studio-boxes"
 import {int, Option, StringMapping, Terminator, UUID, ValueMapping} from "@opendaw/lib-std"
 import {Address, BooleanField, Field, Int32Field} from "@opendaw/lib-box"
 import {AudioUnitType, Pointers} from "@opendaw/studio-enums"
-import {AudioEffectDeviceBoxAdapter, DeviceHost, Devices, MidiEffectDeviceAdapter} from "../devices"
+import {AudioEffectDeviceAdapter, DeviceHost, Devices, MidiEffectDeviceAdapter} from "../devices"
 import {AudioUnitTracks} from "./AudioUnitTracks"
 import {AudioUnitInput} from "./AudioUnitInput"
 import {IndexedBoxAdapterCollection} from "../IndexedBoxAdapterCollection"
@@ -26,7 +26,7 @@ export class AudioUnitBoxAdapter implements DeviceHost, BoxAdapter {
     readonly #tracks: AudioUnitTracks
     readonly #input: AudioUnitInput
     readonly #midiEffects: IndexedBoxAdapterCollection<MidiEffectDeviceAdapter, Pointers.MidiEffectHost>
-    readonly #audioEffects: IndexedBoxAdapterCollection<AudioEffectDeviceBoxAdapter, Pointers.AudioEffectHost>
+    readonly #audioEffects: IndexedBoxAdapterCollection<AudioEffectDeviceAdapter, Pointers.AudioEffectHost>
     readonly #auxSends: IndexedBoxAdapterCollection<AuxSendBoxAdapter, Pointers.AuxSend>
     readonly #output: AudioUnitOutput
     readonly namedParameter // let typescript infer the type
@@ -56,7 +56,7 @@ export class AudioUnitBoxAdapter implements DeviceHost, BoxAdapter {
     get tracks(): AudioUnitTracks {return this.#tracks}
     get input(): AudioUnitInput {return this.#input}
     get midiEffects(): IndexedBoxAdapterCollection<MidiEffectDeviceAdapter, Pointers.MidiEffectHost> {return this.#midiEffects}
-    get audioEffects(): IndexedBoxAdapterCollection<AudioEffectDeviceBoxAdapter, Pointers.AudioEffectHost> {return this.#audioEffects}
+    get audioEffects(): IndexedBoxAdapterCollection<AudioEffectDeviceAdapter, Pointers.AudioEffectHost> {return this.#audioEffects}
     get inputAdapter(): Option<AudioUnitInputAdapter> {return this.#input.getValue()}
     get auxSends(): IndexedBoxAdapterCollection<AuxSendBoxAdapter, Pointers.AuxSend> {return this.#auxSends}
     get output(): AudioUnitOutput {return this.#output}

@@ -2,7 +2,7 @@ import {ModularDeviceBox} from "@opendaw/studio-boxes"
 import {panic, UUID} from "@opendaw/lib-std"
 import {Pointers} from "@opendaw/studio-enums"
 import {Address, BooleanField, FieldKeys, Int32Field, PointerField, StringField} from "@opendaw/lib-box"
-import {AudioEffectDeviceBoxAdapter, DeviceHost, Devices} from "../../devices"
+import {AudioEffectDeviceAdapter, DeviceHost, Devices} from "../../devices"
 import {BoxAdaptersContext} from "../../BoxAdaptersContext"
 import {AutomatableParameterFieldAdapter} from "../../AutomatableParameterFieldAdapter"
 import {AudioUnitBoxAdapter} from "../../audio-unit/AudioUnitBoxAdapter"
@@ -10,7 +10,7 @@ import {ModularAdapter} from "../../modular/modular"
 import {DeviceInterfaceKnobAdapter} from "../../modular/user-interface"
 
 
-export class ModularDeviceBoxAdapter implements AudioEffectDeviceBoxAdapter {
+export class ModularDeviceBoxAdapter implements AudioEffectDeviceAdapter {
     readonly type = "audio-effect"
     readonly accepts = "audio"
 

@@ -1,5 +1,5 @@
 import {int, Option, Terminable, UUID} from "@opendaw/lib-std"
-import {AudioEffectDeviceBoxAdapter} from "@opendaw/studio-adapters"
+import {AudioEffectDeviceAdapter} from "@opendaw/studio-adapters"
 import {EngineContext} from "../../EngineContext"
 import {ProcessInfo, Processor} from "../../processing"
 import {RenderQuantum} from "../../constants"
@@ -14,13 +14,13 @@ export class NopDeviceProcessor extends AbstractProcessor implements AudioEffect
 
     readonly #id: int = NopDeviceProcessor.ID++
 
-    readonly #adapter: AudioEffectDeviceBoxAdapter
+    readonly #adapter: AudioEffectDeviceAdapter
     readonly #output: AudioBuffer
     readonly #peaks: PeakBroadcaster
 
     #source: Option<AudioBuffer> = Option.None
 
-    constructor(context: EngineContext, adapter: AudioEffectDeviceBoxAdapter) {
+    constructor(context: EngineContext, adapter: AudioEffectDeviceAdapter) {
         super(context)
 
         this.#adapter = adapter
@@ -49,7 +49,7 @@ export class NopDeviceProcessor extends AbstractProcessor implements AudioEffect
     }
 
     index(): int {return this.#adapter.indexField.getValue()}
-    adapter(): AudioEffectDeviceBoxAdapter {return this.#adapter}
+    adapter(): AudioEffectDeviceAdapter {return this.#adapter}
 
     process(_processInfo: ProcessInfo): void {
         if (this.#source.isEmpty()) {return}

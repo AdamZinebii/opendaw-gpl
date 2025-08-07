@@ -1,5 +1,5 @@
 import {
-    AudioEffectDeviceBoxAdapter,
+    AudioEffectDeviceAdapter,
     DeviceBoxAdapter,
     DeviceHost,
     MidiEffectDeviceAdapter
@@ -32,7 +32,7 @@ export class DeviceMount implements Terminable {
     }
 
     static forAudioEffect(service: StudioService,
-                          adapter: AudioEffectDeviceBoxAdapter,
+                          adapter: AudioEffectDeviceAdapter,
                           deviceHost: DeviceHost,
                           invalidateSignal: Exec): DeviceMount {
         return new DeviceMount(service, adapter, deviceHost, DeviceEditorFactory.toAudioEffectDeviceEditor, invalidateSignal)

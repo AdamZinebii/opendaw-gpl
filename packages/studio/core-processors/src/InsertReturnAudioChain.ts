@@ -1,5 +1,5 @@
 import {Arrays, assert, SortedSet, Subscription, Terminator, UUID} from "@opendaw/lib-std"
-import {AudioEffectDeviceBoxAdapter} from "@opendaw/studio-adapters"
+import {AudioEffectDeviceAdapter} from "@opendaw/studio-adapters"
 import {AudioEffectDeviceProcessorFactory} from "./DeviceProcessorFactory"
 import {AudioInput, ProcessPhase} from "./processing"
 import {DeviceChain} from "./DeviceChain"
@@ -21,7 +21,7 @@ export interface AudioTarget extends AudioInput, DeviceProcessor {}
 
 export class InsertReturnAudioChain implements DeviceChain {
     static create(context: EngineContext,
-                  collection: IndexedBoxAdapterCollection<AudioEffectDeviceBoxAdapter, Pointers.AudioEffectHost>,
+                  collection: IndexedBoxAdapterCollection<AudioEffectDeviceAdapter, Pointers.AudioEffectHost>,
                   sourceProcessor: AudioDeviceProcessor,
                   targetProcessor: AudioTarget) {
         return new InsertReturnAudioChain(context, collection, sourceProcessor, targetProcessor)
@@ -36,7 +36,7 @@ export class InsertReturnAudioChain implements DeviceChain {
     #needsWiring = true
 
     private constructor(context: EngineContext,
-                        collection: IndexedBoxAdapterCollection<AudioEffectDeviceBoxAdapter, Pointers.AudioEffectHost>,
+                        collection: IndexedBoxAdapterCollection<AudioEffectDeviceAdapter, Pointers.AudioEffectHost>,
                         sourceProcessor: AudioDeviceProcessor,
                         targetProcessor: AudioTarget) {
         this.#effects = UUID.newSet(({device}) => device.uuid)
@@ -44,7 +44,7 @@ export class InsertReturnAudioChain implements DeviceChain {
 
         this.#terminator.ownAll(
             collection.catchupAndSubscribe({
-                onAdd: (adapter: AudioEffectDeviceBoxAdapter) => {
+                onAdd: (adapter: AudioEffectDeviceAdapter) => {
                     this.invalidateWiring()
                     const device = AudioEffectDeviceProcessorFactory.create(context, adapter.box)
                     const added = this.#effects.add({
@@ -52,13 +52,13 @@ export class InsertReturnAudioChain implements DeviceChain {
                     })
                     assert(added, "Could not add.")
                 },
-                onRemove: (adapter: AudioEffectDeviceBoxAdapter) => {
+                onRemove: (adapter: AudioEffectDeviceAdapter) => {
                     this.invalidateWiring()
                     const {device, subscription} = this.#effects.removeByKey(adapter.uuid)
                     subscription.terminate()
                     device.terminate()
                 },
-                onReorder: (_adapter: AudioEffectDeviceBoxAdapter) => this.invalidateWiring()
+                onReorder: (_adapter: AudioEffectDeviceAdapter) => this.invalidateWiring()
             }),
             context.subscribeProcessPhase(phase => {
                 if (phase === ProcessPhase.Before && this.#needsWiring) {

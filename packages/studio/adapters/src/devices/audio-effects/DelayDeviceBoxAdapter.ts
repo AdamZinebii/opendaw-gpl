@@ -3,12 +3,12 @@ import {StringMapping, UUID, ValueMapping} from "@opendaw/lib-std"
 import {Address, BooleanField, Int32Field, PointerField, StringField} from "@opendaw/lib-box"
 import {Pointers} from "@opendaw/studio-enums"
 import {Fraction} from "@opendaw/lib-dsp"
-import {AudioEffectDeviceBoxAdapter, DeviceHost, Devices} from "../../devices"
+import {AudioEffectDeviceAdapter, DeviceHost, Devices} from "../../devices"
 import {BoxAdaptersContext} from "../../BoxAdaptersContext"
 import {ParameterAdapterSet} from "../../ParameterAdapterSet"
 import {AudioUnitBoxAdapter} from "../../audio-unit/AudioUnitBoxAdapter"
 
-export class DelayDeviceBoxAdapter implements AudioEffectDeviceBoxAdapter {
+export class DelayDeviceBoxAdapter implements AudioEffectDeviceAdapter {
     static OffsetFractions = Fraction.builder()
         .add([1, 1]).add([1, 2]).add([1, 3]).add([1, 4])
         .add([3, 16]).add([1, 6]).add([1, 8]).add([3, 32])
