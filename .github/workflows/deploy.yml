@@ -21,14 +21,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: ⬇️ Checkout private submodule
-        uses: actions/checkout@v4
-        with:
-          repository: andremichelle/opendaw-lib
-          path: lib
-          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
-          persist-credentials: false
-
       - name: 🦄 Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -41,7 +33,7 @@ jobs:
       - name: 🏗️ Build project
         shell: bash
         run: |
-          bash ./rebuild.sh
+          npm run build
 
       - name: 🚚 Run deploy script
         env:
