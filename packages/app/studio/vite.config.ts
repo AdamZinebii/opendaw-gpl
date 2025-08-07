@@ -5,7 +5,7 @@ import crossOriginIsolation from "vite-plugin-cross-origin-isolation"
 import viteCompression from "vite-plugin-compression"
 import {BuildInfo} from "./src/BuildInfo"
 
-export default defineConfig(({/*mode, command*/}) => {
+export default defineConfig(({command}) => {
     const uuid = generateUUID()
     console.debug(uuid)
     const env = process.env.NODE_ENV as BuildInfo["env"]
@@ -36,10 +36,10 @@ export default defineConfig(({/*mode, command*/}) => {
         server: {
             port: 8080,
             host: "localhost",
-            https: {
+            https: command === "serve" ? {
                 key: readFileSync("../localhost-key.pem"),
                 cert: readFileSync("../localhost.pem")
-            },
+            } : undefined,
             headers: {
                 "Cross-Origin-Opener-Policy": "same-origin",
                 "Cross-Origin-Embedder-Policy": "require-corp"

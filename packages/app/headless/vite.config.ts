@@ -3,7 +3,7 @@ import crossOriginIsolation from "vite-plugin-cross-origin-isolation"
 import {readFileSync} from "fs"
 import {resolve} from "path"
 
-export default defineConfig({
+export default defineConfig(({command}) => ({
     resolve: {
         alias: {
             "@": resolve(__dirname, "./src")
@@ -12,10 +12,10 @@ export default defineConfig({
     server: {
         port: 8080,
         host: "localhost",
-        https: {
+        https: command === "serve" ? {
             key: readFileSync("../localhost-key.pem"),
             cert: readFileSync("../localhost.pem")
-        },
+        } : undefined,
         headers: {
             "Cross-Origin-Opener-Policy": "same-origin",
             "Cross-Origin-Embedder-Policy": "require-corp"
@@ -28,4 +28,4 @@ export default defineConfig({
     plugins: [
         crossOriginIsolation()
     ]
-})
+}))
