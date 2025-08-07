@@ -325,7 +325,7 @@ export namespace DawProjectImport {
 
             const readAnyRegion = (clip: ClipSchema, trackBox: TrackBox): Promise<unknown> => {
                 return Promise.all(clip.content?.map(async (content: TimelineSchema) => {
-                    if (isInstanceOf(content, ClipsSchema)) {
+                    if (isInstanceOf(content, WarpsSchema)) {
                         await readAnyRegionContent(clip, content, trackBox)
                     } else if (isInstanceOf(content, NotesSchema)) {
                         readNoteRegionContent(clip, content, trackBox)
@@ -361,41 +361,33 @@ export namespace DawProjectImport {
                 })
             }
 
-            const readAnyRegionContent = async (clip: ClipSchema, content: ClipsSchema, trackBox: TrackBox): Promise<unknown> => {
-                const contentClip = content.clips.at(0)
-                if (isUndefined(contentClip)) {
-                    console.warn(clip, "audio-clip without content-clip?")
-                    return
-                }
-                const innerContent = contentClip.content?.at(0) as Nullish<TimelineSchema>
+            const readAnyRegionContent = async (clip: ClipSchema, warpsSchema: WarpsSchema, trackBox: TrackBox): Promise<unknown> => {
                 // TODO Double-check: From which point is it guaranteed that this is an audio region?
-                if (isInstanceOf(innerContent, WarpsSchema)) {
-                    const {warps, content} = innerContent
-                    const audio = content?.at(0) as Nullish<AudioSchema>
-                    const warp0 = warps.at(0)
-                    const warpN = warps.at(-1)
-                    const warpDistance = asDefined(warpN?.time) - asDefined(warp0?.time)
-                    if (isUndefined(audio)) {return}
-                    const {path, external} = audio.file
-                    assert(external !== true, "File cannot be external")
-                    const {uuid, name} = resources.fromPath(path)
-                    const audioFileBox: AudioFileBox = boxGraph.findBox<AudioFileBox>(uuid)
-                        .unwrapOrElse(() => AudioFileBox.create(boxGraph, uuid, box => box.fileName.setValue(name)))
-                    audioIdSet.add(uuid, true)
-                    AudioRegionBox.create(boxGraph, UUID.generate(), box => {
-                        const position = asDefined(clip.time, "Time not defined")
-                        const duration = asDefined(clip.duration, "Duration not defined")
-                        const loopDuration = clip.loopEnd ?? warpDistance
-                        box.position.setValue(position * PPQN.Quarter)
-                        box.duration.setValue(duration * PPQN.Quarter)
-                        box.label.setValue(clip.name ?? "")
-                        box.loopOffset.setValue((-(contentClip.time ?? 0.0)) * PPQN.Quarter)
-                        box.loopDuration.setValue(loopDuration * PPQN.Quarter)
-                        box.mute.setValue(clip.enable === false)
-                        box.regions.refer(trackBox.regions)
-                        box.file.refer(audioFileBox)
-                    })
-                }
+                const audio = warpsSchema.content?.at(0) as Nullish<AudioSchema>
+                if (isUndefined(audio)) {return}
+                const warps = warpsSchema.warps
+                const warp0 = warps.at(0)
+                const warpN = warps.at(-1)
+                const warpDistance = asDefined(warpN?.time) - asDefined(warp0?.time)
+                const {path, external} = audio.file
+                assert(external !== true, "File cannot be external")
+                const {uuid, name} = resources.fromPath(path)
+                const audioFileBox: AudioFileBox = boxGraph.findBox<AudioFileBox>(uuid)
+                    .unwrapOrElse(() => AudioFileBox.create(boxGraph, uuid, box => box.fileName.setValue(name)))
+                audioIdSet.add(uuid, true)
+                AudioRegionBox.create(boxGraph, UUID.generate(), box => {
+                    const position = asDefined(clip.time, "Time not defined")
+                    const duration = asDefined(clip.duration, "Duration not defined")
+                    const loopDuration = clip.loopEnd ?? warpDistance
+                    box.position.setValue(position * PPQN.Quarter)
+                    box.duration.setValue(duration * PPQN.Quarter)
+                    box.label.setValue(clip.name ?? "")
+                    box.loopOffset.setValue(0.0)
+                    box.loopDuration.setValue(loopDuration * PPQN.Quarter)
+                    box.mute.setValue(clip.enable === false)
+                    box.regions.refer(trackBox.regions)
+                    box.file.refer(audioFileBox)
+                })
             }
             return Promise.all(arrangement?.lanes?.lanes?.filter(timeline => isInstanceOf(timeline, LanesSchema))
                 .map(readLane) ?? [])

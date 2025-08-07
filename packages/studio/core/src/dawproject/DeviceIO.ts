@@ -11,7 +11,7 @@ export namespace DeviceIO {
         const mapping = UUID.newSet<{ source: UUID.Format, target: UUID.Format }>(({source}) => source)
         mapping.add({source: box.address.uuid, target: UUID.generate()})
         dependencies
-            .filter(dep => isInstanceOf(dep, AudioFileBox))
+            .filter(dep => !isInstanceOf(dep, AudioFileBox)) // AudioFileBox's uuid identifies the sample
             .forEach(({address: {uuid: source}}) => mapping.add({source, target: UUID.generate()}))
         const output = ByteArrayOutput.create()
         output.writeString("openDAW:device")
