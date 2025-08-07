@@ -11,45 +11,48 @@ import {
     ReverbDeviceBox,
     StereoToolDeviceBox,
     TapeDeviceBox,
+    UnknownAudioEffectDeviceBox,
+    UnknownMidiEffectDeviceBox,
     VaporisateurDeviceBox,
     ZeitgeistDeviceBox
 } from "@opendaw/studio-boxes"
 import {DelayDeviceProcessor} from "./devices/audio-effects/DelayDeviceProcessor"
-import {DelayDeviceBoxAdapter} from "@opendaw/studio-adapters"
+import {
+    ArpeggioDeviceBoxAdapter,
+    AudioBusBoxAdapter,
+    DelayDeviceBoxAdapter,
+    ModularDeviceBoxAdapter,
+    NanoDeviceBoxAdapter,
+    PitchDeviceBoxAdapter,
+    PlayfieldDeviceBoxAdapter,
+    RevampDeviceBoxAdapter,
+    ReverbDeviceBoxAdapter,
+    StereoToolDeviceBoxAdapter,
+    TapeDeviceBoxAdapter,
+    UnknownAudioEffectDeviceBoxAdapter,
+    UnknownMidiEffectDeviceBoxAdapter,
+    VaporisateurDeviceBoxAdapter,
+    ZeitgeistDeviceBoxAdapter
+} from "@opendaw/studio-adapters"
 import {NopDeviceProcessor} from "./devices/audio-effects/NopDeviceProcessor"
-import {ReverbDeviceBoxAdapter} from "@opendaw/studio-adapters"
-import {RevampDeviceBoxAdapter} from "@opendaw/studio-adapters"
-import {ModularDeviceBoxAdapter} from "@opendaw/studio-adapters"
 import {asDefined, Nullish} from "@opendaw/lib-std"
 import {EngineContext} from "./EngineContext"
 import {Box} from "@opendaw/lib-box"
 import {AudioBusProcessor} from "./AudioBusProcessor"
-import {AudioBusBoxAdapter} from "@opendaw/studio-adapters"
 import {VaporisateurDeviceProcessor} from "./devices/instruments/VaporisateurDeviceProcessor"
 import {TapeDeviceProcessor} from "./devices/instruments/TapeDeviceProcessor"
-import {TapeDeviceBoxAdapter} from "@opendaw/studio-adapters"
-import {
-    VaporisateurDeviceBoxAdapter
-} from "@opendaw/studio-adapters"
-import {ArpeggioDeviceBoxAdapter} from "@opendaw/studio-adapters"
 import {ArpeggioDeviceProcessor} from "./devices/midi-effects/ArpeggioDeviceProcessor"
 import {PitchDeviceProcessor} from "./devices/midi-effects/PitchDeviceProcessor"
-import {PitchDeviceBoxAdapter} from "@opendaw/studio-adapters"
 import {RevampDeviceProcessor} from "./devices/audio-effects/RevampDeviceProcessor"
 import {ReverbDeviceProcessor} from "./devices/audio-effects/ReverbDeviceProcessor"
-import {NanoDeviceBoxAdapter} from "@opendaw/studio-adapters"
 import {NanoDeviceProcessor} from "./devices/instruments/NanoDeviceProcessor"
 import {PlayfieldDeviceProcessor} from "./devices/instruments/PlayfieldDeviceProcessor"
-import {PlayfieldDeviceBoxAdapter} from "@opendaw/studio-adapters"
-import {
-    StereoToolDeviceBoxAdapter
-} from "@opendaw/studio-adapters"
 import {StereoToolDeviceProcessor} from "./devices/audio-effects/StereoToolDeviceProcessor"
 import {ZeitgeistDeviceProcessor} from "./devices/midi-effects/ZeitgeistDeviceProcessor"
-import {ZeitgeistDeviceBoxAdapter} from "@opendaw/studio-adapters"
 import {MidiEffectProcessor} from "./MidiEffectProcessor"
 import {InstrumentDeviceProcessor} from "./InstrumentDeviceProcessor"
 import {AudioEffectDeviceProcessor} from "./AudioEffectDeviceProcessor"
+import {UnknownMidiEffectDeviceProcessor} from "./devices/midi-effects/UnknownMidiEffectDeviceProcessor"
 
 export namespace InstrumentDeviceProcessorFactory {
     export const create = (context: EngineContext,
@@ -72,6 +75,8 @@ export namespace MidiEffectDeviceProcessorFactory {
     export const create = (context: EngineContext,
                            box: Box): MidiEffectProcessor =>
         asDefined(box.accept<BoxVisitor<MidiEffectProcessor>>({
+            visitUnknownMidiEffectDeviceBox: (box: UnknownMidiEffectDeviceBox): MidiEffectProcessor =>
+                new UnknownMidiEffectDeviceProcessor(context, context.boxAdapters.adapterFor(box, UnknownMidiEffectDeviceBoxAdapter)),
             visitArpeggioDeviceBox: (box: ArpeggioDeviceBox): MidiEffectProcessor =>
                 new ArpeggioDeviceProcessor(context, context.boxAdapters.adapterFor(box, ArpeggioDeviceBoxAdapter)),
             visitPitchDeviceBox: (box: PitchDeviceBox): MidiEffectProcessor =>
@@ -85,6 +90,8 @@ export namespace AudioEffectDeviceProcessorFactory {
     export const create = (context: EngineContext,
                            box: Box): AudioEffectDeviceProcessor =>
         asDefined(box.accept<BoxVisitor<AudioEffectDeviceProcessor>>({
+            visitUnknownAudioEffectDeviceBox: (box: UnknownAudioEffectDeviceBox): AudioEffectDeviceProcessor =>
+                new NopDeviceProcessor(context, context.boxAdapters.adapterFor(box, UnknownAudioEffectDeviceBoxAdapter)),
             visitStereoToolDeviceBox: (box: StereoToolDeviceBox): AudioEffectDeviceProcessor =>
                 new StereoToolDeviceProcessor(context, context.boxAdapters.adapterFor(box, StereoToolDeviceBoxAdapter)),
             visitDelayDeviceBox: (box: DelayDeviceBox): AudioEffectDeviceProcessor =>

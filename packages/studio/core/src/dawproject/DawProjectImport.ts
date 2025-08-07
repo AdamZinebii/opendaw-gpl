@@ -47,7 +47,6 @@ import {
     AuxSendBox,
     BoxIO,
     BoxVisitor,
-    DelayDeviceBox,
     GrooveShuffleBox,
     NoteEventBox,
     NoteEventCollectionBox,
@@ -55,9 +54,11 @@ import {
     RootBox,
     TimelineBox,
     TrackBox,
+    UnknownAudioEffectDeviceBox,
+    UnknownMidiEffectDeviceBox,
     UserInterfaceBox
 } from "@opendaw/studio-boxes"
-import {EffectDeviceBox, IconSymbol, ProjectDecoder, TrackType} from "@opendaw/studio-adapters"
+import {IconSymbol, ProjectDecoder, TrackType} from "@opendaw/studio-adapters"
 import {DawProject} from "./DawProject"
 import {InstrumentBox} from "../InstrumentBox"
 import {AudioUnitOrdering} from "../AudioUnitOrdering"
@@ -130,23 +131,23 @@ export namespace DawProjectImport {
             const field = target[key]
             if (deviceVendor === "openDAW") {
                 console.debug(`Found openDAW effect device '${deviceName}' with id '${deviceID}'`)
-                const deviceKey = asDefined(deviceID) as keyof BoxIO.TypeMap
-                if(deviceKey === "ZeitgeistDeviceBox") {
-                    return
-                }
-                boxGraph.createBox(deviceKey, UUID.generate(), box => {
-                    const typedBox = box as EffectDeviceBox
-                    typedBox.host.refer(field)
-                    typedBox.index.setValue(index)
-                    typedBox.label.setValue(deviceName ?? "")
-                })
-            } else {
-                // TODO Create placeholder device
-                DelayDeviceBox.create(boxGraph, UUID.generate(), box => {
-                    box.label.setValue(`${deviceName} (Placeholder #${index + 1})`)
-                    box.index.setValue(index)
-                    box.host.refer(field)
-                })
+                // TODO const deviceKey = asDefined(deviceID) as keyof BoxIO.TypeMap
+            }
+            switch (deviceRole) {
+                case DeviceRole.NOTE_FX:
+                    return UnknownMidiEffectDeviceBox.create(boxGraph, UUID.generate(), box => {
+                        box.host.refer(field)
+                        box.index.setValue(index)
+                        box.label.setValue(deviceName ?? "")
+                        box.comment.setValue(`Unknown ${deviceID}`)
+                    })
+                case DeviceRole.AUDIO_FX:
+                    return UnknownAudioEffectDeviceBox.create(boxGraph, UUID.generate(), box => {
+                        box.host.refer(field)
+                        box.index.setValue(index)
+                        box.label.setValue(deviceName ?? "")
+                        box.comment.setValue(`Unknown ${deviceID}`)
+                    })
             }
         }
 

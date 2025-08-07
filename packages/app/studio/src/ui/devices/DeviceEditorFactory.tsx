@@ -13,6 +13,8 @@ import {
     ReverbDeviceBox,
     StereoToolDeviceBox,
     TapeDeviceBox,
+    UnknownAudioEffectDeviceBox,
+    UnknownMidiEffectDeviceBox,
     VaporisateurDeviceBox,
     ZeitgeistDeviceBox
 } from "@opendaw/studio-boxes"
@@ -31,6 +33,8 @@ import {
     ReverbDeviceBoxAdapter,
     StereoToolDeviceBoxAdapter,
     TapeDeviceBoxAdapter,
+    UnknownAudioEffectDeviceBoxAdapter,
+    UnknownMidiEffectDeviceBoxAdapter,
     VaporisateurDeviceBoxAdapter,
     ZeitgeistDeviceBoxAdapter
 } from "@opendaw/studio-adapters"
@@ -50,10 +54,19 @@ import {StereoToolDeviceEditor} from "./audio-effects/StereoToolDeviceEditor"
 import {PlayfieldSampleEditor} from "./instruments/PlayfieldSampleEditor"
 import {ZeitgeistDeviceEditor} from "@/ui/devices/midi-effects/ZeitgeistDeviceEditor"
 import {StudioService} from "@/service/StudioService"
+import {UnknownAudioEffectDeviceEditor} from "@/ui/devices/audio-effects/UnknownAudioEffectDeviceEditor"
+import {UnknownMidiEffectDeviceEditor} from "@/ui/devices/midi-effects/UnknownMidiEffectDeviceEditor"
 
 export namespace DeviceEditorFactory {
     export const toMidiEffectDeviceEditor = (service: StudioService, lifecycle: Lifecycle, box: Box, deviceHost: DeviceHost) =>
         asDefined(box.accept<BoxVisitor<JsxValue>>({
+            visitUnknownMidiEffectDeviceBox: (box: UnknownMidiEffectDeviceBox) => (
+                <UnknownMidiEffectDeviceEditor lifecycle={lifecycle}
+                                               service={service}
+                                               adapter={service.project.boxAdapters
+                                                   .adapterFor(box, UnknownMidiEffectDeviceBoxAdapter)}
+                                               deviceHost={deviceHost}/>
+            ),
             visitArpeggioDeviceBox: (box: ArpeggioDeviceBox) => (
                 <ArpeggioDeviceEditor lifecycle={lifecycle}
                                       service={service}
@@ -118,6 +131,13 @@ export namespace DeviceEditorFactory {
 
     export const toAudioEffectDeviceEditor = (service: StudioService, lifecycle: Lifecycle, box: Box, deviceHost: DeviceHost) =>
         asDefined(box.accept<BoxVisitor<JsxValue>>({
+            visitUnknownAudioEffectDeviceBox: (box: UnknownAudioEffectDeviceBox) => (
+                <UnknownAudioEffectDeviceEditor lifecycle={lifecycle}
+                                                service={service}
+                                                adapter={service.project.boxAdapters
+                                                    .adapterFor(box, UnknownAudioEffectDeviceBoxAdapter)}
+                                                deviceHost={deviceHost}/>
+            ),
             visitStereoToolDeviceBox: (box: StereoToolDeviceBox) => (
                 <StereoToolDeviceEditor lifecycle={lifecycle}
                                         service={service}
