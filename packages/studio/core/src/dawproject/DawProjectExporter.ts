@@ -1,4 +1,4 @@
-import {asDefined, asInstanceOf, Color, ifDefined, isInstanceOf, Nullish, Option} from "@opendaw/lib-std"
+import {asDefined, asInstanceOf, Color, ifDefined, isInstanceOf, Nullish, Option, UUID} from "@opendaw/lib-std"
 import {Xml} from "@opendaw/lib-xml"
 import {dbToGain, PPQN} from "@opendaw/lib-dsp"
 import {
@@ -49,9 +49,10 @@ import {ColorCodes} from "../ColorCodes"
 import {Html} from "@opendaw/lib-dom"
 import {encodeWavFloat} from "../Wav"
 import {DeviceBoxUtils} from "@opendaw/studio-adapters"
+import {DeviceIO} from "./DeviceIO"
 
 export namespace DawProjectExporter {
-    export interface ResourcePacker {write(path: string, buffer: ArrayBuffer): FileReferenceSchema}
+    export interface ResourcePacker {write(path: string, buffer: ArrayBufferLike): FileReferenceSchema}
 
     export const write = (project: Project, resourcePacker: ResourcePacker) => {
         const ids = new AddressIdEncoder()
@@ -103,7 +104,8 @@ export namespace DawProjectExporter {
                     enabled,
                     loaded: true,
                     automatedParameters: [],
-                    state: undefined /*resourcePacker.write(`presets/${UUID.toString(box.address.uuid)}`, arrayBuffer as ArrayBuffer)*/
+                    state: resourcePacker
+                        .write(`presets/${UUID.toString(box.address.uuid)}`, DeviceIO.exportDevice(box))
                 }, BuiltinDeviceSchema)
             })
 

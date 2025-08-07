@@ -107,6 +107,7 @@ export class Address implements Comparable<Address> {
         output.writeByte(this.#fieldKeys.length)
         this.#fieldKeys.forEach(key => output.writeShort(key))
     }
+    moveTo(target: UUID.Format): Address {return new Address(target, this.#fieldKeys)}
     decompose(): AddressLayout {return [this.#uuid, this.#fieldKeys]}
     toJSON() {return {uuid: Array.from(this.#uuid.values()), fields: Array.from(this.#fieldKeys.values())}}
     toArrayBuffer(): ArrayBufferLike {

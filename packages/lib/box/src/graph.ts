@@ -93,8 +93,8 @@ export class BoxGraph<BoxMap = any> {
     inTransaction(): boolean {return this.#inTransaction}
     constructingBox(): boolean {return this.#constructingBox}
 
-    createBox(name: keyof BoxMap, uuid: UUID.Format, constructor: Procedure<Box>): void {
-        this.#boxFactory.unwrap("No box-factory installed")(name as keyof BoxMap, this, uuid, constructor)
+    createBox(name: keyof BoxMap, uuid: UUID.Format, constructor: Procedure<Box>): Box {
+        return this.#boxFactory.unwrap("No box-factory installed")(name as keyof BoxMap, this, uuid, constructor)
     }
 
     stageBox<B extends Box>(box: B, constructor?: Procedure<B>): B {

@@ -1,4 +1,16 @@
-import {Comparator, Func, int, isDefined, Nullable, Nullish, panic, Predicate, Procedure, Provider} from "./lang"
+import {
+    asDefined,
+    Comparator,
+    Func,
+    int,
+    isDefined,
+    Nullable,
+    Nullish,
+    panic,
+    Predicate,
+    Procedure,
+    Provider
+} from "./lang"
 import {Arrays} from "./arrays"
 import {Option} from "./option"
 import {BinarySearch} from "./binary-search"
@@ -103,10 +115,7 @@ export class SortedSet<K, V> implements Iterable<V> {
         return count
     }
 
-    get(key: K): V {
-        const candidate: Nullish<V> = this.#lookup(key)
-        if (isDefined(candidate)) {return candidate} else {return panic(`Unknown key: ${key}`)}
-    }
+    get(key: K): V {return asDefined(this.#lookup(key), `Unknown key: ${key}`)}
 
     getOrThrow(key: K, provider: Provider<Error>): V {
         const candidate: Nullish<V> = this.#lookup(key)

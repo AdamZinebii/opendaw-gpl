@@ -59,13 +59,14 @@ import {
     UnknownMidiEffectDeviceBox,
     UserInterfaceBox
 } from "@opendaw/studio-boxes"
-import {IconSymbol, ProjectDecoder, TrackType} from "@opendaw/studio-adapters"
+import {DeviceBoxUtils, IconSymbol, ProjectDecoder, TrackType} from "@opendaw/studio-adapters"
 import {DawProject} from "./DawProject"
 import {InstrumentBox} from "../InstrumentBox"
 import {AudioUnitOrdering} from "../AudioUnitOrdering"
 import {InstrumentFactories} from "../InstrumentFactories"
 import {ColorCodes} from "../ColorCodes"
 import {Colors} from "../Colors"
+import {DeviceIO} from "./DeviceIO"
 
 export namespace DawProjectImport {
     type AudioBusUnit = { audioBusBox: AudioBusBox, audioUnitBox: AudioUnitBox }
@@ -124,15 +125,22 @@ export namespace DawProjectImport {
 
         // Reading methods
         //
-        const createEffect = ({deviceRole, deviceVendor, deviceID, deviceName}: DeviceSchema,
+        const createEffect = ({deviceRole, deviceVendor, deviceID, deviceName, state}: DeviceSchema,
                               target: AudioUnitBox,
                               key: keyof Pick<AudioUnitBox, "midiEffects" | "audioEffects">,
-                              index: int) => {
+                              index: int): unknown => {
             assert(deviceRole === DeviceRole.NOTE_FX || deviceRole === DeviceRole.AUDIO_FX, "Device is not an effect")
             const field = target[key]
             if (deviceVendor === "openDAW") {
-                console.debug(`Found openDAW effect device '${deviceName}' with id '${deviceID}'`)
-                // TODO const deviceKey = asDefined(deviceID) as keyof BoxIO.TypeMap
+                console.debug(`Recreate openDAW effect device '${deviceName}' with id '${deviceID}'`)
+                const resource = ifDefined(state?.path, path => resources.fromPath(path))
+                if (isDefined(resource)) {
+                    const device = DeviceIO.importDevice(boxGraph, resource.buffer)
+                    device.host.refer(field)
+                    device.label.setValue(deviceName ?? "")
+                    DeviceBoxUtils.lookupIndexField(device).setValue(index)
+                    return
+                }
             }
             const comment = isDefined(deviceVendor) ? `${deviceID} from ${deviceVendor} ⚠️` : `${deviceID} ⚠️`
             switch (deviceRole) {
@@ -173,7 +181,20 @@ export namespace DawProjectImport {
         }
 
         const createInstrumentBox = (audioUnitBox: AudioUnitBox, track: TrackSchema, device: Nullish<DeviceSchema>): InstrumentBox => {
-            // TODO Create openDAW device, if available
+            if (isDefined(device)) {
+                const {deviceName, deviceVendor, deviceID, state} = device
+                if (deviceVendor === "openDAW") {
+                    console.debug(`Recreate openDAW instrument device '${deviceName}' with id '${deviceID}'`)
+                    const resource = ifDefined(state?.path, path => resources.fromPath(path))
+                    if (isDefined(resource)) {
+                        const device = DeviceIO.importDevice(boxGraph, resource.buffer)
+                        device.host.refer(audioUnitBox.input)
+                        device.label.setValue(deviceName ?? "")
+                        assert(DeviceBoxUtils.isInstrumentDeviceBox(device), `${device.name} is not an instrument`)
+                        return device as InstrumentBox
+                    }
+                }
+            }
             if (track.contentType === "notes") {
                 return InstrumentFactories.Vaporisateur
                     .create(boxGraph, audioUnitBox.input, track.name ?? "", IconSymbol.Piano)

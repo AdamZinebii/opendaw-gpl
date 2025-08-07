@@ -26,12 +26,11 @@ export namespace DeviceBoxUtils {
         "minimized" in box && isInstanceOf(box.minimized, BooleanField)
 
     export const isInstrumentDeviceBox = (box: Box): box is InstrumentDeviceBox =>
-        isDeviceBox(box) && box.host.pointerRules.accepts.includes(Pointers.InstrumentHost as any)
+        isDeviceBox(box) && box.host.pointerType === Pointers.InstrumentHost
 
     export const isEffectDeviceBox = (box: Box): box is EffectDeviceBox =>
-        isDeviceBox(box) && "index" in box && isInstanceOf(box.index, Int32Field)
-        && box.host.pointerRules.accepts.includes(Pointers.MidiEffectHost as any)
-        && box.host.pointerRules.accepts.includes(Pointers.AudioEffectHost as any)
+        isDeviceBox(box) && "index" in box && isInstanceOf(box.index, Int32Field) &&
+        (box.host.pointerType === Pointers.MidiEffectHost || box.host.pointerType === Pointers.AudioEffectHost)
 
     export const lookupHostField = (box: Nullish<Box>): PointerField =>
         isDefined(box) && "host" in box && isInstanceOf(box.host, PointerField)
