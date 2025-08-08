@@ -1,58 +1,25 @@
 import {Address, Box, BoxGraph, PointerField} from "@opendaw/lib-box"
-import {assert, ByteArrayInput, ByteArrayOutput, isInstanceOf, Option, panic, UUID} from "@opendaw/lib-std"
-import {AudioFileBox, AudioUnitBox, BoxIO} from "@opendaw/studio-boxes"
+import {assert, ByteArrayInput, ByteArrayOutput, Option, panic, UUID} from "@opendaw/lib-std"
+import {AudioFileBox, BoxIO} from "@opendaw/studio-boxes"
 import {DeviceBox, DeviceBoxUtils} from "@opendaw/studio-adapters"
 
 export namespace DeviceIO {
     export const exportDevice = (box: Box): ArrayBufferLike => {
         const dependencies = Array.from(box.graph.dependenciesOf(box).boxes)
-        // We are going to award all boxes with new UUIDs.
-        // Therefore, we need to map all internal pointer targets.
-        const mapping = UUID.newSet<{ source: UUID.Format, target: UUID.Format }>(({source}) => source)
-        mapping.add({source: box.address.uuid, target: UUID.generate()})
-        dependencies
-            .filter(dep => !isInstanceOf(dep, AudioFileBox)) // AudioFileBox's uuid identifies the sample
-            .forEach(({address: {uuid: source}}) => mapping.add({source, target: UUID.generate()}))
+
         const output = ByteArrayOutput.create()
         output.writeString("openDAW:device")
         output.writeInt(1) // format version
         const writeBox = (box: Box) => {
-            const uuid = box.address.uuid
-            UUID.toDataOutput(output, mapping.opt(uuid).match({
-                none: () => uuid,
-                some: ({target}) => target
-            }))
+            UUID.toDataOutput(output, box.address.uuid)
             output.writeString(box.name)
             const arrayBuffer = box.toArrayBuffer()
             output.writeInt(arrayBuffer.byteLength)
             output.writeBytes(new Int8Array(arrayBuffer))
         }
-        PointerField.encodeWith({
-            map: (pointer: PointerField): Option<Address> => {
-                return pointer.targetVertex.match({
-                    none: () => Option.None,
-                    some: vertex => {
-                        if (isInstanceOf(vertex.box, AudioUnitBox)) {return Option.None}
-                        const targetAddress = pointer.targetAddress
-                        if (targetAddress.nonEmpty()) {
-                            const address = targetAddress.unwrap()
-                            const optEntry = mapping.opt(address.uuid)
-                            if (optEntry.nonEmpty()) {
-                                const target = optEntry.unwrap().target
-                                return Option.wrap(address.moveTo(target))
-                            }
-                        }
-                        return targetAddress
-                    }
-                })
-            }
-        }, () => {
-            writeBox(box)
-            output.writeInt(dependencies.length)
-            for (const dep of dependencies) {
-                writeBox(dep)
-            }
-        })
+        writeBox(box)
+        output.writeInt(dependencies.length)
+        dependencies.forEach(dep => writeBox(dep))
         return output.toArrayBuffer()
     }
 
@@ -62,20 +29,39 @@ export namespace DeviceIO {
         const version = input.readInt()
         assert(header === "openDAW:device", `wrong header: ${header}`)
         assert(version === 1, `wrong version: ${version}`)
-        const readBox = () => {
+        const mapping = UUID.newSet<{ source: UUID.Format, target: UUID.Format }>(({source}) => source)
+        const rawBoxes: Array<{uuid: UUID.Format, key: keyof BoxIO.TypeMap, array: Int8Array}> = []
+        const readRawBox = () => {
             const uuid = UUID.fromDataInput(input)
             const key = input.readString() as keyof BoxIO.TypeMap
             const length = input.readInt()
             const array = new Int8Array(length)
             input.readBytes(array)
-            return boxGraph.createBox(key, uuid, box => box.read(new ByteArrayInput(array.buffer)))
+            mapping.add({source: uuid, target: key === "AudioFileBox" ? uuid : UUID.generate()})
+            rawBoxes.push({uuid, key, array})
         }
-        const box = readBox()
-        if (!DeviceBoxUtils.isDeviceBox(box)) {return panic(`${box.name} is not a DeviceBox`)}
+        readRawBox()
         const numDeps = input.readInt()
         for (let i = 0; i < numDeps; i++) {
-            readBox()
+            readRawBox()
         }
-        return box
+        // We are going to award all boxes with new UUIDs.
+        // Therefore, we need to map all internal pointer targets.
+        return PointerField.decodeWith({
+            map: (_pointer: PointerField, newAddress: Option<Address>): Option<Address> =>
+                newAddress.map(address => mapping.opt(address.uuid).match({
+                    none: () => address,
+                    some: ({target}) => address.moveTo(target)
+                }))
+        }, () => {
+            const {key, uuid, array} = rawBoxes[0]
+            const box = boxGraph.createBox(key, mapping.get(uuid).target, box => box.read(new ByteArrayInput(array.buffer)))
+            if (!DeviceBoxUtils.isDeviceBox(box)) {return panic(`${box.name} is not a DeviceBox`)}
+            for (let i = 1; i < rawBoxes.length; i++) {
+                const {key, uuid, array} = rawBoxes[i]
+                boxGraph.createBox(key, mapping.get(uuid).target, box => box.read(new ByteArrayInput(array.buffer)))
+            }
+            return box
+        })
     }
 }

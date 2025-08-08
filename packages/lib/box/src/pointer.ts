@@ -8,7 +8,8 @@ import {
     panic,
     Provider,
     safeExecute,
-    Subscription
+    Subscription,
+    tryCatch
 } from "@opendaw/lib-std"
 import {Vertex, VertexVisitor} from "./vertex"
 import {Address} from "./address"
@@ -24,6 +25,8 @@ export type PointerTypes = number | string | UnreferenceableType
 
 export interface SpecialEncoder {map(pointer: PointerField): Option<Address>}
 
+export interface SpecialDecoder {map(pointer: PointerField, newAddress: Option<Address>): Option<Address>}
+
 export class PointerField<P extends PointerTypes = PointerTypes> extends Field<UnreferenceableType, never> {
     static create<P extends PointerTypes>(construct: FieldConstruct<UnreferenceableType>,
                                           pointerType: P,
@@ -32,14 +35,29 @@ export class PointerField<P extends PointerTypes = PointerTypes> extends Field<U
     }
 
     static encodeWith<R>(encoder: SpecialEncoder, exec: Provider<R>): R {
-        assert(this.#encoder.isEmpty(), "SerializationEncoder already set.")
+        assert(this.#encoder.isEmpty(), "SerializationEncoder already in use")
         this.#encoder = Option.wrap(encoder)
-        const result = exec()
+        const result = tryCatch(exec)
         this.#encoder = Option.None
-        return result
+        if (result.status === "failure") {
+            throw result.error
+        }
+        return result.value
+    }
+
+    static decodeWith<R>(decoder: SpecialDecoder, exec: Provider<R>): R {
+        assert(this.#decoder.isEmpty(), "SerializationDecoder already in use")
+        this.#decoder = Option.wrap(decoder)
+        const result = tryCatch(exec)
+        this.#decoder = Option.None
+        if (result.status === "failure") {
+            throw result.error
+        }
+        return result.value
     }
 
     static #encoder: Option<SpecialEncoder> = Option.None
+    static #decoder: Option<SpecialDecoder> = Option.None
 
     readonly #pointerType: P
     readonly #mandatory: boolean
@@ -111,9 +129,13 @@ export class PointerField<P extends PointerTypes = PointerTypes> extends Field<U
     resolvedTo(newTarget: Option<Vertex>): void {this.#targetVertex = newTarget}
 
     read(input: DataInput) {
-        this.targetAddress = input.readBoolean()
+        const address = input.readBoolean()
             ? Option.wrap(Address.read(input))
             : Option.None
+        this.targetAddress = PointerField.#decoder.match({
+            none: () => address,
+            some: decoder => decoder.map(this, address)
+        })
     }
 
     write(output: DataOutput) {

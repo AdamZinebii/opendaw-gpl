@@ -4,6 +4,12 @@ _This package is part of the openDAW SDK_
 
 Graph-based object modeling system with serialization, transactions, and pointer management for TypeScript projects.
 
+## Wishlist
+
+* Introduce readonly fields (cannot only be written in the constructing phase)
+* Introduce meta-fields (compile time only)
+* Add array with all TypeMap keys
+
 ## Core Architecture
 
 * **box.ts** - Core Box class for graph nodes with field management
