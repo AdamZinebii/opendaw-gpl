@@ -30,20 +30,21 @@ export namespace DeviceIO {
         assert(header === "openDAW:device", `wrong header: ${header}`)
         assert(version === 1, `wrong version: ${version}`)
         const mapping = UUID.newSet<{ source: UUID.Format, target: UUID.Format }>(({source}) => source)
-        const rawBoxes: Array<{uuid: UUID.Format, key: keyof BoxIO.TypeMap, array: Int8Array}> = []
-        const readRawBox = () => {
+        type RawBox = { uuid: UUID.Format, key: keyof BoxIO.TypeMap, input: ByteArrayInput }
+        const rawBoxes: Array<RawBox> = []
+        const readRawBox = (): RawBox => {
             const uuid = UUID.fromDataInput(input)
             const key = input.readString() as keyof BoxIO.TypeMap
             const length = input.readInt()
             const array = new Int8Array(length)
             input.readBytes(array)
             mapping.add({source: uuid, target: key === "AudioFileBox" ? uuid : UUID.generate()})
-            rawBoxes.push({uuid, key, array})
+            return {uuid, key, input: new ByteArrayInput(array.buffer)}
         }
-        readRawBox()
+        rawBoxes.push(readRawBox())
         const numDeps = input.readInt()
         for (let i = 0; i < numDeps; i++) {
-            readRawBox()
+            rawBoxes.push(readRawBox())
         }
         // We are going to award all boxes with new UUIDs.
         // Therefore, we need to map all internal pointer targets.
@@ -54,13 +55,12 @@ export namespace DeviceIO {
                     some: ({target}) => address.moveTo(target)
                 }))
         }, () => {
-            const {key, uuid, array} = rawBoxes[0]
-            const box = boxGraph.createBox(key, mapping.get(uuid).target, box => box.read(new ByteArrayInput(array.buffer)))
+            const [main, ...deps] = rawBoxes
+            const {key, uuid, input} = main
+            const box = boxGraph.createBox(key, mapping.get(uuid).target, box => box.read(input))
             if (!DeviceBoxUtils.isDeviceBox(box)) {return panic(`${box.name} is not a DeviceBox`)}
-            for (let i = 1; i < rawBoxes.length; i++) {
-                const {key, uuid, array} = rawBoxes[i]
-                boxGraph.createBox(key, mapping.get(uuid).target, box => box.read(new ByteArrayInput(array.buffer)))
-            }
+            deps.forEach(({key, uuid, input}) =>
+                boxGraph.createBox(key, mapping.get(uuid).target, box => box.read(input)))
             return box
         })
     }
