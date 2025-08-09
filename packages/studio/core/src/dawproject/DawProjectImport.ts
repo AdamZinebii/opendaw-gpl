@@ -324,13 +324,19 @@ export namespace DawProjectImport {
             }
 
             const readAnyRegion = (clip: ClipSchema, trackBox: TrackBox): Promise<unknown> => {
-                return Promise.all(clip.content?.map(async (content: TimelineSchema) => {
+                const createRegion = async (content: TimelineSchema) => {
                     if (isInstanceOf(content, WarpsSchema)) {
                         await readAnyRegionContent(clip, content, trackBox)
                     } else if (isInstanceOf(content, NotesSchema)) {
                         readNoteRegionContent(clip, content, trackBox)
+                    } else if (isInstanceOf(content, ClipsSchema)) {
+                        const nested = content.clips.at(0)?.content?.at(0)
+                        if (isDefined(nested)) {
+                            await createRegion(nested)
+                        }
                     }
-                }) ?? [])
+                }
+                return Promise.all(clip.content?.map(createRegion) ?? [])
             }
 
             const readNoteRegionContent = (clip: ClipSchema, notes: NotesSchema, trackBox: TrackBox): void => {

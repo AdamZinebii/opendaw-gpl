@@ -11,7 +11,7 @@ export const renderNotes = (context: CanvasRenderingContext2D,
                             {index, rawStart, regionStart, resultStart, resultEnd}: LoopableRegion.LoopCycle) => {
     const collection = region.optCollection.unwrap()
     const height = bottom - top
-    context.fillStyle = index === 0 ? contentColor : contentLoopColor
+    context.fillStyle = index === 0 || true ? contentColor : contentLoopColor
     const padding = 8
     const noteHeight = 5
     const searchStart = Math.floor(resultStart - rawStart)

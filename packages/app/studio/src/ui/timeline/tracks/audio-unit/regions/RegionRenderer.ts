@@ -74,7 +74,7 @@ export const renderRegions = (context: CanvasRenderingContext2D,
             const labelColor = selected ? `hsl(${hue}, ${normSat}%, 10%)` : `hsl(${hue}, ${normSat}%, 60%)`
             const contentColor = `hsl(${hue}, ${normSat}%, 45%)`
             const contentLoopColor = `hsl(${hue}, ${lessSat}%, 30%)`
-            const loopColor = `hsla(${hue}, 40%, ${normSat}%, 0.15)`
+            const loopColor = `hsla(${hue}, 40%, ${normSat}%, 0.5)`
             const backgroundColor = selected ? `hsla(${hue}, ${normSat}%, 60%, 0.06)` : `hsla(${hue}, ${normSat}%, 60%, 0.03)`
             const labelBackgroundColor = selected ? `hsla(${hue}, ${fullSat}%, 60%, 0.75)` : `hsla(${hue}, ${lessSat}%, 60%, 0.15)`
             const colors: RegionColors = {contentColor, contentLoopColor}
@@ -161,7 +161,6 @@ export const renderRegions = (context: CanvasRenderingContext2D,
                     context.restore()
                 }
             })
-
             if (tracks.service.project.userEditingManager.timeline.isEditing(region.box)) {
                 context.strokeStyle = `hsla(${hue}, ${normSat}%, 45%, 0.1)`
                 context.beginPath()

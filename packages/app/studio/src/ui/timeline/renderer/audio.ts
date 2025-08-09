@@ -21,7 +21,7 @@ export const renderAudio = (context: CanvasRenderingContext2D,
         const x0 = range.unitToX(resultStart) * devicePixelRatio
         const x1 = range.unitToX(resultEnd) * devicePixelRatio
         const ht = bottom - top
-        context.fillStyle = index === 0 ? contentColor : contentLoopColor
+        context.fillStyle = index === 0 || true ? contentColor : contentLoopColor
         const peaks: Peaks = file.peaks.unwrap()
         const numFrames = peaks.numFrames
         const numberOfChannels = peaks.numChannels

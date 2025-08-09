@@ -87,7 +87,7 @@ export const renderValueStream = (context: CanvasRenderingContext2D,
         path.lineTo(xMax, valueToY(prev.value))
     }
     const yMin = valueToY(anchor) + devicePixelRatio
-    const style = index === (debug ? 1 : 0) ? contentColor : contentLoopColor
+    const style = index === (debug ? 1 : 0) || true ? contentColor : contentLoopColor
     context.fillStyle = style
     context.strokeStyle = style
     context.beginPath()
