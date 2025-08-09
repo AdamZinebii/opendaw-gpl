@@ -338,10 +338,12 @@ export namespace DawProjectImport {
                 NoteRegionBox.create(boxGraph, UUID.generate(), box => {
                     const position = asDefined(clip.time, "Time not defined")
                     const duration = asDefined(clip.duration, "Duration not defined")
-                    const loopDuration = clip.loopEnd ?? duration
+                    const loopOffset = clip.playStart ?? 0
+                    const loopDuration = clip.loopEnd ?? duration - loopOffset
                     box.position.setValue(position * PPQN.Quarter)
                     box.duration.setValue(duration * PPQN.Quarter)
                     box.label.setValue(clip.name ?? "")
+                    box.loopOffset.setValue(loopOffset * PPQN.Quarter)
                     box.loopDuration.setValue(loopDuration * PPQN.Quarter)
                     box.mute.setValue(clip.enable === false)
                     box.hue.setValue(isUndefined(clip.color)
