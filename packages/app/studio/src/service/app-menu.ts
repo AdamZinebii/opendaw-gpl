@@ -104,6 +104,8 @@ export const initAppMenu = (service: StudioService) => {
                                 .setTriggerProcedure(() => RouteLocation.get().navigateTo("/audio-input")),
                             MenuItem.default({label: "・ Errors"})
                                 .setTriggerProcedure(() => RouteLocation.get().navigateTo("/errors")),
+                            MenuItem.default({label: "・ Graph"})
+                                .setTriggerProcedure(() => RouteLocation.get().navigateTo("/graph")),
                             MenuItem.default({
                                 label: "Throw an error in main-thread 💣",
                                 separatorBefore: true,

@@ -13,6 +13,7 @@ import {Header} from "@/ui/header/Header"
 import {AudioInputDevicesPage} from "./pages/AudioInputDevicesPage"
 import {ErrorsPage} from "@/ui/pages/ErrorsPage.tsx"
 import {ImprintPage} from "@/ui/pages/ImprintPage.tsx"
+import {GraphPage} from "@/ui/pages/GraphPage"
 
 export const App = (service: StudioService) => {
     const terminator = new Terminator()
@@ -37,7 +38,8 @@ export const App = (service: StudioService) => {
                     {path: "/errors", factory: ErrorsPage},
                     {path: "/upload", factory: SampleUploadPage},
                     {path: "/audio-input", factory: AudioInputDevicesPage},
-                    {path: "/colors", factory: ColorsPage}
+                    {path: "/colors", factory: ColorsPage},
+                    {path: "/graph", factory: GraphPage}
                 ]}
             />
             <Footer lifecycle={terminator} service={service}/>
