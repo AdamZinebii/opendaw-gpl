@@ -73,11 +73,10 @@ export const renderRegions = (context: CanvasRenderingContext2D,
             const lessSat = 45 * saturationFactor
             const labelColor = selected ? `hsl(${hue}, ${normSat}%, 10%)` : `hsl(${hue}, ${normSat}%, 60%)`
             const contentColor = `hsl(${hue}, ${normSat}%, 45%)`
-            const contentLoopColor = `hsl(${hue}, ${lessSat}%, 30%)`
             const loopColor = `hsla(${hue}, 40%, ${normSat}%, 0.5)`
             const backgroundColor = selected ? `hsla(${hue}, ${normSat}%, 60%, 0.06)` : `hsla(${hue}, ${normSat}%, 60%, 0.03)`
             const labelBackgroundColor = selected ? `hsla(${hue}, ${fullSat}%, 60%, 0.75)` : `hsla(${hue}, ${lessSat}%, 60%, 0.15)`
-            const colors: RegionColors = {contentColor, contentLoopColor}
+            const colors: RegionColors = {contentColor}
 
             context.fillStyle = labelBackgroundColor
             context.fillRect(x0Int, 0, xnInt, labelHeight)
@@ -95,9 +94,7 @@ export const renderRegions = (context: CanvasRenderingContext2D,
             }
             const text = region.label.length === 0 ? "◻" : region.label
             context.fillText(Context2d.truncateText(context, text, maxTextWidth).text, x0Int + 1, 1 + labelHeight / 2)
-            if (!region.hasCollection) {
-                continue
-            }
+            if (!region.hasCollection) {continue}
             context.fillStyle = contentColor
             region.accept({
                 visitNoteRegionBoxAdapter: (region: NoteRegionBoxAdapter): void => {

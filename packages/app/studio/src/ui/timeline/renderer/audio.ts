@@ -9,9 +9,8 @@ export const renderAudio = (context: CanvasRenderingContext2D,
                             file: AudioFileBoxAdapter,
                             gain: number,
                             {top, bottom}: RegionBound,
-                            {contentColor, contentLoopColor}: RegionColors,
+                            {contentColor}: RegionColors,
                             {
-                                index,
                                 resultStart,
                                 resultEnd,
                                 resultStartValue,
@@ -21,7 +20,7 @@ export const renderAudio = (context: CanvasRenderingContext2D,
         const x0 = range.unitToX(resultStart) * devicePixelRatio
         const x1 = range.unitToX(resultEnd) * devicePixelRatio
         const ht = bottom - top
-        context.fillStyle = index === 0 || true ? contentColor : contentLoopColor
+        context.fillStyle = contentColor
         const peaks: Peaks = file.peaks.unwrap()
         const numFrames = peaks.numFrames
         const numberOfChannels = peaks.numChannels

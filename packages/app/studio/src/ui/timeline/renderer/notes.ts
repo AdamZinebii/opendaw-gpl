@@ -7,11 +7,11 @@ export const renderNotes = (context: CanvasRenderingContext2D,
                             range: TimelineRange,
                             region: NoteRegionBoxAdapter,
                             {top, bottom}: RegionBound,
-                            {contentColor, contentLoopColor}: RegionColors,
-                            {index, rawStart, regionStart, resultStart, resultEnd}: LoopableRegion.LoopCycle) => {
+                            {contentColor}: RegionColors,
+                            {rawStart, regionStart, resultStart, resultEnd}: LoopableRegion.LoopCycle) => {
     const collection = region.optCollection.unwrap()
     const height = bottom - top
-    context.fillStyle = index === 0 || true ? contentColor : contentLoopColor
+    context.fillStyle = contentColor
     const padding = 8
     const noteHeight = 5
     const searchStart = Math.floor(resultStart - rawStart)

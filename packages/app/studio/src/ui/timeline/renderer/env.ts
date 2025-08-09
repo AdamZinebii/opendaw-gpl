@@ -5,5 +5,4 @@ export type RegionBound = {
 
 export type RegionColors = {
     contentColor: string
-    contentLoopColor: string
 }

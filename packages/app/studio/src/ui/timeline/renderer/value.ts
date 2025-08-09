@@ -7,11 +7,10 @@ export const renderValueStream = (context: CanvasRenderingContext2D,
                                   range: TimelineRange,
                                   generator: Generator<ValueEvent>,
                                   valueToY: Func<unitValue, number>,
-                                  {contentColor, contentLoopColor}: RegionColors,
+                                  {contentColor}: RegionColors,
                                   alphaFill: unitValue,
                                   anchor: unitValue,
-                                  {index, resultStart, resultEnd, rawStart: delta}: LoopableRegion.LoopCycle,
-                                  debug: boolean = false) => {
+                                  {resultStart, resultEnd, rawStart: delta}: LoopableRegion.LoopCycle) => {
     const {done, value} = generator.next()
     if (done) {return}
 
@@ -87,7 +86,7 @@ export const renderValueStream = (context: CanvasRenderingContext2D,
         path.lineTo(xMax, valueToY(prev.value))
     }
     const yMin = valueToY(anchor) + devicePixelRatio
-    const style = index === (debug ? 1 : 0) || true ? contentColor : contentLoopColor
+    const style = contentColor
     context.fillStyle = style
     context.strokeStyle = style
     context.beginPath()

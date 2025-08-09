@@ -596,8 +596,7 @@ export const AutomationPage: PageFactory<StudioService> = ({}: PageContext<Studi
     const height = 48
     const loopColor = "rgba(64, 255, 64, 0.25)"
     const colors: RegionColors = {
-        contentColor: "rgba(255, 255, 255, 0.5)",
-        contentLoopColor: "rgba(255, 255, 255, 0.2)"
+        contentColor: "rgba(255, 255, 255, 0.5)"
     }
 
     return (
@@ -636,7 +635,7 @@ export const AutomationPage: PageFactory<StudioService> = ({}: PageContext<Studi
                             const windowMin = pass.resultStart - pass.rawStart
                             const windowMax = pass.resultEnd - pass.rawStart
                             const iterator = ValueEvent.iterateWindow(eventCollection, windowMin, windowMax)
-                            renderValueStream(context, range, iterator, valueToY, colors, 0.2, 0.0, pass, true)
+                            renderValueStream(context, range, iterator, valueToY, colors, 0.2, 0.0, pass)
                             context.strokeStyle = "rgba(255, 255, 255, 0.25)"
                         }
                         const offset = section.position - section.loopOffset

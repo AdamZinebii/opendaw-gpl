@@ -71,8 +71,7 @@ export const createValuePainter =
         context.setLineDash(Arrays.empty())
         context.lineWidth = devicePixelRatio
         const colors: RegionColors = {
-            contentColor: `hsl(${reader.hue}, 60%, 45%)`,
-            contentLoopColor: "none"
+            contentColor: `hsl(${reader.hue}, 60%, 45%)`
         }
         const start = range.unitMin - range.unitPadding
         const end = range.unitMax
