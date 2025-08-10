@@ -53,8 +53,9 @@ import {Recovery} from "@/Recovery.ts"
 import {MIDILearning} from "@/midi/devices/MIDILearning"
 import {
     DawProject,
+    DawProjectImport,
     EngineFacade,
-    EngineWorklet, DawProjectImport,
+    EngineWorklet,
     MainThreadSampleManager,
     Project,
     ProjectEnv,
@@ -239,6 +240,7 @@ export class StudioService implements ProjectEnv {
     panicEngine(): void {this.engine.panic()}
 
     async closeProject() {
+        RouteLocation.get().navigateTo("/")
         if (!this.hasProjectSession) {
             this.switchScreen("dashboard")
             return

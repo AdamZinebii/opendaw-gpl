@@ -2,9 +2,12 @@
 import ForceGraph from "force-graph"
 import * as d3 from "d3-force"
 
+type Node = { id: string; label?: string, root?: boolean }
+type Edge = { source: string; target: string }
+
 export type GraphData = {
-    nodes: { id: string; label?: string }[]
-    edges: { source: string; target: string }[]
+    nodes: Array<Node>
+    edges: Array<Edge>
 }
 
 export type CreateGraphPanel =
@@ -13,27 +16,22 @@ export type CreateGraphPanel =
         resize(): void
     }
 
-// Remove trailing " Box" or "Box" from labels (no leftover space)
-const stripBoxSuffix = (label?: string): string => {
-    if (!label) return ""
-    if (label.endsWith(" Box")) return label.slice(0, -4)
-    if (label.endsWith("Box")) return label.slice(0, -3)
-    return label
-}
+export const GRAPH_INTERACTION_HINT =
+    "Drag nodes to reposition. Scroll to zoom. Drag background to pan. Hover a node to see its name."
 
 export const createGraphPanel: CreateGraphPanel = (canvas, data, opts = {}) => {
     const dark = !!opts.dark
 
     // ---- Convert to force-graph data shape ----
-    const nodes = data.nodes.map(n => ({id: n.id, label: stripBoxSuffix(n.label)}))
-    const links = data.edges.map(e => ({source: e.source, target: e.target}))
+    const nodes = data.nodes
+    const links = data.edges
 
     // ---- Degree map for sizing & heatmap coloring ----
     const degree = new Map<string, number>()
     for (const n of nodes) degree.set(n.id, 0)
     for (const l of links) {
-        degree.set(l.source as string, (degree.get(l.source as string) || 0) + 1)
-        degree.set(l.target as string, (degree.get(l.target as string) || 0) + 1)
+        degree.set(l.source, (degree.get(l.source) || 0) + 1)
+        degree.set(l.target, (degree.get(l.target) || 0) + 1)
     }
     const degVals = Array.from(degree.values())
     const minDeg = degVals.length ? Math.min(...degVals) : 0
@@ -44,8 +42,8 @@ export const createGraphPanel: CreateGraphPanel = (canvas, data, opts = {}) => {
     let hovered: any = null
 
     // ---- Init ForceGraph ----
-    const fg = new (ForceGraph as any)(canvas)
-        .graphData({nodes, links} as any)
+    const fg = new ForceGraph(canvas)
+        .graphData({nodes, links})
         .backgroundColor(dark ? "#0e0f12" : "#ffffff")
         .nodeId("id")
         .linkSource("source")
@@ -56,7 +54,7 @@ export const createGraphPanel: CreateGraphPanel = (canvas, data, opts = {}) => {
         .linkColor(() => (dark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.25)"))
         .linkWidth(1)
         // size by degree (capped so hubs don’t get giant)
-        .nodeVal((n: any) => Math.min(18, 4 + (degree.get(n.id) || 0) * 2))
+        .nodeVal(({root, id}: any) => root ? 48 : Math.min(18, 4 + (degree.get(id) || 0) * 2))
         // heatmap color by degree: blue (low) → red (high)
         .nodeColor((n: any) => {
             const d = degree.get(n.id) ?? 0
@@ -70,13 +68,11 @@ export const createGraphPanel: CreateGraphPanel = (canvas, data, opts = {}) => {
             /* labels drawn in onRenderFramePost */
         })
         // update hover state
-        .onNodeHover((node: any) => {
-            hovered = node || null
-        })
+        .onNodeHover((node: any) => hovered = node || null)
 
     // ---- Draw labels centered & on top, with zoom-based visibility + hover always ----
     fg.onRenderFramePost((ctx: CanvasRenderingContext2D) => {
-        const zoom: number = fg.zoom?.() ?? 1
+        const zoom: number = fg.zoom?.()
         const threshold = 1.2
 
         const drawPill = (x: number, y: number, text: string) => {
@@ -155,6 +151,7 @@ export const createGraphPanel: CreateGraphPanel = (canvas, data, opts = {}) => {
         terminate(): void {
             try { ro.disconnect() } catch {}
             try { fg.graphData({nodes: [], links: []}) } catch {}
+            fg._destructor()
         },
         resize(): void {
             applySize()
