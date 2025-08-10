@@ -19,6 +19,16 @@ export class Arrays {
     static readonly peekLast = <T>(array: ReadonlyArray<T>): Nullable<T> => array.at(-1) ?? null
     static readonly getFirst = <T>(array: ReadonlyArray<T>, fail: string): T => asDefined(array.at(0), fail)
     static readonly getLast = <T>(array: ReadonlyArray<T>, fail: string): T => asDefined(array.at(-1), fail)
+    static readonly getPrev = <T>(array: Array<T>, element: T): T => {
+        const index: int = array.indexOf(element)
+        if (index === -1) {return panic(`${element} not found in ${array}`)}
+        return asDefined(array.at((index - 1) % array.length), "Internal Error")
+    }
+    static readonly getNext = <T>(array: Array<T>, element: T): T => {
+        const index: int = array.indexOf(element)
+        if (index === -1) {return panic(`${element} not found in ${array}`)}
+        return asDefined(array.at((index + 1) % array.length), "Internal Error")
+    }
     static readonly removeLast = <T>(array: Array<T>, fail: string): T => asDefined(array.pop(), fail)
     static readonly create = <T>(factory: Func<int, T>, n: int): Array<T> => {
         const array: T[] = new Array<T>(n)

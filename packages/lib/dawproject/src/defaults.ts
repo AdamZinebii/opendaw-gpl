@@ -409,23 +409,44 @@ export class AutomationTargetSchema {
 export class PointSchema {
     @Xml.Attribute("time")
     readonly time!: number
+}
 
-    @Xml.Attribute("value")
-    readonly value?: number
+@Xml.Class("BoolPoint")
+export class BoolPoint extends PointSchema {
+    @Xml.Attribute("value", Xml.BoolOptional)
+    readonly value!: boolean
+}
+
+@Xml.Class("RealPoint")
+export class RealPointSchema extends PointSchema {
+    @Xml.Attribute("value", Xml.NumberRequired)
+    readonly value!: number
 
     @Xml.Attribute("interpolation")
     readonly interpolation?: Interpolation
 }
 
-@Xml.Class("RealPoint")
-export class RealPointSchema extends PointSchema {}
+@Xml.Class("IntegerPoint")
+export class IntegerPointSchema extends PointSchema {
+    @Xml.Attribute("value", Xml.NumberRequired)
+    readonly value!: int
+}
+
+@Xml.Class("TimeSignaturePoint")
+export class TimeSignaturePointSchema extends PointSchema {
+    @Xml.Attribute("numerator", Xml.NumberRequired)
+    readonly numerator!: int
+
+    @Xml.Attribute("denominator", Xml.NumberRequired)
+    readonly denominator!: int
+}
 
 @Xml.Class("Points")
 export class PointsSchema extends TimelineSchema {
     @Xml.Element("Target", AutomationTargetSchema)
     readonly target?: AutomationTargetSchema
 
-    @Xml.Element("Point", Array)
+    @Xml.ElementRef(PointSchema)
     readonly points?: ReadonlyArray<PointSchema>
 
     @Xml.Attribute("unit")

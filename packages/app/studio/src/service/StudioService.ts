@@ -109,7 +109,7 @@ export class StudioService implements ProjectEnv {
     readonly panelLayout = new PanelContents(createPanelFactory(this))
     readonly spotlightDataSupplier = new SpotlightDataSupplier()
     readonly samplePlayback: SamplePlayback
-    readonly shortcuts = new Shortcuts(this) // TODO reference will be used later in a key-mapping configurator
+    readonly _shortcuts = new Shortcuts(this) // TODO reference will be used later in a key-mapping configurator
     readonly engine = new EngineFacade()
     readonly recovery = new Recovery(this)
     readonly midiLearning = new MIDILearning(this)

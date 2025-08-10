@@ -1,21 +1,28 @@
 import {StudioService} from "@/service/StudioService"
 import {PanelType} from "@/ui/workspace/PanelType"
 import {Events, Keyboard} from "@opendaw/lib-dom"
+import {DefaultWorkspace} from "@/ui/workspace/Default"
+import {Arrays, isUndefined} from "@opendaw/lib-std"
+import {Workspace} from "@/ui/workspace/Workspace"
 
 export class Shortcuts {
     constructor(service: StudioService) {
-        window.addEventListener("keydown", (event: KeyboardEvent) => {
-            if (Events.isTextInput(event.target) || event.repeat) {return}
+        window.addEventListener("keydown", async (event: KeyboardEvent) => {
+            if (Events.isTextInput(event.target)) {return}
+            if (event.repeat) {
+                event.preventDefault()
+                return
+            }
             const code = event.code
             if (Keyboard.isControlKey(event) && event.shiftKey && code === "KeyS") {
                 event.preventDefault()
-                service.saveAs()
+                await service.saveAs()
             } else if (Keyboard.isControlKey(event) && code === "KeyS") {
                 event.preventDefault()
-                service.save()
+                await service.save()
             } else if (Keyboard.isControlKey(event) && code === "KeyO") {
                 event.preventDefault()
-                service.browse()
+                await service.browse()
             } else if (code === "Space") {
                 event.preventDefault()
                 const playing = service.engine.isPlaying()
@@ -28,9 +35,22 @@ export class Shortcuts {
                 service.panelLayout.getByType(PanelType.DevicePanel).toggleMinimize()
             } else if (code === "KeyM") {
                 service.panelLayout.getByType(PanelType.Mixer).toggleMinimize()
+            } else if (code === "Tab") {
+                const keys = Object.entries(DefaultWorkspace)
+                    .filter((entry: [string, Workspace.Screen]) => !entry[1].hidden)
+                    .map(([key]) => key as Workspace.ScreenKeys)
+                const screen = service.layout.screen
+                const current = screen.getValue()
+                if (isUndefined(current)) {return}
+                if (event.shiftKey) {
+                    screen.setValue(Arrays.getPrev(keys, current))
+                } else {
+                    screen.setValue(Arrays.getNext(keys, current))
+                }
+                event.preventDefault()
             } else if (event.shiftKey) {
                 if (code === "Digit0") {
-                    service.closeProject()
+                    await service.closeProject()
                 } else if (code === "Digit1") {
                     if (service.hasProjectSession) {
                         service.switchScreen("default")

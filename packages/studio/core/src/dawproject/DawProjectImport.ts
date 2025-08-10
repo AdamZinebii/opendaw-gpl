@@ -31,6 +31,7 @@ import {
     LaneSchema,
     LanesSchema,
     NotesSchema,
+    PointsSchema,
     ProjectSchema,
     SendSchema,
     SendType,
@@ -319,8 +320,14 @@ export namespace DawProjectImport {
 
             const readLane = (lane: LanesSchema): Promise<unknown> => {
                 const track = lane.track // links to track in structure
-                return Promise.all(lane?.lanes?.filter(timeline => isInstanceOf(timeline, ClipsSchema))
-                    .map(clips => readTrackRegions(clips, asDefined(track, "Region(Clips) must have an id."))) ?? [])
+                return Promise.all(lane?.lanes?.map(timeline => {
+                    if (isInstanceOf(timeline, ClipsSchema)) {
+                        return readTrackRegions(timeline, asDefined(track, "Region(Clips) must have an id."))
+                    } else if (isInstanceOf(timeline, PointsSchema)) {
+                        // TODO How to get the actual parameter?
+                        console.debug(timeline.target?.parameter)
+                    }
+                }) ?? [])
             }
 
             const readAnyRegion = (clip: ClipSchema, trackBox: TrackBox): Promise<unknown> => {
@@ -334,6 +341,8 @@ export namespace DawProjectImport {
                         if (isDefined(nested)) {
                             await createRegion(nested)
                         }
+                    } else {
+                        console.warn("readAnyRegion > Unknown", content)
                     }
                 }
                 return Promise.all(clip.content?.map(createRegion) ?? [])
@@ -370,7 +379,6 @@ export namespace DawProjectImport {
             }
 
             const readAnyRegionContent = async (clip: ClipSchema, warpsSchema: WarpsSchema, trackBox: TrackBox): Promise<unknown> => {
-                // TODO Double-check: From which point is it guaranteed that this is an audio region?
                 const audio = warpsSchema.content?.at(0) as Nullish<AudioSchema>
                 if (isUndefined(audio)) {return}
                 const warps = warpsSchema.warps
