@@ -91,7 +91,7 @@ export class ApplicationSchema {
 }
 
 @Xml.Class("BooleanParameter")
-export class BooleanParameterSchema implements Referenceable{
+export class BooleanParameterSchema implements Referenceable {
     @Xml.Attribute("value", Xml.BoolRequired)
     readonly value?: boolean
 
@@ -501,16 +501,27 @@ export class DeviceSchema implements Referenceable {
 @Xml.Class("BuiltinDevice")
 export class BuiltinDeviceSchema extends DeviceSchema {}
 
+// noinspection JSUnusedGlobalSymbols
+export enum EqBandType {
+    HIGH_PASS = "highPass",
+    LOW_PASS = "lowPass",
+    BAND_PASS = "bandPass",
+    HIGH_SHELF = "highShelf",
+    LOW_SHELF = "lowShelf",
+    BELL = "bell",
+    NOTCH = "notch"
+}
+
 @Xml.Class("Band")
 export class BandSchema {
-    @Xml.Attribute("type")
-    readonly type!: string
-
-    @Xml.Attribute("order")
-    readonly order!: string
+    @Xml.Attribute("type", Xml.StringRequired)
+    readonly type!: EqBandType
 
     @Xml.Element("Freq", RealParameterSchema)
     readonly freq!: RealParameterSchema
+
+    @Xml.Attribute("order")
+    readonly order?: string
 
     @Xml.Element("Gain", RealParameterSchema)
     readonly gain?: RealParameterSchema

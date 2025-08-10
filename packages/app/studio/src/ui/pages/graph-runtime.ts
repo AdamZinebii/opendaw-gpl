@@ -13,13 +13,20 @@ export type CreateGraphPanel =
         resize(): void
     }
 
-// noinspection JSUnusedGlobalSymbols
+// Remove trailing " Box" or "Box" from labels (no leftover space)
+const stripBoxSuffix = (label?: string): string => {
+    if (!label) return ""
+    if (label.endsWith(" Box")) return label.slice(0, -4)
+    if (label.endsWith("Box")) return label.slice(0, -3)
+    return label
+}
+
 export const createGraphPanel: CreateGraphPanel = (canvas, data, opts = {}) => {
     const dark = !!opts.dark
 
     // ---- Convert to force-graph data shape ----
-    const nodes = data.nodes
-    const links = data.edges
+    const nodes = data.nodes.map(n => ({id: n.id, label: stripBoxSuffix(n.label)}))
+    const links = data.edges.map(e => ({source: e.source, target: e.target}))
 
     // ---- Degree map for sizing & heatmap coloring ----
     const degree = new Map<string, number>()
@@ -33,7 +40,10 @@ export const createGraphPanel: CreateGraphPanel = (canvas, data, opts = {}) => {
     const maxDeg = degVals.length ? Math.max(...degVals) : 1
     const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 
-    // ---- Init ForceGraph (cast to any to satisfy varying TS setups) ----
+    // Hover state
+    let hovered: any = null
+
+    // ---- Init ForceGraph ----
     const fg = new (ForceGraph as any)(canvas)
         .graphData({nodes, links} as any)
         .backgroundColor(dark ? "#0e0f12" : "#ffffff")
@@ -54,32 +64,72 @@ export const createGraphPanel: CreateGraphPanel = (canvas, data, opts = {}) => {
             const hue = lerp(240, 0, t) // 240=blue → 0=red
             return `hsl(${hue}, 100%, 50%)`
         })
-        // we draw labels ourselves on top of everything:
+        // draw labels ourselves on top:
         .nodeCanvasObjectMode(() => "after")
         .nodeCanvasObject((_node: any, _ctx: CanvasRenderingContext2D) => {
-            /* no-op here; we draw all labels in onRenderFramePost */
+            /* labels drawn in onRenderFramePost */
+        })
+        // update hover state
+        .onNodeHover((node: any) => {
+            hovered = node || null
         })
 
-    // ---- Draw labels centered & on top, with zoom-based visibility ----
+    // ---- Draw labels centered & on top, with zoom-based visibility + hover always ----
     fg.onRenderFramePost((ctx: CanvasRenderingContext2D) => {
         const zoom: number = fg.zoom?.() ?? 1
         const threshold = 1.2
-        if (zoom < threshold) return
 
-        const fontSize = 12 / zoom
+        const drawPill = (x: number, y: number, text: string) => {
+            const padX = 6
+            const padY = 3
+            const tw = ctx.measureText(text).width
+            const w = tw + padX * 2
+            const h = 16 + padY * 2
+            const rx = 6
+            ctx.beginPath()
+            ctx.moveTo(x - w / 2 + rx, y - h / 2)
+            ctx.lineTo(x + w / 2 - rx, y - h / 2)
+            ctx.quadraticCurveTo(x + w / 2, y - h / 2, x + w / 2, y - h / 2 + rx)
+            ctx.lineTo(x + w / 2, y + h / 2 - rx)
+            ctx.quadraticCurveTo(x + w / 2, y + h / 2, x + w / 2 - rx, y + h / 2)
+            ctx.lineTo(x - w / 2 + rx, y + h / 2)
+            ctx.quadraticCurveTo(x - w / 2, y + h / 2, x - w / 2, y + h / 2 - rx)
+            ctx.lineTo(x - w / 2, y - h / 2 + rx)
+            ctx.quadraticCurveTo(x - w / 2, y - h / 2, x - w / 2 + rx, y - h / 2)
+            ctx.closePath()
+            ctx.fillStyle = dark ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.8)"
+            ctx.fill()
+            ctx.strokeStyle = dark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.25)"
+            ctx.stroke()
+            ctx.fillStyle = dark ? "#ffffff" : "#000000"
+            ctx.fillText(text, x, y)
+        }
+
         ctx.save()
+        const fontSize = 12 / zoom
         ctx.font = `${fontSize}px system-ui, -apple-system, Segoe UI, Roboto`
         ctx.textAlign = "center"
         ctx.textBaseline = "middle"
         ctx.fillStyle = "#ffffff"
 
         const g = fg.graphData() as { nodes: Array<any> }
-        for (const n of g.nodes) {
-            if (typeof n.x !== "number" || typeof n.y !== "number") continue
-            const label = n.label as string | undefined
-            if (!label) continue
-            ctx.fillText(label, n.x, n.y)
+
+        // Show labels for all nodes only when zoomed in enough
+        if (zoom >= threshold) {
+            for (const n of g.nodes) {
+                if (typeof n.x !== "number" || typeof n.y !== "number") continue
+                const label = n.label as string | undefined
+                if (!label) continue
+                ctx.fillText(label, n.x, n.y)
+            }
         }
+
+        // Always show hovered node label (with a pill), regardless of zoom
+        if (hovered && typeof hovered.x === "number" && typeof hovered.y === "number") {
+            const text = hovered.label ?? hovered.id
+            drawPill(hovered.x, hovered.y - 18 / zoom, text)
+        }
+
         ctx.restore()
     })
 
@@ -95,9 +145,7 @@ export const createGraphPanel: CreateGraphPanel = (canvas, data, opts = {}) => {
     // ---- Resize handling ----
     const applySize = () => {
         const rect = canvas.getBoundingClientRect()
-        if (rect.width && rect.height) {
-            fg.width(rect.width).height(rect.height)
-        }
+        if (rect.width && rect.height) fg.width(rect.width).height(rect.height)
     }
     const ro = new ResizeObserver(applySize)
     ro.observe(canvas)
@@ -105,7 +153,6 @@ export const createGraphPanel: CreateGraphPanel = (canvas, data, opts = {}) => {
 
     return {
         terminate(): void {
-            // no explicit destructor required; clearing data stops sim & rendering
             try { ro.disconnect() } catch {}
             try { fg.graphData({nodes: [], links: []}) } catch {}
         },
