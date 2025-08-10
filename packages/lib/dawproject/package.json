@@ -22,6 +22,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@opendaw/lib-dsp": "^0.0.19",
     "@opendaw/lib-runtime": "^0.0.19",
     "@opendaw/lib-xml": "^0.0.5",
     "jszip": "^3.10.1"

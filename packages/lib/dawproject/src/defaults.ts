@@ -110,8 +110,8 @@ export class RealParameterSchema implements Referenceable {
     @Xml.Attribute("name")
     readonly name?: string
 
-    @Xml.Attribute("value", Xml.NumberOptional)
-    readonly value?: number
+    @Xml.Attribute("value", Xml.NumberRequired)
+    readonly value!: number
 
     @Xml.Attribute("unit", Xml.StringRequired)
     readonly unit!: Unit
@@ -538,11 +538,11 @@ export class BandSchema {
     @Xml.Attribute("type", Xml.StringRequired)
     readonly type!: EqBandType
 
+    @Xml.Attribute("order", Xml.NumberOptional)
+    readonly order?: int
+
     @Xml.Element("Freq", RealParameterSchema)
     readonly freq!: RealParameterSchema
-
-    @Xml.Attribute("order")
-    readonly order?: string
 
     @Xml.Element("Gain", RealParameterSchema)
     readonly gain?: RealParameterSchema
@@ -555,8 +555,8 @@ export class BandSchema {
 }
 
 @Xml.Class("Equalizer")
-export class Equalizer extends BuiltinDeviceSchema {
-    @Xml.Element("Band", Array)
+export class EqualizerSchema extends BuiltinDeviceSchema {
+    @Xml.ElementRef(BandSchema)
     readonly bands!: ReadonlyArray<BandSchema>
 }
 

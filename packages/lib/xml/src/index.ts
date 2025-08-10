@@ -70,7 +70,6 @@ export namespace Xml {
 
     export const toElement = (tagName: string, object: Record<string, any>): Element => {
         const doc = document.implementation.createDocument(null, null)
-
         const getClassTagName = (constructor: Function): string => {
             const tagMeta = MetaClassMap.get(constructor)?.get("class")
             if (tagMeta?.type === "class") {
@@ -81,19 +80,15 @@ export namespace Xml {
 
         const visit = (tagName: string, object: Record<string, any>): Element => {
             const element = doc.createElement(tagName)
-
             Object.entries(object).forEach(([key, value]) => {
                 if (!isDefined(value)) return
-
                 const meta = resolveMeta(object.constructor, key)
                 if (!isDefined(meta)) return
-
                 if (meta.type === "attribute") {
                     assert(typeof value === "number" || typeof value === "string" || typeof value === "boolean",
                         `Attribute value must be a primitive for ${key} = ${value}`)
                     meta.validator?.parse?.call(null, value)
                     element.setAttribute(meta.name, String(value))
-
                 } else if (meta.type === "element") {
                     if (Array.isArray(value)) {
                         if (value.length === 0) return
@@ -111,11 +106,9 @@ export namespace Xml {
                     } else {
                         element.appendChild(visit(meta.name, value))
                     }
-
                 } else if (meta.type === "element-ref") {
                     if (!Array.isArray(value)) return panic("ElementRef must be an array of items.")
                     if (value.length === 0) return
-
                     const validItems = value.filter(isDefined)
                     if (validItems.length === 0) return
 
@@ -136,7 +129,6 @@ export namespace Xml {
                     }
                 }
             })
-
             return element
         }
 
@@ -227,7 +219,6 @@ export namespace Xml {
                         meta.validator?.required && panic(`Missing attribute '${meta.name}'`)
                         Object.defineProperty(instance, key, {value: undefined, enumerable: true})
                     }
-
                 } else if (meta.type === "element") {
                     const {name, clazz: elementClazz} = meta
                     if (elementClazz === Array) {
@@ -264,7 +255,6 @@ export namespace Xml {
                 } else if (meta.type === "element-ref") {
                     if (meta.name) {
                         const directElements = findAllChildrenByName(element, meta.name)
-
                         if (directElements.length > 0 && directElements[0].children.length === 0) {
                             // Direct elements case
                             const items = directElements.map(child => {
@@ -306,7 +296,6 @@ export namespace Xml {
             }
             return instance
         }
-
         const xmlDoc = new DOMParser().parseFromString(xml.trimStart(), "application/xml").documentElement
         return deserialize(xmlDoc, clazz)
     }

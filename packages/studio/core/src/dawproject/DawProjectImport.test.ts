@@ -8,8 +8,7 @@ import {DawProjectImport} from "./DawProjectImport"
 describe("DawProjectImport", () => {
     it("import", async () => {
         const __dirname = path.dirname(fileURLToPath(import.meta.url))
-        // const testFile = "../../../../../test-files/groups-bw.dawproject"
-        const testFile = "../../../../../test-files/automation.dawproject"
+        const testFile = "../../../../../test-files/eq.dawproject"
         const buffer = fs.readFileSync(path.join(__dirname, testFile))
         const {project, resources} = await DawProject.decode(buffer)
         const {skeleton} = await DawProjectImport.read(project, resources)

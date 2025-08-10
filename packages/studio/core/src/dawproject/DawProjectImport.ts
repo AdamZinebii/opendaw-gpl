@@ -17,7 +17,7 @@ import {
     UUID,
     ValueMapping
 } from "@opendaw/lib-std"
-import {BoxGraph, PointerField} from "@opendaw/lib-box"
+import {BoxGraph, Field, PointerField} from "@opendaw/lib-box"
 import {gainToDb, PPQN} from "@opendaw/lib-dsp"
 import {
     ArrangementSchema,
@@ -28,6 +28,7 @@ import {
     ClipsSchema,
     DeviceRole,
     DeviceSchema,
+    EqualizerSchema,
     LaneSchema,
     LanesSchema,
     NotesSchema,
@@ -68,6 +69,7 @@ import {InstrumentFactories} from "../InstrumentFactories"
 import {ColorCodes} from "../ColorCodes"
 import {Colors} from "../Colors"
 import {DeviceIO} from "./DeviceIO"
+import {BuiltinDevices} from "./BuiltinDevices"
 
 export namespace DawProjectImport {
     type AudioBusUnit = { audioBusBox: AudioBusBox, audioUnitBox: AudioUnitBox }
@@ -126,12 +128,11 @@ export namespace DawProjectImport {
 
         // Reading methods
         //
-        const createEffect = ({deviceRole, deviceVendor, deviceID, deviceName, state}: DeviceSchema,
-                              target: AudioUnitBox,
-                              key: keyof Pick<AudioUnitBox, "midiEffects" | "audioEffects">,
+        const createEffect = (device: DeviceSchema,
+                              field: Field<Pointers.MidiEffectHost> | Field<Pointers.AudioEffectHost>,
                               index: int): unknown => {
+            const {deviceRole, deviceVendor, deviceID, deviceName, state} = device
             assert(deviceRole === DeviceRole.NOTE_FX || deviceRole === DeviceRole.AUDIO_FX, "Device is not an effect")
-            const field = target[key]
             if (deviceVendor === "openDAW") {
                 console.debug(`Recreate openDAW effect device '${deviceName}' with id '${deviceID}'`)
                 const resource = ifDefined(state?.path, path => resources.fromPath(path))
@@ -142,6 +143,9 @@ export namespace DawProjectImport {
                     DeviceBoxUtils.lookupIndexField(device).setValue(index)
                     return
                 }
+            }
+            if (isInstanceOf(device, EqualizerSchema)) {
+                return BuiltinDevices.equalizer(boxGraph, device, field, index)
             }
             const comment = isDefined(deviceVendor) ? `${deviceID} from ${deviceVendor} ⚠️` : `${deviceID} ⚠️`
             switch (deviceRole) {
@@ -181,7 +185,9 @@ export namespace DawProjectImport {
                 })
         }
 
-        const createInstrumentBox = (audioUnitBox: AudioUnitBox, track: TrackSchema, device: Nullish<DeviceSchema>): InstrumentBox => {
+        const createInstrumentBox = (audioUnitBox: AudioUnitBox,
+                                     track: TrackSchema,
+                                     device: Nullish<DeviceSchema>): InstrumentBox => {
             if (isDefined(device)) {
                 const {deviceName, deviceVendor, deviceID, state} = device
                 if (deviceVendor === "openDAW") {
@@ -206,10 +212,8 @@ export namespace DawProjectImport {
             return panic(`Cannot create instrument box for track '${track.name}' with contentType '${track.contentType}' and device '${device?.deviceName}'`)
         }
 
-        const createInstrumentUnit = (track: TrackSchema,
-                                      type: AudioUnitType): InstrumentUnit => {
-            const channel: ChannelSchema = asDefined(track.channel)
-            const audioUnitBox = AudioUnitBox.create(rootBox.graph, UUID.generate(), box => {
+        const createAudioUnit = (channel: ChannelSchema, type: AudioUnitType): AudioUnitBox =>
+            AudioUnitBox.create(rootBox.graph, UUID.generate(), box => {
                 box.collection.refer(rootBox.audioUnits)
                 box.type.setValue(type)
                 box.volume.setValue(gainToDb(channel.volume?.value ?? 1.0))
@@ -217,14 +221,18 @@ export namespace DawProjectImport {
                 box.mute.setValue(channel.mute?.value === true)
                 box.solo.setValue(channel.solo === true)
             })
+
+        const createInstrumentUnit = (track: TrackSchema, type: AudioUnitType): InstrumentUnit => {
+            const channel: ChannelSchema = asDefined(track.channel)
+            const audioUnitBox = createAudioUnit(channel, type)
             sortAudioUnits.add(AudioUnitOrdering[type], audioUnitBox)
             const instrumentDevice: Nullish<DeviceSchema> = ifDefined(channel.devices, devices => {
                 devices
                     .filter((device) => device.deviceRole === DeviceRole.NOTE_FX)
-                    .forEach((device, index) => createEffect(device, audioUnitBox, "midiEffects", index))
+                    .forEach((device, index) => createEffect(device, audioUnitBox.midiEffects, index))
                 devices
                     .filter((device) => device.deviceRole === DeviceRole.AUDIO_FX)
-                    .forEach((device, index) => createEffect(device, audioUnitBox, "audioEffects", index))
+                    .forEach((device, index) => createEffect(device, audioUnitBox.audioEffects, index))
                 return devices
                     .find((device) => device.deviceRole === DeviceRole.INSTRUMENT)
             })
@@ -236,14 +244,7 @@ export namespace DawProjectImport {
                                     type: AudioUnitType,
                                     icon: IconSymbol): AudioBusUnit => {
             const channel: ChannelSchema = asDefined(track.channel)
-            const audioUnitBox = AudioUnitBox.create(rootBox.graph, UUID.generate(), box => {
-                box.collection.refer(rootBox.audioUnits)
-                box.type.setValue(type)
-                box.volume.setValue(gainToDb(channel.volume?.value ?? 1.0))
-                box.panning.setValue(ValueMapping.bipolar().y(channel.pan?.value ?? 0.5))
-                box.mute.setValue(channel.mute?.value === true)
-                box.solo.setValue(channel.solo === true)
-            })
+            const audioUnitBox = createAudioUnit(channel, type)
             sortAudioUnits.add(AudioUnitOrdering[type], audioUnitBox)
             const audioBusBox = AudioBusBox.create(rootBox.graph, UUID.generate(), box => {
                 box.collection.refer(rootBox.audioBusses)
@@ -255,7 +256,7 @@ export namespace DawProjectImport {
             })
             ifDefined(channel.devices, devices => devices
                 .filter((device) => device.deviceRole === DeviceRole.AUDIO_FX)
-                .forEach((device, index) => createEffect(device, audioUnitBox, "audioEffects", index)))
+                .forEach((device, index) => createEffect(device, audioUnitBox.audioEffects, index)))
             return {audioBusBox, audioUnitBox}
         }
 
