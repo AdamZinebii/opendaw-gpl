@@ -36,12 +36,13 @@ export class Shortcuts {
             } else if (code === "KeyM") {
                 service.panelLayout.getByType(PanelType.Mixer).toggleMinimize()
             } else if (code === "Tab") {
+                event.preventDefault()
                 const keys = Object.entries(DefaultWorkspace)
                     .filter((entry: [string, Workspace.Screen]) => !entry[1].hidden)
                     .map(([key]) => key as Workspace.ScreenKeys)
                 const screen = service.layout.screen
                 const current = screen.getValue()
-                if (isUndefined(current)) {return}
+                if (isUndefined(current) || !keys.includes(current)) {return}
                 if (event.shiftKey) {
                     screen.setValue(Arrays.getPrev(keys, current))
                 } else {

@@ -20,7 +20,7 @@
 
 ### Importer
 
-* Map to new uuids (not when exporting)
+* ~~Map to new uuids (not when exporting)~~
 * ~~Create the openDAW device if found~~
       * ~~Read preset~~
 * Create automation
