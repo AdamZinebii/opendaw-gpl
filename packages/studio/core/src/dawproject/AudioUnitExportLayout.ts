@@ -1,5 +1,5 @@
 import {AudioBusBox, AudioUnitBox} from "@opendaw/studio-boxes"
-import {ArrayMultimap, asInstanceOf, isInstanceOf, Nullable, Option} from "@opendaw/lib-std"
+import {ArrayMultimap, asInstanceOf, isDefined, isInstanceOf, Nullable, Option} from "@opendaw/lib-std"
 import {AudioUnitType} from "@opendaw/studio-enums"
 import {DeviceBoxUtils} from "@opendaw/studio-adapters"
 
@@ -40,7 +40,7 @@ export namespace AudioUnitExportLayout {
         const visited = new Set<AudioUnitBox>()
         return roots
             .map(root => buildTrackRecursive(root, feedsInto, visited))
-            .filter((track): track is Track => track !== null)
+            .filter(isDefined)
     }
 
     const buildTrackRecursive = (audioUnit: AudioUnitBox,
@@ -53,14 +53,15 @@ export namespace AudioUnitExportLayout {
         visited.add(audioUnit)
         const children = feedsInto.get(audioUnit)
             .map(childUnit => buildTrackRecursive(childUnit, feedsInto, visited))
-            .filter((track): track is Track => track !== null)
+            .filter(isDefined)
         return {audioUnit, children}
     }
 
     export const printTrackStructure = (tracks: ReadonlyArray<Track>, indent = 0): void => {
         const spaces = " ".repeat(indent)
         tracks.forEach(track => {
-            const label = DeviceBoxUtils.lookupLabelField(track.audioUnit.input.pointerHub.incoming().at(0)?.box).getValue()
+            const inputBox = track.audioUnit.input.pointerHub.incoming().at(0)?.box
+            const label = DeviceBoxUtils.lookupLabelField(inputBox).getValue()
             console.debug(`${spaces}⌙ ${label} (${track.audioUnit.address.toString()})`)
             if (track.children.length > 0) {
                 printTrackStructure(track.children, indent + 2)
