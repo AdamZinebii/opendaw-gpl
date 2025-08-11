@@ -108,6 +108,7 @@ openDAW tries to avoid external libraries and frameworks. Following is a list of
 
 * [jszip](https://www.npmjs.com/package/jszip) (for openDAW project bundle file)
 * [markdown-it](https://www.npmjs.com/package/markdown-it) + [markdown-it-table](https://www.npmjs.com/package/markdown-it-table) (for help pages)
+* [d3-force](https://d3js.org/d3-force) (for graph debugging)
 
 Before starting, ensure you have the following installed on your system:
 
