@@ -241,10 +241,13 @@ export const showNewItemDialog = (headline: string, suggestion: string, factory:
     dialog.showModal()
 }
 
-export const showErrorDialog = (_scope: string,
-                                name: string,
-                                message: string,
-                                backupCommand: Option<Provider<Promise<void>>> = Option.None): void => {
+export const showErrorDialog = ({name, message, probablyHasExtension, backupCommand = Option.None}: {
+    scope: string,
+    name: string,
+    message: string,
+    probablyHasExtension: boolean,
+    backupCommand?: Option<Provider<Promise<void>>>
+}): void => {
     console.debug(`Recovery enabled: ${backupCommand}`)
     const dialog: HTMLDialogElement = (
         <Dialog headline="An error occurred :("
@@ -270,12 +273,12 @@ export const showErrorDialog = (_scope: string,
             <div style={{padding: "1em 0", maxWidth: "50vw"}}>
                 <h3>{name}</h3>
                 <p>{message}</p>
-                {document.scripts.length > 1 &&
+                {probablyHasExtension && (
                     <p style={{color: Colors.red}}>
                         Something extra is running! A browser extension might be causing issues.<br/>
                         Try disabling extensions for this site.
                     </p>
-                }
+                )}
             </div>
         </Dialog>
     )

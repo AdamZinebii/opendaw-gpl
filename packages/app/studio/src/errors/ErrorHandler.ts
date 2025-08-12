@@ -38,8 +38,17 @@ export class ErrorHandler {
             }).then(console.info, console.warn)
         }
         console.error(scope, error.name, error.message, error.stack)
+        const probablyHasExtension = document.scripts.length > 1
+            || error.message.includes("script-src blocked eval")
+            || error.stack?.includes("chrome-extension://") === true
         if (Surface.isAvailable()) {
-            showErrorDialog(scope, error.name, error.message, this.#service.recovery.createBackupCommand())
+            showErrorDialog({
+                scope: scope,
+                name: error.name,
+                message: error.message,
+                probablyHasExtension,
+                backupCommand: this.#service.recovery.createBackupCommand()
+            })
         } else {
             alert(`Boot Error in '${scope}': ${error.name}`)
         }

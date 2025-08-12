@@ -1,9 +1,9 @@
 import "./main.sass"
 import {App} from "@/ui/App.tsx"
-import {Option, panic, Procedure, unitValue, UUID} from "@opendaw/lib-std"
+import {panic, Procedure, unitValue, UUID} from "@opendaw/lib-std"
 import {StudioService} from "@/service/StudioService"
 import {AudioData, SampleMetaData} from "@opendaw/studio-adapters"
-import {showCacheDialog, showErrorDialog, showInfoDialog} from "@/ui/components/dialogs.tsx"
+import {showCacheDialog, showInfoDialog} from "@/ui/components/dialogs.tsx"
 import {installCursors} from "@/ui/Cursors.ts"
 import {BuildInfo} from "./BuildInfo"
 import {Surface} from "@/ui/surface/Surface.tsx"
@@ -50,9 +50,7 @@ requestAnimationFrame(async () => {
         console.debug(`AudioContext state: ${context.state}, sampleRate: ${context.sampleRate}`)
         const audioWorklets = await Promises.tryCatch(Worklets.install(context, WorkletsUrl))
         if (audioWorklets.status === "rejected") {
-            showErrorDialog("Audio",
-                "Boot Error", `Could not boot audio-worklets (${audioWorklets.error})`, Option.None)
-            return
+            return panic(audioWorklets.error)
         }
         if (context.state === "suspended") {
             window.addEventListener("click",
