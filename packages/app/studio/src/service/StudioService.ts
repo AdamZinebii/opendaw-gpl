@@ -109,6 +109,7 @@ export class StudioService implements ProjectEnv {
     readonly panelLayout = new PanelContents(createPanelFactory(this))
     readonly spotlightDataSupplier = new SpotlightDataSupplier()
     readonly samplePlayback: SamplePlayback
+    // noinspection JSUnusedGlobalSymbols
     readonly _shortcuts = new Shortcuts(this) // TODO reference will be used later in a key-mapping configurator
     readonly engine = new EngineFacade()
     readonly recovery = new Recovery(this)
@@ -171,6 +172,7 @@ export class StudioService implements ProjectEnv {
                 this.#startAudioWorklet(lifeTime, project)
                 if (root) {this.switchScreen("default")}
             } else {
+                this.engine.releaseClient()
                 range.maxUnits = PPQN.fromSignature(128, 1)
                 range.showUnitInterval(0, PPQN.fromSignature(16, 1))
                 this.layout.screen.setValue("dashboard")
@@ -202,8 +204,6 @@ export class StudioService implements ProjectEnv {
             })
         }
 
-        this.spotlightDataSupplier.registerAction("Play", () => this.engine.isPlaying().setValue(true))
-        this.spotlightDataSupplier.registerAction("Stop", () => this.engine.isPlaying().setValue(false))
         this.spotlightDataSupplier.registerAction("Create Synth", EmptyExec)
         this.spotlightDataSupplier.registerAction("Create Drumcomputer", EmptyExec)
         this.spotlightDataSupplier.registerAction("Create ModularSystem", EmptyExec)

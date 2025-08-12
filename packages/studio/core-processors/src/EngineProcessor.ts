@@ -10,6 +10,7 @@ import {
     Observer,
     Option,
     panic,
+    quantizeFloor,
     SortedSet,
     Subscription,
     SyncStream,
@@ -89,6 +90,7 @@ export class EngineProcessor extends AudioWorkletProcessor implements EngineCont
     #context: Option<EngineContext> = Option.None
     #panic: boolean = false
     #running: boolean = true
+    #metronomeEnabled: boolean = false
 
     constructor({processorOptions: {sab, project, exportConfiguration}}: {
         processorOptions: EngineProcessorOptions
@@ -120,10 +122,13 @@ export class EngineProcessor extends AudioWorkletProcessor implements EngineCont
         this.#audioGraphSorting = new TopologicalSort<Processor>(this.#audioGraph)
         this.#notifier = new Notifier<ProcessPhase>()
         this.#mixer = new Mixer()
-        this.#metronome = new Metronome()
+        this.#metronome = new Metronome(this.#timeInfo)
         this.#renderer = new BlockRenderer(this)
         this.#stateSender = SyncStream.writer(EngineStateSchema(), sab, x => {
             x.position = this.#timeInfo.position
+            x.countInBeatsRemaining = 0 // TODO
+            x.isPlaying = this.#timeInfo.transporting
+            x.isRecording = this.#timeInfo.isRecording
         })
         this.#liveStreamBroadcaster = this.#terminator.own(LiveStreamBroadcaster.create(this.#messenger, "engine-live-data"))
         this.#updateClock = new UpdateClock(this)
@@ -132,42 +137,49 @@ export class EngineProcessor extends AudioWorkletProcessor implements EngineCont
         this.#terminator.ownAll(
             createSyncTarget(this.#boxGraph, this.#messenger.channel("engine-sync")),
             Communicator.executor<EngineCommands>(this.#messenger.channel("engine-commands"), {
-                setPlaying: (value: boolean) => this.#timeInfo.transporting = value,
-                setPosition: (position: number) => {this.#timeInfo.position = position},
-                setRecording: (value: boolean) => {
-                    if (value) {
-                        if (this.#timeInfo.transporting) {
-                            // smoothly turn on recording
-                        } else {
-                            console.debug("COUNT-IN RECORDING...")
-                            const position = this.#timeInfo.position
-                            const metronomeEnabled = this.#timeInfo.metronomeEnabled
-                            this.#timeInfo.metronomeEnabled = true
-                            this.#renderer.playEvents = false
-                            this.#timeInfo.transporting = true
-                            this.#timeInfo.position = position - PPQN.Bar
-                            const subscription = this.#renderer.setCallback(position, () => {
-                                console.debug("START RECORDING...")
-                                this.#timeInfo.metronomeEnabled = metronomeEnabled
-                                this.#renderer.playEvents = true
-                                subscription.terminate()
-                            })
-                            // TODO Cancel subscription and reset, if user stops recording or changes position
-                        }
-                    } else {
-                        console.debug("STOP RECORDING")
+                play: () => {
+                    this.#timeInfo.transporting = true
+                },
+                stop: (reset: boolean) => {
+                    const wasTransporting = this.#timeInfo.transporting
+                    this.#timeInfo.transporting = false
+                    if (reset || !wasTransporting) {
+                        this.#reset()
                     }
                 },
-                setMetronomeEnabled: (value: boolean) => this.#timeInfo.metronomeEnabled = value,
-                stopAndReset: () => {
-                    console.debug("stopAndReset")
-                    this.#timeInfo.position = 0.0
-                    this.#timeInfo.transporting = false
-                    this.#renderer.reset()
-                    this.#clipSequencing.reset()
-                    this.#audioGraphSorting.sorted().forEach(processor => processor.reset())
-                    this.#peaks.clear()
+                setPosition: (position: number) => {
+                    if (!this.#timeInfo.isRecording) {
+                        this.#timeInfo.position = position
+                    }
                 },
+                startRecording: () => {
+                    if (this.#timeInfo.isRecording || true) {return}
+                    this.#timeInfo.isRecording = true
+                    if (!this.#timeInfo.transporting) {
+                        console.debug("COUNT-IN RECORDING...")
+                        const position = this.#timeInfo.position
+                        const start = quantizeFloor(position, PPQN.Bar)
+                        this.#timeInfo.metronomeEnabled = true
+                        this.#renderer.playEvents = false
+                        this.#timeInfo.transporting = true
+                        this.#timeInfo.position = start - PPQN.Bar
+                        const subscription = this.#renderer.setCallback(start, () => {
+                            console.debug("START RECORDING...")
+                            this.#timeInfo.metronomeEnabled = this.#metronomeEnabled
+                            this.#renderer.playEvents = true
+                            subscription.terminate()
+                        })
+                    }
+                },
+                stopRecording: () => {
+                    if (!this.#timeInfo.isRecording) {return}
+                    console.debug("STOP RECORDING")
+                    this.#timeInfo.isRecording = false
+                    this.#timeInfo.metronomeEnabled = this.#metronomeEnabled
+                    this.#timeInfo.transporting = false
+                    this.#renderer.playEvents = true
+                },
+                setMetronomeEnabled: (value: boolean) => this.#timeInfo.metronomeEnabled = this.#metronomeEnabled = value,
                 queryLoadingComplete: (): Promise<boolean> =>
                     Promise.resolve(this.#boxGraph.boxes().every(box => box.accept<BoxVisitor<boolean>>({
                         visitAudioFileBox: (box: AudioFileBox) =>
@@ -332,5 +344,16 @@ export class EngineProcessor extends AudioWorkletProcessor implements EngineCont
         this.#terminator.terminate()
         this.#audioUnits.forEach(unit => unit.terminate())
         this.#audioUnits.clear()
+    }
+
+    #reset(): void {
+        console.debug("reset")
+        this.#timeInfo.isRecording = false
+        this.#timeInfo.position = 0.0
+        this.#timeInfo.transporting = false
+        this.#renderer.reset()
+        this.#clipSequencing.reset()
+        this.#audioGraphSorting.sorted().forEach(processor => processor.reset())
+        this.#peaks.clear()
     }
 }

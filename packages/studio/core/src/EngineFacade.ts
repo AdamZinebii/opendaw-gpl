@@ -30,10 +30,7 @@ export class EngineFacade implements Engine {
 
     #client: Option<EngineWorklet> = Option.None
 
-    constructor() {
-        this.#blockBooleanWhenNoClient(this.#isPlaying)
-        this.#blockBooleanWhenNoClient(this.#isRecording)
-    }
+    constructor() {}
 
     setClient(client: EngineWorklet) {
         this.#client = Option.wrap(client)
@@ -45,24 +42,32 @@ export class EngineFacade implements Engine {
             client.isRecording().catchupAndSubscribe(owner => this.#isRecording.setValue(owner.getValue())),
             client.metronomeEnabled().catchupAndSubscribe(owner => this.#metronomeEnabled.setValue(owner.getValue())),
             client.markerState().catchupAndSubscribe(owner => this.#markerState.setValue(owner.getValue())),
-            this.position().catchupAndSubscribe(owner => client.position().setValue(owner.getValue())),
-            this.isPlaying().catchupAndSubscribe(owner => client.isPlaying().setValue(owner.getValue())),
-            this.isRecording().catchupAndSubscribe(owner => client.isRecording().setValue(owner.getValue())),
             this.metronomeEnabled().catchupAndSubscribe(owner => client.metronomeEnabled().setValue(owner.getValue()))
         )
     }
 
+    releaseClient(): void {
+        this.#lifecycle.terminate()
+        this.#client.ifSome(client => client.terminate())
+        this.#client = Option.None
+    }
+
+    play(): void {this.#client.ifSome(client => client.play())}
+    stop(reset: boolean = false): void {this.#client.ifSome(client => client.stop(reset))}
+    setPosition(position: ppqn): void {this.#client.ifSome(client => client.setPosition(position))}
+    startRecording(): void {this.#client.ifSome(client => client.startRecording())}
+    stopRecording(): void {this.#client.ifSome(client => client.stopRecording())}
+
     playbackTimestamp(): MutableObservableValue<ppqn> {return this.#playbackTimestamp}
     position(): ObservableValue<ppqn> {return this.#position}
-    isPlaying(): MutableObservableValue<boolean> {return this.#isPlaying}
-    isRecording(): MutableObservableValue<boolean> {return this.#isRecording}
+    isPlaying(): ObservableValue<boolean> {return this.#isPlaying}
+    isRecording(): ObservableValue<boolean> {return this.#isRecording}
     metronomeEnabled(): MutableObservableValue<boolean> {return this.#metronomeEnabled}
     markerState(): DefaultObservableValue<Nullable<[UUID.Format, int]>> {return this.#markerState}
     isReady(): Promise<void> {return this.#client.mapOr(client => client.isReady(), Promise.resolve())}
     queryLoadingComplete(): Promise<boolean> {
         return this.#client.mapOr(client => client.queryLoadingComplete(), Promise.resolve(false))
     }
-    stop(): void {this.#client.ifSome(client => client.stop())}
     panic(): void {this.#client.ifSome(client => client.panic())}
     sampleRate(): number {return this.#client.isEmpty() ? 44_100 : this.#client.unwrap().context.sampleRate}
     subscribeClipNotification(observer: Observer<ClipNotification>): Subscription {
@@ -72,27 +77,15 @@ export class EngineFacade implements Engine {
         this.#client.unwrap("No engine").noteOn(uuid, pitch, velocity)
     }
     noteOff(uuid: UUID.Format, pitch: byte): void {this.#client.unwrap("No engine").noteOff(uuid, pitch)}
-    scheduleClipPlay(...clipIds: ReadonlyArray<UUID.Format>): void {
-        this.#client.unwrap("No engine").scheduleClipPlay(...clipIds)
+    scheduleClipPlay(clipIds: ReadonlyArray<UUID.Format>): void {
+        this.#client.unwrap("No engine").scheduleClipPlay(clipIds)
     }
-    scheduleClipStop(...trackIds: ReadonlyArray<UUID.Format>): void {
-        this.#client.unwrap("No engine").scheduleClipStop(...trackIds)
-    }
-    requestPosition(position: ppqn): void {
-        this.#client.unwrap("No engine").requestPosition(position)
+    scheduleClipStop(trackIds: ReadonlyArray<UUID.Format>): void {
+        this.#client.unwrap("No engine").scheduleClipStop(trackIds)
     }
 
     terminate(): void {
+        this.releaseClient()
         this.#terminator.terminate()
-        this.#client.ifSome(client => client.terminate())
-        this.#client = Option.None
-    }
-
-    #blockBooleanWhenNoClient(value: DefaultObservableValue<boolean>): void {
-        this.#terminator.own(value.subscribe(owner => {
-            if (this.#client.isEmpty() && owner.getValue()) {
-                value.setValue(false)
-            }
-        }))
     }
 }

@@ -23,25 +23,19 @@ type Construct = {
     appearance?: Appearance
 }
 
-export const ButtonCheckboxRadio = ({
-                                        lifecycle,
-                                        dataClass,
-                                        style,
-                                        className: externalClassName,
-                                        appearance
-                                    }: Construct, children: JsxValue) => {
+export const ButtonCheckboxRadio = ({lifecycle, dataClass, style, className: externalClassName, appearance}: Construct,
+                                    children: JsxValue) => {
     const wrapper: HTMLElement = (
-        <div
-            className={Html.buildClassList(className,
-                appearance?.framed && "framed",
-                appearance?.landscape && "landscape",
-                externalClassName)}
-            data-class={dataClass}
-            onpointerdown={(event: PointerEvent) => {
-                self.getSelection()?.removeAllRanges()
-                event.preventDefault()
-                event.stopPropagation()
-            }}>
+        <div className={Html.buildClassList(className,
+            appearance?.framed && "framed",
+            appearance?.landscape && "landscape",
+            externalClassName)}
+             data-class={dataClass}
+             onpointerdown={(event: PointerEvent) => {
+                 self.getSelection()?.removeAllRanges()
+                 event.preventDefault()
+                 event.stopPropagation()
+             }}>
             {children}
         </div>
     )

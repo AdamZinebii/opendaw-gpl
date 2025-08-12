@@ -37,7 +37,13 @@ export class BlockRenderer {
         return Terminable.create(() => this.#callbacks.remove(position, callback))
     }
 
-    reset(): void {this.#currentMarker = null}
+    reset(): void {
+        this.#playEvents = true
+        this.#tempoChanged = false
+        this.#someMarkersChanged = false
+        this.#freeRunningPosition = 0.0
+        this.#currentMarker = null
+    }
 
     process(procedure: Procedure<ProcessInfo>): void {
         let markerChanged = false

@@ -91,7 +91,7 @@ export const TimeAxis = ({lifecycle, service, snapping, range, mapper}: Construc
             update: (event: Dragging.Event) => {
                 const x = event.clientX - canvas.getBoundingClientRect().left
                 const p = Math.max(0, range.xToUnit(x))
-                service.engine.requestPosition(snapping.round(p))
+                service.engine.setPosition(snapping.round(p))
                 if (p < range.unitMin) {
                     range.moveToUnit(p)
                 } else if (p > range.unitMax) {
