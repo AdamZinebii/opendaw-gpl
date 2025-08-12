@@ -26,7 +26,7 @@ type RenderCall = {
 }
 
 export const NoteFall = ({lifecycle, service, updateNotifier}: Construct) => {
-    const enginePosition = service.engine.position()
+    const enginePosition = service.engine.position
     const {project} = service
     const pianoMode = project.rootBoxAdapter.pianoMode
     const {keyboard, timeRangeInQuarters, noteScale, noteLabels, transpose} = pianoMode

@@ -54,7 +54,7 @@ import {createExampleProject} from "./ExampleProject"
         window.addEventListener("click", () => {
             worklet.play()
             AnimationFrame.add(() => {
-                const ppqn = worklet.position().getValue()
+                const ppqn = worklet.position.getValue()
                 const {bars, beats} = PPQN.toParts(ppqn)
                 document.body.textContent = `${bars + 1}:${beats + 1}`
             })

@@ -36,13 +36,13 @@ export class EngineFacade implements Engine {
         this.#client = Option.wrap(client)
         this.#lifecycle.terminate()
         this.#lifecycle.ownAll(
-            client.playbackTimestamp().catchupAndSubscribe(owner => this.#playbackTimestamp.setValue(owner.getValue())),
-            client.position().catchupAndSubscribe(owner => this.#position.setValue(owner.getValue())),
-            client.isPlaying().catchupAndSubscribe(owner => this.#isPlaying.setValue(owner.getValue())),
-            client.isRecording().catchupAndSubscribe(owner => this.#isRecording.setValue(owner.getValue())),
-            client.metronomeEnabled().catchupAndSubscribe(owner => this.#metronomeEnabled.setValue(owner.getValue())),
-            client.markerState().catchupAndSubscribe(owner => this.#markerState.setValue(owner.getValue())),
-            this.metronomeEnabled().catchupAndSubscribe(owner => client.metronomeEnabled().setValue(owner.getValue()))
+            client.playbackTimestamp.catchupAndSubscribe(owner => this.#playbackTimestamp.setValue(owner.getValue())),
+            client.position.catchupAndSubscribe(owner => this.#position.setValue(owner.getValue())),
+            client.isPlaying.catchupAndSubscribe(owner => this.#isPlaying.setValue(owner.getValue())),
+            client.isRecording.catchupAndSubscribe(owner => this.#isRecording.setValue(owner.getValue())),
+            client.metronomeEnabled.catchupAndSubscribe(owner => this.#metronomeEnabled.setValue(owner.getValue())),
+            client.markerState.catchupAndSubscribe(owner => this.#markerState.setValue(owner.getValue())),
+            this.metronomeEnabled.catchupAndSubscribe(owner => client.metronomeEnabled.setValue(owner.getValue()))
         )
     }
 
@@ -58,11 +58,11 @@ export class EngineFacade implements Engine {
     startRecording(): void {this.#client.ifSome(client => client.startRecording())}
     stopRecording(): void {this.#client.ifSome(client => client.stopRecording())}
 
-    playbackTimestamp(): MutableObservableValue<ppqn> {return this.#playbackTimestamp}
-    position(): ObservableValue<ppqn> {return this.#position}
-    isPlaying(): ObservableValue<boolean> {return this.#isPlaying}
-    isRecording(): ObservableValue<boolean> {return this.#isRecording}
-    metronomeEnabled(): MutableObservableValue<boolean> {return this.#metronomeEnabled}
+    get position(): ObservableValue<ppqn> {return this.#position}
+    get isPlaying(): ObservableValue<boolean> {return this.#isPlaying}
+    get isRecording(): ObservableValue<boolean> {return this.#isRecording}
+    get metronomeEnabled(): MutableObservableValue<boolean> {return this.#metronomeEnabled}
+    get playbackTimestamp(): ObservableValue<ppqn> {return this.#playbackTimestamp}
     markerState(): DefaultObservableValue<Nullable<[UUID.Format, int]>> {return this.#markerState}
     isReady(): Promise<void> {return this.#client.mapOr(client => client.isReady(), Promise.resolve())}
     queryLoadingComplete(): Promise<boolean> {

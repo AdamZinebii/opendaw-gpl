@@ -19,7 +19,6 @@ export class BlockRenderer {
     #currentMarker: Nullable<[MarkerBoxAdapter, int]> = null
     #someMarkersChanged: boolean = false
     #freeRunningPosition: ppqn = 0.0 // synced with timeInfo when transporting
-    #playEvents: boolean = true // playing events
 
     constructor(context: EngineContext) {
         this.#context = context
@@ -29,16 +28,12 @@ export class BlockRenderer {
         this.#callbacks = new SetMultimap()
     }
 
-    get playEvents(): boolean {return this.#playEvents}
-    set playEvents(value: boolean) {this.#playEvents = value}
-
     setCallback(position: ppqn, callback: Exec): Terminable {
         this.#callbacks.add(position, callback)
         return Terminable.create(() => this.#callbacks.remove(position, callback))
     }
 
     reset(): void {
-        this.#playEvents = true
         this.#tempoChanged = false
         this.#someMarkersChanged = false
         this.#freeRunningPosition = 0.0
@@ -119,11 +114,12 @@ export class BlockRenderer {
                 //
                 // handle action (if any)
                 //
+                const playing = !timeInfo.isCountingIn
                 if (action === null) {
                     const s1 = s0 + sn
                     blocks.push({
                         index: index++, p0, p1, s0, s1, bpm,
-                        flags: BlockFlags.create(transporting, discontinuous, this.#playEvents, this.#tempoChanged)
+                        flags: BlockFlags.create(transporting, discontinuous, playing, this.#tempoChanged)
                     })
                     discontinuous = false
                     p0 = p1
@@ -134,7 +130,7 @@ export class BlockRenderer {
                             const s1 = s0 + PPQN.pulsesToSamples(actionPosition - p0, bpm, sampleRate) | 0
                             blocks.push({
                                 index: index++, p0, p1: actionPosition, s0, s1, bpm,
-                                flags: BlockFlags.create(transporting, discontinuous, this.#playEvents, this.#tempoChanged)
+                                flags: BlockFlags.create(transporting, discontinuous, playing, this.#tempoChanged)
                             })
                             discontinuous = false
                             p0 = actionPosition

@@ -6,6 +6,7 @@ export class TimeInfo {
     #transporting: boolean = false
     #leap: boolean = false
     isRecording: boolean = false
+    isCountingIn: boolean = false
     metronomeEnabled: boolean = false
 
     getLeapStateAndReset(): boolean {

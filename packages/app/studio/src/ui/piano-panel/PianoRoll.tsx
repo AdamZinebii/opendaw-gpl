@@ -19,7 +19,7 @@ export const PianoRoll = ({lifecycle, service, updateNotifier}: Construct) => {
     const {WhiteKey, BlackKey} = PianoRollLayout
     const {project, engine} = service
     const {rootBoxAdapter: {pianoMode: {keyboard, transpose}}} = project
-    const enginePosition = engine.position()
+    const enginePosition = engine.position
     const getPianoLayout = () => PianoRollLayout.Defaults()[keyboard.getValue()]
     const createSVG = (): SVGSVGElement => {
         const pianoLayout = getPianoLayout()

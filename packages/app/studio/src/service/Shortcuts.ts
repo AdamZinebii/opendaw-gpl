@@ -26,7 +26,7 @@ export class Shortcuts {
             } else if (code === "Space") {
                 event.preventDefault()
                 const engine = service.engine
-                const isPlaying = engine.isPlaying().getValue()
+                const isPlaying = engine.isPlaying.getValue()
                 if (isPlaying) {
                     engine.stop()
                 } else {

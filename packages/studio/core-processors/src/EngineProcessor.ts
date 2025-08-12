@@ -50,7 +50,7 @@ import {UpdateClock} from "./UpdateClock"
 import {PeakBroadcaster} from "./PeakBroadcaster"
 import {Metronome} from "./Metronome"
 import {BlockRenderer} from "./BlockRenderer"
-import {Graph, PPQN, TopologicalSort} from "@opendaw/lib-dsp"
+import {Graph, ppqn, PPQN, TopologicalSort} from "@opendaw/lib-dsp"
 import {AudioManagerWorklet} from "./AudioManagerWorklet"
 import {ClipSequencingAudioContext} from "./ClipSequencingAudioContext"
 import {Communicator, Messenger} from "@opendaw/lib-runtime"
@@ -91,6 +91,7 @@ export class EngineProcessor extends AudioWorkletProcessor implements EngineCont
     #panic: boolean = false
     #running: boolean = true
     #metronomeEnabled: boolean = false
+    #recordingStartTime: ppqn = 0.0
 
     constructor({processorOptions: {sab, project, exportConfiguration}}: {
         processorOptions: EngineProcessorOptions
@@ -126,9 +127,12 @@ export class EngineProcessor extends AudioWorkletProcessor implements EngineCont
         this.#renderer = new BlockRenderer(this)
         this.#stateSender = SyncStream.writer(EngineStateSchema(), sab, x => {
             x.position = this.#timeInfo.position
-            x.countInBeatsRemaining = 0 // TODO
+            x.countInBeatsRemaining = this.#timeInfo.isCountingIn
+                ? Math.floor((this.#recordingStartTime - this.#timeInfo.position) / PPQN.Quarter)
+                : 0
             x.isPlaying = this.#timeInfo.transporting
             x.isRecording = this.#timeInfo.isRecording
+            x.isCountingIn = this.#timeInfo.isCountingIn
         })
         this.#liveStreamBroadcaster = this.#terminator.own(LiveStreamBroadcaster.create(this.#messenger, "engine-live-data"))
         this.#updateClock = new UpdateClock(this)
@@ -153,31 +157,31 @@ export class EngineProcessor extends AudioWorkletProcessor implements EngineCont
                     }
                 },
                 startRecording: () => {
-                    if (this.#timeInfo.isRecording || true) {return}
-                    this.#timeInfo.isRecording = true
+                    if (this.#timeInfo.isRecording || this.#timeInfo.isCountingIn) {return}
                     if (!this.#timeInfo.transporting) {
                         console.debug("COUNT-IN RECORDING...")
                         const position = this.#timeInfo.position
-                        const start = quantizeFloor(position, PPQN.Bar)
+                        this.#recordingStartTime = quantizeFloor(position, PPQN.Bar)
+                        this.#timeInfo.isCountingIn = true
                         this.#timeInfo.metronomeEnabled = true
-                        this.#renderer.playEvents = false
                         this.#timeInfo.transporting = true
-                        this.#timeInfo.position = start - PPQN.Bar
-                        const subscription = this.#renderer.setCallback(start, () => {
+                        this.#timeInfo.position = this.#recordingStartTime - PPQN.Bar
+                        const subscription = this.#renderer.setCallback(this.#recordingStartTime, () => {
                             console.debug("START RECORDING...")
+                            this.#timeInfo.isCountingIn = false
+                            this.#timeInfo.isRecording = true
                             this.#timeInfo.metronomeEnabled = this.#metronomeEnabled
-                            this.#renderer.playEvents = true
                             subscription.terminate()
                         })
                     }
                 },
                 stopRecording: () => {
-                    if (!this.#timeInfo.isRecording) {return}
+                    if (!this.#timeInfo.isRecording && !this.#timeInfo.isCountingIn) {return}
                     console.debug("STOP RECORDING")
                     this.#timeInfo.isRecording = false
+                    this.#timeInfo.isCountingIn = false
                     this.#timeInfo.metronomeEnabled = this.#metronomeEnabled
                     this.#timeInfo.transporting = false
-                    this.#renderer.playEvents = true
                 },
                 setMetronomeEnabled: (value: boolean) => this.#timeInfo.metronomeEnabled = this.#metronomeEnabled = value,
                 queryLoadingComplete: (): Promise<boolean> =>
@@ -349,6 +353,8 @@ export class EngineProcessor extends AudioWorkletProcessor implements EngineCont
     #reset(): void {
         console.debug("reset")
         this.#timeInfo.isRecording = false
+        this.#timeInfo.isCountingIn = false
+        this.#timeInfo.metronomeEnabled = this.#metronomeEnabled
         this.#timeInfo.position = 0.0
         this.#timeInfo.transporting = false
         this.#renderer.reset()

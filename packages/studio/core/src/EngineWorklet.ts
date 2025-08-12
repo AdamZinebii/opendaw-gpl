@@ -32,6 +32,8 @@ import {AnimationFrame} from "@opendaw/lib-dom"
 import {Communicator, Messenger} from "@opendaw/lib-runtime"
 import {BoxIO} from "@opendaw/studio-boxes"
 import {Project} from "./Project"
+import {MidiData} from "@opendaw/app-studio/src/midi/MidiData"
+import debug = MidiData.debug
 
 export class EngineWorklet extends AudioWorkletNode implements EngineCommands {
     static ID: int = 0 | 0
@@ -75,6 +77,9 @@ export class EngineWorklet extends AudioWorkletNode implements EngineCommands {
                 } satisfies EngineProcessorOptions
             }
         )
+
+        // TODO
+        this.#countInBeatsRemaining.subscribe(owner => console.debug("COUNT IN", owner.getValue()))
 
         const {resolve, promise} = Promise.withResolvers<void>()
         const messenger = Messenger.for(this.port)
@@ -159,13 +164,15 @@ export class EngineWorklet extends AudioWorkletNode implements EngineCommands {
         this.#commands.setMetronomeEnabled(enabled)
         this.#metronomeEnabled.setValue(enabled)
     }
-    isPlaying(): ObservableValue<boolean> {return this.#isPlaying}
-    isRecording(): ObservableValue<boolean> {return this.#isRecording}
-    isCountingIn(): ObservableValue<boolean> {return this.#isCountingIn}
-    countInBeatsRemaining(): ObservableValue<int> {return this.#countInBeatsRemaining}
-    position(): ObservableValue<ppqn> {return this.#position}
-    playbackTimestamp(): MutableObservableValue<number> {return this.#playbackTimestamp}
-    metronomeEnabled(): MutableObservableValue<boolean> {return this.#metronomeEnabled}
+    get isPlaying(): ObservableValue<boolean> {return this.#isPlaying}
+    get isRecording(): ObservableValue<boolean> {return this.#isRecording}
+    get isCountingIn(): ObservableValue<boolean> {return this.#isCountingIn}
+    get countInBeatsRemaining(): ObservableValue<int> {return this.#countInBeatsRemaining}
+    get position(): ObservableValue<ppqn> {return this.#position}
+    get playbackTimestamp(): MutableObservableValue<number> {return this.#playbackTimestamp}
+    get metronomeEnabled(): MutableObservableValue<boolean> {return this.#metronomeEnabled}
+    get markerState(): DefaultObservableValue<Nullable<[UUID.Format, int]>> {return this.#markerState}
+
     isReady(): Promise<void> {return this.#isReady}
     queryLoadingComplete(): Promise<boolean> {return this.#commands.queryLoadingComplete()}
     noteOn(uuid: UUID.Format, pitch: byte, velocity: unitValue): void {this.#commands.noteOn(uuid, pitch, velocity)}
@@ -184,10 +191,6 @@ export class EngineWorklet extends AudioWorkletNode implements EngineCommands {
             changes: {started: this.#playingClips, stopped: Arrays.empty(), obsolete: Arrays.empty()}
         })
         return this.#notifyClipNotification.subscribe(observer)
-    }
-
-    markerState(): DefaultObservableValue<Nullable<[UUID.Format, int]>> {
-        return this.#markerState
     }
 
     terminate(): void {

@@ -33,7 +33,7 @@ export interface TimeAxisCursorMapper {
 export const TimeAxis = ({lifecycle, service, snapping, range, mapper}: Construct) => {
     let endMarkerPosition: Nullable<ppqn> = null
     const {project: {timelineBox: {signature, durationInPulses}, editing, boxGraph}} = service
-    const position = service.engine.position()
+    const position = service.engine.position
     const canvas: HTMLCanvasElement = <canvas/>
     const painter = lifecycle.own(new CanvasPainter(canvas, ({context}) => {
         const {height} = canvas
@@ -58,7 +58,7 @@ export const TimeAxis = ({lifecycle, service, snapping, range, mapper}: Construc
                     context.fillRect(x, height * 0.5, 1, height * 0.5)
                 }
             })
-        const pulse = service.engine.playbackTimestamp().getValue()
+        const pulse = service.engine.playbackTimestamp.getValue()
         const x = Math.floor(range.unitToX(pulse) * devicePixelRatio)
         context.fillStyle = "rgba(255, 255, 255, 0.25)"
         context.fillRect(x, 0, devicePixelRatio, height)
@@ -116,7 +116,7 @@ export const TimeAxis = ({lifecycle, service, snapping, range, mapper}: Construc
         }, {passive: false}),
         Html.watchResize(canvas, onResize),
         range.subscribe(painter.requestUpdate),
-        service.engine.playbackTimestamp().subscribe(painter.requestUpdate),
+        service.engine.playbackTimestamp.subscribe(painter.requestUpdate),
         boxGraph.subscribeVertexUpdates(Propagation.Children, signature.address, painter.requestUpdate)
     )
     return (

@@ -52,7 +52,7 @@ export const TimeStateDisplay = ({lifecycle, service}: Construct) => {
         if (optSession.isEmpty()) {return}
         const {project} = optSession.unwrap()
         const {timelineBoxAdapter, rootBoxAdapter, boxGraph} = project
-        projectActiveLifeTime.own(service.engine.position().catchupAndSubscribe((owner: ObservableValue<number>) => {
+        projectActiveLifeTime.own(service.engine.position.catchupAndSubscribe((owner: ObservableValue<number>) => {
             const {bars, beats, semiquavers, ticks} = PPQN.toParts(owner.getValue())
             barDigits.value = (bars + 1).toString().padStart(3, "0")
             beatDigit.value = (beats + 1).toString()

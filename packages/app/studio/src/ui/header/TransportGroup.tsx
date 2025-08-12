@@ -17,7 +17,7 @@ export const TransportGroup = ({lifecycle, service: {engine, transport}}: Constr
         <Button lifecycle={lifecycle}
                 appearance={{activeColor: "hsl(120, 50%, 60%)", tooltip: "Play"}}
                 onClick={() => {
-                    if (engine.isPlaying().getValue()) {
+                    if (engine.isPlaying.getValue()) {
                         engine.stop()
                     } else {
                         engine.play()
@@ -28,15 +28,15 @@ export const TransportGroup = ({lifecycle, service: {engine, transport}}: Constr
         <Button lifecycle={lifecycle}
                 appearance={{activeColor: "hsl(0, 50%, 60%)", tooltip: "Recording"}}
                 onClick={() => {
-                    if (engine.isRecording().getValue()) {
+                    if (engine.isRecording.getValue()) {
                         engine.stopRecording()
                     } else {
                         engine.startRecording()
                     }
                 }}><Icon symbol={IconSymbol.Record}/></Button>)
     lifecycle.ownAll(
-        engine.isPlaying().subscribe(owner => playButton.classList.toggle("active", owner.getValue())),
-        engine.isRecording().subscribe(owner => recordButton.classList.toggle("active", owner.getValue()))
+        engine.isPlaying.subscribe(owner => playButton.classList.toggle("active", owner.getValue())),
+        engine.isRecording.subscribe(owner => recordButton.classList.toggle("active", owner.getValue()))
     )
     return (
         <div style={{display: "flex"}}>

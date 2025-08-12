@@ -41,7 +41,7 @@ export const Timeline = ({lifecycle, service}: Construct) => {
                 - tracksFooter.clientHeight
             element.style.setProperty("--cursor-height", `${cursorHeight - 1}px`)
         }),
-        service.engine.position().subscribe((() => {
+        service.engine.position.subscribe((() => {
             let lastPosition: ppqn = 0
             return owner => {
                 if (!followPlaybackCursor.getValue()) {return}

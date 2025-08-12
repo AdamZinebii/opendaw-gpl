@@ -23,7 +23,7 @@ export const MarkerTrackBody = ({lifecycle, service}: Construct) => {
     const {range, snapping} = service.timeline
     const markerState = engine.markerState()
     const canvas: HTMLCanvasElement = <canvas style={{fontSize: "1.25em"}}/>
-    const position = service.engine.position()
+    const position = service.engine.position
     const timelineAdapter = project.boxAdapters.adapterFor(project.timelineBox, TimelineBoxAdapter)
     const markerTrackAdapter: MarkerTrackAdapter = timelineAdapter.markerTrack
     const events = markerTrackAdapter.events

@@ -3,7 +3,6 @@ import {
     byte,
     DefaultObservableValue,
     int,
-    MutableObservableValue,
     Nullable,
     ObservableValue,
     Observer,
@@ -20,11 +19,6 @@ export interface Engine extends Terminable {
     setPosition(position: ppqn): void
     startRecording(): void
     stopRecording(): void
-    position(): ObservableValue<ppqn>
-    isPlaying(): ObservableValue<boolean>
-    isRecording(): ObservableValue<boolean>
-    metronomeEnabled(): ObservableValue<boolean>
-    playbackTimestamp(): MutableObservableValue<ppqn>
     isReady(): Promise<void>
     queryLoadingComplete(): Promise<boolean>
     stop(): void
@@ -35,4 +29,10 @@ export interface Engine extends Terminable {
     scheduleClipStop(trackIds: ReadonlyArray<UUID.Format>): void
     subscribeClipNotification(observer: Observer<ClipNotification>): Subscription
     markerState(): DefaultObservableValue<Nullable<[UUID.Format, int]>>
+
+    get position(): ObservableValue<ppqn>
+    get isPlaying(): ObservableValue<boolean>
+    get isRecording(): ObservableValue<boolean>
+    get metronomeEnabled(): ObservableValue<boolean>
+    get playbackTimestamp(): ObservableValue<ppqn>
 }
