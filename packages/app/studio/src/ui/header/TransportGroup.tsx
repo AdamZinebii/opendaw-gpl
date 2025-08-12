@@ -3,7 +3,7 @@ import {Icon} from "@/ui/components/Icon.tsx"
 import {createElement} from "@opendaw/lib-jsx"
 import {StudioService} from "@/service/StudioService"
 import {Button} from "@/ui/components/Button.tsx"
-import {Lifecycle, MutableObservableValue} from "@opendaw/lib-std"
+import {Lifecycle} from "@opendaw/lib-std"
 import {IconSymbol} from "@opendaw/studio-adapters"
 import {Colors} from "@opendaw/studio-core"
 
@@ -15,7 +15,7 @@ type Construct = {
 export const TransportGroup = ({lifecycle, service: {engine, transport}}: Construct) => (
     <div style={{display: "flex"}}>
         <Checkbox lifecycle={lifecycle}
-                  model={MutableObservableValue.False}
+                  model={engine.isRecording()}
                   appearance={{activeColor: "hsl(0, 50%, 50%)", tooltip: "Recording"}}>
             <Icon symbol={IconSymbol.Record}/>
         </Checkbox>
