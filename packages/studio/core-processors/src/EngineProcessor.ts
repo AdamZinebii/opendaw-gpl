@@ -92,6 +92,7 @@ export class EngineProcessor extends AudioWorkletProcessor implements EngineCont
     #running: boolean = true
     #metronomeEnabled: boolean = false
     #recordingStartTime: ppqn = 0.0
+    #playbackTimestamp: ppqn = 0.0
 
     constructor({processorOptions: {sab, project, exportConfiguration}}: {
         processorOptions: EngineProcessorOptions
@@ -133,6 +134,7 @@ export class EngineProcessor extends AudioWorkletProcessor implements EngineCont
             x.isPlaying = this.#timeInfo.transporting
             x.isRecording = this.#timeInfo.isRecording
             x.isCountingIn = this.#timeInfo.isCountingIn
+            x.playbackTimestamp = this.#playbackTimestamp
         })
         this.#liveStreamBroadcaster = this.#terminator.own(LiveStreamBroadcaster.create(this.#messenger, "engine-live-data"))
         this.#updateClock = new UpdateClock(this)
@@ -142,6 +144,7 @@ export class EngineProcessor extends AudioWorkletProcessor implements EngineCont
             createSyncTarget(this.#boxGraph, this.#messenger.channel("engine-sync")),
             Communicator.executor<EngineCommands>(this.#messenger.channel("engine-commands"), {
                 play: () => {
+                    this.#timeInfo.position = this.#playbackTimestamp
                     this.#timeInfo.transporting = true
                 },
                 stop: (reset: boolean) => {
@@ -153,7 +156,7 @@ export class EngineProcessor extends AudioWorkletProcessor implements EngineCont
                 },
                 setPosition: (position: number) => {
                     if (!this.#timeInfo.isRecording) {
-                        this.#timeInfo.position = position
+                        this.#timeInfo.position = this.#playbackTimestamp = position
                     }
                 },
                 startRecording: () => {
@@ -173,6 +176,8 @@ export class EngineProcessor extends AudioWorkletProcessor implements EngineCont
                             this.#timeInfo.metronomeEnabled = this.#metronomeEnabled
                             subscription.terminate()
                         })
+                    } else {
+                        this.#timeInfo.isRecording = true
                     }
                 },
                 stopRecording: () => {
@@ -352,6 +357,7 @@ export class EngineProcessor extends AudioWorkletProcessor implements EngineCont
 
     #reset(): void {
         console.debug("reset")
+        this.#playbackTimestamp = 0.0
         this.#timeInfo.isRecording = false
         this.#timeInfo.isCountingIn = false
         this.#timeInfo.metronomeEnabled = this.#metronomeEnabled

@@ -32,8 +32,6 @@ import {AnimationFrame} from "@opendaw/lib-dom"
 import {Communicator, Messenger} from "@opendaw/lib-runtime"
 import {BoxIO} from "@opendaw/studio-boxes"
 import {Project} from "./Project"
-import {MidiData} from "@opendaw/app-studio/src/midi/MidiData"
-import debug = MidiData.debug
 
 export class EngineWorklet extends AudioWorkletNode implements EngineCommands {
     static ID: int = 0 | 0
@@ -64,6 +62,7 @@ export class EngineWorklet extends AudioWorkletNode implements EngineCommands {
             this.#isRecording.setValue(state.isRecording)
             this.#isCountingIn.setValue(state.isCountingIn)
             this.#countInBeatsRemaining.setValue(state.countInBeatsRemaining)
+            this.#playbackTimestamp.setValue(state.playbackTimestamp)
         })
 
         super(context, "engine-processor", {
@@ -78,7 +77,7 @@ export class EngineWorklet extends AudioWorkletNode implements EngineCommands {
             }
         )
 
-        // TODO
+        // TODO remove debug code
         this.#countInBeatsRemaining.subscribe(owner => console.debug("COUNT IN", owner.getValue()))
 
         const {resolve, promise} = Promise.withResolvers<void>()
