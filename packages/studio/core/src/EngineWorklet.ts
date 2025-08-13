@@ -157,10 +157,6 @@ export class EngineWorklet extends AudioWorkletNode implements Engine {
     startRecording(): void {this.#commands.startRecording()}
     stopRecording(): void {this.#commands.stopRecording()}
     panic(): void {this.#commands.panic()}
-    setMetronomeEnabled(enabled: boolean): void {
-        this.#commands.setMetronomeEnabled(enabled)
-        this.#metronomeEnabled.setValue(enabled)
-    }
     get isPlaying(): ObservableValue<boolean> {return this.#isPlaying}
     get isRecording(): ObservableValue<boolean> {return this.#isRecording}
     get isCountingIn(): ObservableValue<boolean> {return this.#isCountingIn}
