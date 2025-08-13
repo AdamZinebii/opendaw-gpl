@@ -1,6 +1,5 @@
 import {
     Arrays,
-    assert,
     byte,
     DefaultObservableValue,
     int,
@@ -17,6 +16,9 @@ import {
     UUID
 } from "@opendaw/lib-std"
 import {ppqn} from "@opendaw/lib-dsp"
+import {SyncSource} from "@opendaw/lib-box"
+import {AnimationFrame} from "@opendaw/lib-dom"
+import {Communicator, Messenger} from "@opendaw/lib-runtime"
 import {
     AudioData,
     ClipNotification,
@@ -28,13 +30,9 @@ import {
     EngineToClient,
     ExportStemsConfiguration
 } from "@opendaw/studio-adapters"
-import {SyncSource} from "@opendaw/lib-box"
-import {AnimationFrame} from "@opendaw/lib-dom"
-import {Communicator, Messenger} from "@opendaw/lib-runtime"
 import {BoxIO} from "@opendaw/studio-boxes"
 import {Project} from "./Project"
-import {Engine} from "./Engine"
-import {EngineRecording} from "./EngineRecording"
+import {Engine, NoteTrigger} from "./Engine"
 
 export class EngineWorklet extends AudioWorkletNode implements Engine {
     static ID: int = 0 | 0
@@ -54,11 +52,10 @@ export class EngineWorklet extends AudioWorkletNode implements Engine {
     readonly #metronomeEnabled: DefaultObservableValue<boolean> = new DefaultObservableValue(false)
     readonly #markerState: DefaultObservableValue<Nullable<[UUID.Format, int]>> = new DefaultObservableValue<Nullable<[UUID.Format, int]>>(null)
     readonly #notifyClipNotification: Notifier<ClipNotification>
+    readonly #notifyNoteTrigger: Notifier<NoteTrigger>
     readonly #playingClips: Array<UUID.Format>
     readonly #commands: EngineCommands
     readonly #isReady: Promise<void>
-
-    #recording: Option<EngineRecording> = Option.None
 
     constructor(context: BaseAudioContext,
                 project: Project,
@@ -91,6 +88,7 @@ export class EngineWorklet extends AudioWorkletNode implements Engine {
         this.#project = project
         this.#isReady = promise
         this.#notifyClipNotification = this.#terminator.own(new Notifier<ClipNotification>())
+        this.#notifyNoteTrigger = this.#terminator.own(new Notifier<NoteTrigger>())
         this.#playingClips = []
         this.#commands = this.#terminator.own(
             Communicator.sender<EngineCommands>(messenger.channel("engine-commands"),
@@ -159,23 +157,8 @@ export class EngineWorklet extends AudioWorkletNode implements Engine {
 
     play(): void {this.#commands.play()}
     stop(reset: boolean = false): void {this.#commands.stop(reset)}
-    setPosition(position: ppqn): void {
-        this.#playbackTimestamp.setValue(position)
-        this.#commands.setPosition(position)
-    }
-    startRecording(): void {
-        this.#commands.startRecording()
-        // TODO Needs to run on isRecording
-        /*assert(this.#recording.isEmpty(), "Recording already in progress")
-        this.#recording = Option.wrap(new EngineRecording(this.#project, this))
-        const recording = this.#isRecording.subscribe(owner => {
-            if (!owner.getValue()) {
-                recording.terminate()
-                this.#recording.unwrap("No Recording in progress").terminate()
-                this.#recording = Option.None
-            }
-        })*/
-    }
+    setPosition(position: ppqn): void {this.#commands.setPosition(position)}
+    startRecording(): void {this.#commands.startRecording()}
     stopRecording(): void {this.#commands.stopRecording()}
     panic(): void {this.#commands.panic()}
 
@@ -188,17 +171,19 @@ export class EngineWorklet extends AudioWorkletNode implements Engine {
     get playbackTimestamp(): MutableObservableValue<number> {return this.#playbackTimestamp}
     get metronomeEnabled(): MutableObservableValue<boolean> {return this.#metronomeEnabled}
     get markerState(): ObservableValue<Nullable<[UUID.Format, int]>> {return this.#markerState}
+    get project(): Project {return this.#project}
 
     isReady(): Promise<void> {return this.#isReady}
     queryLoadingComplete(): Promise<boolean> {return this.#commands.queryLoadingComplete()}
     noteOn(uuid: UUID.Format, pitch: byte, velocity: unitValue): void {
         this.#commands.noteOn(uuid, pitch, velocity)
-        this.#recording.ifSome(recording => recording.noteOn(uuid, pitch, velocity))
+        this.#notifyNoteTrigger.notify({type: "note-on", uuid, pitch, velocity})
     }
     noteOff(uuid: UUID.Format, pitch: byte): void {
         this.#commands.noteOff(uuid, pitch)
-        this.#recording.ifSome(recording => recording.noteOff(uuid, pitch))
+        this.#notifyNoteTrigger.notify({type: "note-off", uuid, pitch})
     }
+    subscribeNotes(observer: Observer<NoteTrigger>): Subscription {return this.#notifyNoteTrigger.subscribe(observer)}
     scheduleClipPlay(clipIds: ReadonlyArray<UUID.Format>): void {
         this.#notifyClipNotification.notify({type: "waiting", clips: clipIds})
         this.#commands.scheduleClipPlay(clipIds)

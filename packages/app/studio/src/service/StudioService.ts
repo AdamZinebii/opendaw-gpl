@@ -148,7 +148,7 @@ export class StudioService implements ProjectEnv {
                     {terminate: () => session.saveMidiConfiguration()}
                 )
                 range.showUnitInterval(0, PPQN.fromSignature(16, 1))
-                session.loadMidiConfiguration()
+                session.loadMidiConfiguration().then()
 
                 // -------------------------------
                 // Show views if content available

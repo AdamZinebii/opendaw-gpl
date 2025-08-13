@@ -14,8 +14,9 @@ import {
 } from "@opendaw/lib-std"
 import {ppqn} from "@opendaw/lib-dsp"
 import {ClipNotification} from "@opendaw/studio-adapters"
-import {Engine} from "./Engine"
+import {Engine, NoteTrigger} from "./Engine"
 import {EngineWorklet} from "./EngineWorklet"
+import {Project} from "./Project"
 
 export class EngineFacade implements Engine {
     readonly #terminator: Terminator = new Terminator()
@@ -73,6 +74,8 @@ export class EngineFacade implements Engine {
     get countInBeatsTotal(): ObservableValue<int> {return this.#countInBeatsTotal}
     get countInBeatsRemaining(): ObservableValue<int> {return this.#countInBeatsRemaining}
     get markerState(): DefaultObservableValue<Nullable<[UUID.Format, int]>> {return this.#markerState}
+    get project(): Project {return this.#client.unwrap("No engine").project}
+
     isReady(): Promise<void> {return this.#client.mapOr(client => client.isReady(), Promise.resolve())}
     queryLoadingComplete(): Promise<boolean> {
         return this.#client.mapOr(client => client.queryLoadingComplete(), Promise.resolve(false))
@@ -80,7 +83,10 @@ export class EngineFacade implements Engine {
     panic(): void {this.#client.ifSome(client => client.panic())}
     sampleRate(): number {return this.#client.isEmpty() ? 44_100 : this.#client.unwrap().context.sampleRate}
     subscribeClipNotification(observer: Observer<ClipNotification>): Subscription {
-        return this.#client.unwrap().subscribeClipNotification(observer)
+        return this.#client.unwrap("No engine").subscribeClipNotification(observer)
+    }
+    subscribeNotes(observer: Observer<NoteTrigger>): Subscription {
+        return this.#client.unwrap("No engine").subscribeNotes(observer)
     }
     noteOn(uuid: UUID.Format, pitch: byte, velocity: unitValue): void {
         this.#client.unwrap("No engine").noteOn(uuid, pitch, velocity)
