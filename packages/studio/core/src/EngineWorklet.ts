@@ -32,8 +32,9 @@ import {AnimationFrame} from "@opendaw/lib-dom"
 import {Communicator, Messenger} from "@opendaw/lib-runtime"
 import {BoxIO} from "@opendaw/studio-boxes"
 import {Project} from "./Project"
+import {Engine} from "./Engine"
 
-export class EngineWorklet extends AudioWorkletNode implements EngineCommands {
+export class EngineWorklet extends AudioWorkletNode implements Engine {
     static ID: int = 0 | 0
 
     readonly id = EngineWorklet.ID++
@@ -76,9 +77,6 @@ export class EngineWorklet extends AudioWorkletNode implements EngineCommands {
                 } satisfies EngineProcessorOptions
             }
         )
-
-        // TODO remove debug code
-        this.#countInBeatsRemaining.subscribe(owner => console.debug("COUNT IN", owner.getValue()))
 
         const {resolve, promise} = Promise.withResolvers<void>()
         const messenger = Messenger.for(this.port)
@@ -170,7 +168,7 @@ export class EngineWorklet extends AudioWorkletNode implements EngineCommands {
     get position(): ObservableValue<ppqn> {return this.#position}
     get playbackTimestamp(): MutableObservableValue<number> {return this.#playbackTimestamp}
     get metronomeEnabled(): MutableObservableValue<boolean> {return this.#metronomeEnabled}
-    get markerState(): DefaultObservableValue<Nullable<[UUID.Format, int]>> {return this.#markerState}
+    get markerState(): ObservableValue<Nullable<[UUID.Format, int]>> {return this.#markerState}
 
     isReady(): Promise<void> {return this.#isReady}
     queryLoadingComplete(): Promise<boolean> {return this.#commands.queryLoadingComplete()}

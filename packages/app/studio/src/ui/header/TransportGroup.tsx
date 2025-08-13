@@ -2,10 +2,12 @@ import {Icon} from "@/ui/components/Icon.tsx"
 import {createElement} from "@opendaw/lib-jsx"
 import {StudioService} from "@/service/StudioService"
 import {Button} from "@/ui/components/Button.tsx"
-import {Lifecycle} from "@opendaw/lib-std"
+import {Lifecycle, Terminator} from "@opendaw/lib-std"
 import {IconSymbol} from "@opendaw/studio-adapters"
 import {Colors} from "@opendaw/studio-core"
 import {Checkbox} from "@/ui/components/Checkbox"
+import {Surface} from "@/ui/surface/Surface"
+import {CountIn} from "@/ui/header/CountIn"
 
 type Construct = {
     lifecycle: Lifecycle
@@ -34,9 +36,17 @@ export const TransportGroup = ({lifecycle, service: {engine, transport}}: Constr
                         engine.startRecording()
                     }
                 }}><Icon symbol={IconSymbol.Record}/></Button>)
+    const countInLifecycle = lifecycle.own(new Terminator())
     lifecycle.ownAll(
         engine.isPlaying.subscribe(owner => playButton.classList.toggle("active", owner.getValue())),
-        engine.isRecording.subscribe(owner => recordButton.classList.toggle("active", owner.getValue()))
+        engine.isRecording.subscribe(owner => recordButton.classList.toggle("active", owner.getValue())),
+        engine.isCountingIn.subscribe(owner => {
+            if (owner.getValue()) {
+                Surface.get(recordButton).body.appendChild(CountIn({lifecycle: countInLifecycle, engine}))
+            } else {
+                countInLifecycle.terminate()
+            }
+        })
     )
     return (
         <div style={{display: "flex"}}>

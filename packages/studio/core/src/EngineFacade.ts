@@ -21,9 +21,11 @@ export class EngineFacade implements Engine {
     readonly #terminator: Terminator = new Terminator()
     readonly #lifecycle: Terminator = this.#terminator.own(new Terminator())
     readonly #playbackTimestamp: DefaultObservableValue<ppqn> = new DefaultObservableValue(0.0)
+    readonly #countInBeatsRemaining: DefaultObservableValue<int> = new DefaultObservableValue(0)
     readonly #position: DefaultObservableValue<ppqn> = new DefaultObservableValue(0.0)
     readonly #isPlaying: DefaultObservableValue<boolean> = new DefaultObservableValue(false)
     readonly #isRecording: DefaultObservableValue<boolean> = new DefaultObservableValue(false)
+    readonly #isCountingIn: DefaultObservableValue<boolean> = new DefaultObservableValue(false)
     readonly #metronomeEnabled: DefaultObservableValue<boolean> = new DefaultObservableValue(false)
     readonly #markerState: DefaultObservableValue<Nullable<[UUID.Format, int]>> =
         new DefaultObservableValue<Nullable<[UUID.Format, int]>>(null)
@@ -37,9 +39,11 @@ export class EngineFacade implements Engine {
         this.#lifecycle.terminate()
         this.#lifecycle.ownAll(
             client.playbackTimestamp.catchupAndSubscribe(owner => this.#playbackTimestamp.setValue(owner.getValue())),
+            client.countInBeatsRemaining.catchupAndSubscribe(owner => this.#countInBeatsRemaining.setValue(owner.getValue())),
             client.position.catchupAndSubscribe(owner => this.#position.setValue(owner.getValue())),
             client.isPlaying.catchupAndSubscribe(owner => this.#isPlaying.setValue(owner.getValue())),
             client.isRecording.catchupAndSubscribe(owner => this.#isRecording.setValue(owner.getValue())),
+            client.isCountingIn.catchupAndSubscribe(owner => this.#isCountingIn.setValue(owner.getValue())),
             client.metronomeEnabled.catchupAndSubscribe(owner => this.#metronomeEnabled.setValue(owner.getValue())),
             client.markerState.catchupAndSubscribe(owner => this.#markerState.setValue(owner.getValue())),
             this.metronomeEnabled.catchupAndSubscribe(owner => client.metronomeEnabled.setValue(owner.getValue()))
@@ -61,9 +65,11 @@ export class EngineFacade implements Engine {
     get position(): ObservableValue<ppqn> {return this.#position}
     get isPlaying(): ObservableValue<boolean> {return this.#isPlaying}
     get isRecording(): ObservableValue<boolean> {return this.#isRecording}
+    get isCountingIn(): ObservableValue<boolean> {return this.#isCountingIn}
     get metronomeEnabled(): MutableObservableValue<boolean> {return this.#metronomeEnabled}
     get playbackTimestamp(): ObservableValue<ppqn> {return this.#playbackTimestamp}
-    markerState(): DefaultObservableValue<Nullable<[UUID.Format, int]>> {return this.#markerState}
+    get countInBeatsRemaining(): ObservableValue<int> {return this.#countInBeatsRemaining}
+    get markerState(): DefaultObservableValue<Nullable<[UUID.Format, int]>> {return this.#markerState}
     isReady(): Promise<void> {return this.#client.mapOr(client => client.isReady(), Promise.resolve())}
     queryLoadingComplete(): Promise<boolean> {
         return this.#client.mapOr(client => client.queryLoadingComplete(), Promise.resolve(false))

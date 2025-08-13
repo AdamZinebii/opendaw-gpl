@@ -1,7 +1,6 @@
 import {ppqn} from "@opendaw/lib-dsp"
 import {
     byte,
-    DefaultObservableValue,
     int,
     Nullable,
     ObservableValue,
@@ -28,11 +27,12 @@ export interface Engine extends Terminable {
     scheduleClipPlay(clipIds: ReadonlyArray<UUID.Format>): void
     scheduleClipStop(trackIds: ReadonlyArray<UUID.Format>): void
     subscribeClipNotification(observer: Observer<ClipNotification>): Subscription
-    markerState(): DefaultObservableValue<Nullable<[UUID.Format, int]>>
 
     get position(): ObservableValue<ppqn>
     get isPlaying(): ObservableValue<boolean>
     get isRecording(): ObservableValue<boolean>
     get metronomeEnabled(): ObservableValue<boolean>
     get playbackTimestamp(): ObservableValue<ppqn>
+    get countInBeatsRemaining(): ObservableValue<int>
+    get markerState(): ObservableValue<Nullable<[UUID.Format, int]>>
 }

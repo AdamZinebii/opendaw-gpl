@@ -162,7 +162,6 @@ export class EngineProcessor extends AudioWorkletProcessor implements EngineCont
                 startRecording: () => {
                     if (this.#timeInfo.isRecording || this.#timeInfo.isCountingIn) {return}
                     if (!this.#timeInfo.transporting) {
-                        console.debug("COUNT-IN RECORDING...")
                         const position = this.#timeInfo.position
                         this.#recordingStartTime = quantizeFloor(position, PPQN.Bar)
                         this.#timeInfo.isCountingIn = true
@@ -170,7 +169,6 @@ export class EngineProcessor extends AudioWorkletProcessor implements EngineCont
                         this.#timeInfo.transporting = true
                         this.#timeInfo.position = this.#recordingStartTime - PPQN.Bar
                         const subscription = this.#renderer.setCallback(this.#recordingStartTime, () => {
-                            console.debug("START RECORDING...")
                             this.#timeInfo.isCountingIn = false
                             this.#timeInfo.isRecording = true
                             this.#timeInfo.metronomeEnabled = this.#metronomeEnabled
