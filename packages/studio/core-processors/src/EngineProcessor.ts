@@ -93,6 +93,7 @@ export class EngineProcessor extends AudioWorkletProcessor implements EngineCont
     #metronomeEnabled: boolean = false
     #recordingStartTime: ppqn = 0.0
     #playbackTimestamp: ppqn = 0.0 // this is where we start playing again (after paused)
+    #countInBeatsTotal: int = 4
 
     constructor({processorOptions: {sab, project, exportConfiguration}}: {
         processorOptions: EngineProcessorOptions
@@ -128,8 +129,9 @@ export class EngineProcessor extends AudioWorkletProcessor implements EngineCont
         this.#renderer = new BlockRenderer(this)
         this.#stateSender = SyncStream.writer(EngineStateSchema(), sab, x => {
             x.position = this.#timeInfo.position
+            x.countInBeatsTotal = this.#countInBeatsTotal
             x.countInBeatsRemaining = this.#timeInfo.isCountingIn
-                ? Math.floor((this.#recordingStartTime - this.#timeInfo.position) / PPQN.Quarter)
+                ? (this.#recordingStartTime - this.#timeInfo.position) / PPQN.Quarter
                 : 0
             x.isPlaying = this.#timeInfo.transporting
             x.isRecording = this.#timeInfo.isRecording
@@ -173,7 +175,7 @@ export class EngineProcessor extends AudioWorkletProcessor implements EngineCont
                         this.#timeInfo.isCountingIn = true
                         this.#timeInfo.metronomeEnabled = true
                         this.#timeInfo.transporting = true
-                        this.#timeInfo.position = this.#recordingStartTime - PPQN.Bar
+                        this.#timeInfo.position = this.#recordingStartTime - PPQN.Quarter * this.#countInBeatsTotal
                         const subscription = this.#renderer.setCallback(this.#recordingStartTime, () => {
                             this.#timeInfo.isCountingIn = false
                             this.#timeInfo.isRecording = true

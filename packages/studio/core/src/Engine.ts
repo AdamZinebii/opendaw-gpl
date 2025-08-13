@@ -33,6 +33,7 @@ export interface Engine extends Terminable {
     get isRecording(): ObservableValue<boolean>
     get metronomeEnabled(): ObservableValue<boolean>
     get playbackTimestamp(): ObservableValue<ppqn>
-    get countInBeatsRemaining(): ObservableValue<int>
+    get countInBeatsTotal(): ObservableValue<int>
+    get countInBeatsRemaining(): ObservableValue<number>
     get markerState(): ObservableValue<Nullable<[UUID.Format, int]>>
 }

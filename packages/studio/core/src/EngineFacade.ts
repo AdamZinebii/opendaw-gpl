@@ -21,6 +21,7 @@ export class EngineFacade implements Engine {
     readonly #terminator: Terminator = new Terminator()
     readonly #lifecycle: Terminator = this.#terminator.own(new Terminator())
     readonly #playbackTimestamp: DefaultObservableValue<ppqn> = new DefaultObservableValue(0.0)
+    readonly #countInBeatsTotal: DefaultObservableValue<int> = new DefaultObservableValue(4)
     readonly #countInBeatsRemaining: DefaultObservableValue<int> = new DefaultObservableValue(0)
     readonly #position: DefaultObservableValue<ppqn> = new DefaultObservableValue(0.0)
     readonly #isPlaying: DefaultObservableValue<boolean> = new DefaultObservableValue(false)
@@ -39,6 +40,7 @@ export class EngineFacade implements Engine {
         this.#lifecycle.terminate()
         this.#lifecycle.ownAll(
             client.playbackTimestamp.catchupAndSubscribe(owner => this.#playbackTimestamp.setValue(owner.getValue())),
+            client.countInBeatsTotal.catchupAndSubscribe(owner => this.#countInBeatsTotal.setValue(owner.getValue())),
             client.countInBeatsRemaining.catchupAndSubscribe(owner => this.#countInBeatsRemaining.setValue(owner.getValue())),
             client.position.catchupAndSubscribe(owner => this.#position.setValue(owner.getValue())),
             client.isPlaying.catchupAndSubscribe(owner => this.#isPlaying.setValue(owner.getValue())),
@@ -68,6 +70,7 @@ export class EngineFacade implements Engine {
     get isCountingIn(): ObservableValue<boolean> {return this.#isCountingIn}
     get metronomeEnabled(): MutableObservableValue<boolean> {return this.#metronomeEnabled}
     get playbackTimestamp(): ObservableValue<ppqn> {return this.#playbackTimestamp}
+    get countInBeatsTotal(): ObservableValue<int> {return this.#countInBeatsTotal}
     get countInBeatsRemaining(): ObservableValue<int> {return this.#countInBeatsRemaining}
     get markerState(): DefaultObservableValue<Nullable<[UUID.Format, int]>> {return this.#markerState}
     isReady(): Promise<void> {return this.#client.mapOr(client => client.isReady(), Promise.resolve())}

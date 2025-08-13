@@ -1,5 +1,6 @@
 import {
     Arrays,
+    assert,
     byte,
     DefaultObservableValue,
     int,
@@ -33,6 +34,7 @@ import {Communicator, Messenger} from "@opendaw/lib-runtime"
 import {BoxIO} from "@opendaw/studio-boxes"
 import {Project} from "./Project"
 import {Engine} from "./Engine"
+import {EngineRecording} from "./EngineRecording"
 
 export class EngineWorklet extends AudioWorkletNode implements Engine {
     static ID: int = 0 | 0
@@ -40,11 +42,14 @@ export class EngineWorklet extends AudioWorkletNode implements Engine {
     readonly id = EngineWorklet.ID++
 
     readonly #terminator: Terminator = new Terminator()
+
+    readonly #project: Project
     readonly #playbackTimestamp: DefaultObservableValue<ppqn> = new DefaultObservableValue(0.0)
     readonly #position: DefaultObservableValue<ppqn> = new DefaultObservableValue(0.0)
     readonly #isPlaying: DefaultObservableValue<boolean> = new DefaultObservableValue(false)
     readonly #isRecording: DefaultObservableValue<boolean> = new DefaultObservableValue(false)
     readonly #isCountingIn: DefaultObservableValue<boolean> = new DefaultObservableValue(false)
+    readonly #countInBeatsTotal: DefaultObservableValue<int> = new DefaultObservableValue(4)
     readonly #countInBeatsRemaining: DefaultObservableValue<int> = new DefaultObservableValue(0)
     readonly #metronomeEnabled: DefaultObservableValue<boolean> = new DefaultObservableValue(false)
     readonly #markerState: DefaultObservableValue<Nullable<[UUID.Format, int]>> = new DefaultObservableValue<Nullable<[UUID.Format, int]>>(null)
@@ -53,8 +58,10 @@ export class EngineWorklet extends AudioWorkletNode implements Engine {
     readonly #commands: EngineCommands
     readonly #isReady: Promise<void>
 
+    #recording: Option<EngineRecording> = Option.None
+
     constructor(context: BaseAudioContext,
-                project: Readonly<Project>,
+                project: Project,
                 exportConfiguration?: ExportStemsConfiguration) {
         const numberOfChannels = ExportStemsConfiguration.countStems(Option.wrap(exportConfiguration)) * 2
         const reader = SyncStream.reader<EngineState>(EngineStateSchema(), state => {
@@ -62,6 +69,7 @@ export class EngineWorklet extends AudioWorkletNode implements Engine {
             this.#isPlaying.setValue(state.isPlaying)
             this.#isRecording.setValue(state.isRecording)
             this.#isCountingIn.setValue(state.isCountingIn)
+            this.#countInBeatsTotal.setValue(state.countInBeatsTotal)
             this.#countInBeatsRemaining.setValue(state.countInBeatsRemaining)
             this.#playbackTimestamp.setValue(state.playbackTimestamp)
         })
@@ -80,6 +88,7 @@ export class EngineWorklet extends AudioWorkletNode implements Engine {
 
         const {resolve, promise} = Promise.withResolvers<void>()
         const messenger = Messenger.for(this.port)
+        this.#project = project
         this.#isReady = promise
         this.#notifyClipNotification = this.#terminator.own(new Notifier<ClipNotification>())
         this.#playingClips = []
@@ -154,13 +163,27 @@ export class EngineWorklet extends AudioWorkletNode implements Engine {
         this.#playbackTimestamp.setValue(position)
         this.#commands.setPosition(position)
     }
-    startRecording(): void {this.#commands.startRecording()}
+    startRecording(): void {
+        this.#commands.startRecording()
+        // TODO Needs to run on isRecording
+        /*assert(this.#recording.isEmpty(), "Recording already in progress")
+        this.#recording = Option.wrap(new EngineRecording(this.#project, this))
+        const recording = this.#isRecording.subscribe(owner => {
+            if (!owner.getValue()) {
+                recording.terminate()
+                this.#recording.unwrap("No Recording in progress").terminate()
+                this.#recording = Option.None
+            }
+        })*/
+    }
     stopRecording(): void {this.#commands.stopRecording()}
     panic(): void {this.#commands.panic()}
+
     get isPlaying(): ObservableValue<boolean> {return this.#isPlaying}
     get isRecording(): ObservableValue<boolean> {return this.#isRecording}
     get isCountingIn(): ObservableValue<boolean> {return this.#isCountingIn}
-    get countInBeatsRemaining(): ObservableValue<int> {return this.#countInBeatsRemaining}
+    get countInBeatsTotal(): ObservableValue<int> {return this.#countInBeatsTotal}
+    get countInBeatsRemaining(): ObservableValue<number> {return this.#countInBeatsRemaining}
     get position(): ObservableValue<ppqn> {return this.#position}
     get playbackTimestamp(): MutableObservableValue<number> {return this.#playbackTimestamp}
     get metronomeEnabled(): MutableObservableValue<boolean> {return this.#metronomeEnabled}
@@ -168,8 +191,14 @@ export class EngineWorklet extends AudioWorkletNode implements Engine {
 
     isReady(): Promise<void> {return this.#isReady}
     queryLoadingComplete(): Promise<boolean> {return this.#commands.queryLoadingComplete()}
-    noteOn(uuid: UUID.Format, pitch: byte, velocity: unitValue): void {this.#commands.noteOn(uuid, pitch, velocity)}
-    noteOff(uuid: UUID.Format, pitch: byte): void {this.#commands.noteOff(uuid, pitch)}
+    noteOn(uuid: UUID.Format, pitch: byte, velocity: unitValue): void {
+        this.#commands.noteOn(uuid, pitch, velocity)
+        this.#recording.ifSome(recording => recording.noteOn(uuid, pitch, velocity))
+    }
+    noteOff(uuid: UUID.Format, pitch: byte): void {
+        this.#commands.noteOff(uuid, pitch)
+        this.#recording.ifSome(recording => recording.noteOff(uuid, pitch))
+    }
     scheduleClipPlay(clipIds: ReadonlyArray<UUID.Format>): void {
         this.#notifyClipNotification.notify({type: "waiting", clips: clipIds})
         this.#commands.scheduleClipPlay(clipIds)
