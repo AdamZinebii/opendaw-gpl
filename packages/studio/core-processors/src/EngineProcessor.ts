@@ -92,7 +92,7 @@ export class EngineProcessor extends AudioWorkletProcessor implements EngineCont
     #running: boolean = true
     #metronomeEnabled: boolean = false
     #recordingStartTime: ppqn = 0.0
-    #playbackTimestamp: ppqn = 0.0
+    #playbackTimestamp: ppqn = 0.0 // this is where we start playing again (after paused)
 
     constructor({processorOptions: {sab, project, exportConfiguration}}: {
         processorOptions: EngineProcessorOptions
@@ -150,6 +150,9 @@ export class EngineProcessor extends AudioWorkletProcessor implements EngineCont
                 stop: (reset: boolean) => {
                     const wasTransporting = this.#timeInfo.transporting
                     this.#timeInfo.transporting = false
+                    this.#timeInfo.isRecording = false
+                    this.#timeInfo.isCountingIn = false
+                    this.#timeInfo.metronomeEnabled = this.#metronomeEnabled
                     if (reset || !wasTransporting) {
                         this.#reset()
                     }
