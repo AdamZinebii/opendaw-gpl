@@ -148,10 +148,13 @@ export class EngineProcessor extends AudioWorkletProcessor implements EngineCont
                     this.#timeInfo.transporting = true
                 },
                 stop: (reset: boolean) => {
+                    if (this.#timeInfo.isRecording || this.#timeInfo.isCountingIn) {
+                        this.#timeInfo.isRecording = false
+                        this.#timeInfo.isCountingIn = false
+                        this.#timeInfo.position = this.#playbackTimestamp
+                    }
                     const wasTransporting = this.#timeInfo.transporting
                     this.#timeInfo.transporting = false
-                    this.#timeInfo.isRecording = false
-                    this.#timeInfo.isCountingIn = false
                     this.#timeInfo.metronomeEnabled = this.#metronomeEnabled
                     if (reset || !wasTransporting) {
                         this.#reset()
