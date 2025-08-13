@@ -265,6 +265,18 @@ export class StudioService implements ProjectEnv {
             UUID.generate(), Project.new(this), ProjectMeta.init("Untitled"), Option.None)))
     }
 
+    startRecording(): void {
+        // TODO Arm recording tracks
+        this.engine.startRecording()
+    }
+
+    stopRecording(): void {
+        // TODO Stop recording tracks
+        this.engine.stopRecording()
+    }
+
+    isRecording(): boolean {return this.engine.isRecording.getValue()}
+
     async save(): Promise<void> {return this.sessionService.save()}
     async saveAs(): Promise<void> {return this.sessionService.saveAs()}
     async browse(): Promise<void> {return this.sessionService.browse()}

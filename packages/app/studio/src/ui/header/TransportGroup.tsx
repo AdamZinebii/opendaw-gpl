@@ -14,7 +14,8 @@ type Construct = {
     service: StudioService
 }
 
-export const TransportGroup = ({lifecycle, service: {engine, transport}}: Construct) => {
+export const TransportGroup = ({lifecycle, service}: Construct) => {
+    const {engine, transport} = service
     const playButton: HTMLElement = (
         <Button lifecycle={lifecycle}
                 appearance={{activeColor: "hsl(120, 50%, 60%)", tooltip: "Play"}}
@@ -30,10 +31,10 @@ export const TransportGroup = ({lifecycle, service: {engine, transport}}: Constr
         <Button lifecycle={lifecycle}
                 appearance={{activeColor: "hsl(0, 50%, 60%)", tooltip: "Recording"}}
                 onClick={() => {
-                    if (engine.isRecording.getValue()) {
-                        engine.stopRecording()
+                    if (service.isRecording()) {
+                        service.stopRecording()
                     } else {
-                        engine.startRecording()
+                        service.startRecording()
                     }
                 }}><Icon symbol={IconSymbol.Record}/></Button>)
     const countInLifecycle = lifecycle.own(new Terminator())

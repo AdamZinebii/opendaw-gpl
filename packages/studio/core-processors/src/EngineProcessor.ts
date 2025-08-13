@@ -128,15 +128,14 @@ export class EngineProcessor extends AudioWorkletProcessor implements EngineCont
         this.#metronome = new Metronome(this.#timeInfo)
         this.#renderer = new BlockRenderer(this)
         this.#stateSender = SyncStream.writer(EngineStateSchema(), sab, x => {
-            x.position = this.#timeInfo.position
-            x.countInBeatsTotal = this.#countInBeatsTotal
-            x.countInBeatsRemaining = this.#timeInfo.isCountingIn
-                ? (this.#recordingStartTime - this.#timeInfo.position) / PPQN.Quarter
-                : 0
-            x.isPlaying = this.#timeInfo.transporting
-            x.isRecording = this.#timeInfo.isRecording
-            x.isCountingIn = this.#timeInfo.isCountingIn
+            const {transporting, isCountingIn, isRecording, position} = this.#timeInfo
+            x.position = position
             x.playbackTimestamp = this.#playbackTimestamp
+            x.countInBeatsTotal = this.#countInBeatsTotal
+            x.countInBeatsRemaining = isCountingIn ? (this.#recordingStartTime - position) / PPQN.Quarter : 0
+            x.isPlaying = transporting
+            x.isRecording = isRecording
+            x.isCountingIn = isCountingIn
         })
         this.#liveStreamBroadcaster = this.#terminator.own(LiveStreamBroadcaster.create(this.#messenger, "engine-live-data"))
         this.#updateClock = new UpdateClock(this)
@@ -171,11 +170,12 @@ export class EngineProcessor extends AudioWorkletProcessor implements EngineCont
                     if (this.#timeInfo.isRecording || this.#timeInfo.isCountingIn) {return}
                     if (!this.#timeInfo.transporting) {
                         const position = this.#timeInfo.position
-                        this.#recordingStartTime = quantizeFloor(position, PPQN.Bar)
+                        const denominator = this.#timelineBoxAdapter.box.signature.denominator.getValue()
+                        this.#recordingStartTime = quantizeFloor(position, PPQN.Quarter)
                         this.#timeInfo.isCountingIn = true
                         this.#timeInfo.metronomeEnabled = true
                         this.#timeInfo.transporting = true
-                        this.#timeInfo.position = this.#recordingStartTime - PPQN.Quarter * this.#countInBeatsTotal
+                        this.#timeInfo.position = this.#recordingStartTime - PPQN.fromSignature(this.#countInBeatsTotal, denominator)
                         const subscription = this.#renderer.setCallback(this.#recordingStartTime, () => {
                             this.#timeInfo.isCountingIn = false
                             this.#timeInfo.isRecording = true
