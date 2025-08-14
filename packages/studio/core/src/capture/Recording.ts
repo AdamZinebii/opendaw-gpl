@@ -2,7 +2,6 @@ import {assert, Option} from "@opendaw/lib-std"
 import {Worklets} from "../Worklets"
 import {Project} from "../Project"
 import {Engine} from "../Engine"
-import {MidiData} from "@opendaw/app-studio/src/midi/MidiData"
 import {RecordMidi} from "./RecordMidi"
 
 export interface RecordingContext {
@@ -16,7 +15,7 @@ export interface RecordingContext {
 export class Recording {
     static start(context: RecordingContext): void {
         assert(this.#instance.isEmpty(), "Recording already in progress")
-        this.#instance = Option.wrap(new Recording(context))
+        this.#instance = Option.wrap(new Recording(context)) // TODO How to reset
     }
 
     static #instance: Option<Recording> = Option.None
@@ -28,7 +27,7 @@ export class Recording {
             const input = capture.box.input.pointerHub.incoming()[0].box
             // TODO Test for audio or notes. We assume MIDI for now.
             if (midiAccess.isEmpty()) {return}
-            const terminable = RecordMidi.start({
+            RecordMidi.start({
                 midi: midiAccess.unwrap(),
                 capture,
                 engine,

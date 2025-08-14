@@ -15,7 +15,7 @@ import {
 import {NoteEventBox, NoteEventCollectionBox, NoteRegionBox, TrackBox} from "@opendaw/studio-boxes"
 import {TrackType} from "@opendaw/studio-adapters"
 import {Events} from "@opendaw/lib-dom"
-import {MidiData} from "@opendaw/app-studio/src/midi/MidiData"
+import {MidiData} from "@opendaw/app-studio/src/midi/MidiData" // TODO Move to midi package???
 import {PPQN} from "@opendaw/lib-dsp"
 
 export namespace RecordMidi {
@@ -25,6 +25,7 @@ export namespace RecordMidi {
         project: Project,
         capture: Capture
     }
+
     export const start = ({midi, engine, project, capture}: RecordMidiContext): void => {
         console.debug("RecordMidi.start", midi)
         const beats = PPQN.fromSignature(1, project.timelineBox.signature.denominator.getValue())
