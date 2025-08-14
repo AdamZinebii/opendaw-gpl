@@ -10,6 +10,7 @@ export * from "./samples/SampleProvider"
 
 export * from "./capture/Capture"
 export * from "./capture/CaptureManager"
+export * from "./capture/Recording" // TODO Move to?
 
 export * from "./dawproject/DawProject"
 export * from "./dawproject/DawProjectExporter"

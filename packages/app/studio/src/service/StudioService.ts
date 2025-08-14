@@ -59,6 +59,7 @@ import {
     MainThreadSampleManager,
     Project,
     ProjectEnv,
+    Recording,
     Worklets
 } from "@opendaw/studio-core"
 import {AudioOfflineRenderer} from "@/audio/AudioOfflineRenderer"
@@ -264,9 +265,17 @@ export class StudioService implements ProjectEnv {
             UUID.generate(), Project.new(this), ProjectMeta.init("Untitled"), Option.None)))
     }
 
-    startRecording(): void {this.project.captureManager.startRecording(this.engine)}
-    stopRecording(): void {this.engine.stopRecording()}
+    startRecording(): void {
+        Recording.start({
+            project: this.project,
+            worklets: this.worklets,
+            engine: this.engine,
+            midiAccess: MidiDeviceAccess.get().map(x => x.access),
+            audioContext: this.context
+        })
+    }
 
+    stopRecording(): void {this.engine.stopRecording()}
     isRecording(): boolean {return this.engine.isRecording.getValue()}
 
     async save(): Promise<void> {return this.sessionService.save()}

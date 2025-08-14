@@ -62,13 +62,13 @@ export class EngineWorklet extends AudioWorkletNode implements Engine {
                 exportConfiguration?: ExportStemsConfiguration) {
         const numberOfChannels = ExportStemsConfiguration.countStems(Option.wrap(exportConfiguration)) * 2
         const reader = SyncStream.reader<EngineState>(EngineStateSchema(), state => {
-            this.#position.setValue(state.position)
             this.#isPlaying.setValue(state.isPlaying)
             this.#isRecording.setValue(state.isRecording)
             this.#isCountingIn.setValue(state.isCountingIn)
             this.#countInBeatsTotal.setValue(state.countInBeatsTotal)
             this.#countInBeatsRemaining.setValue(state.countInBeatsRemaining)
             this.#playbackTimestamp.setValue(state.playbackTimestamp)
+            this.#position.setValue(state.position) // This must be the last to handle the state values before
         })
 
         super(context, "engine-processor", {

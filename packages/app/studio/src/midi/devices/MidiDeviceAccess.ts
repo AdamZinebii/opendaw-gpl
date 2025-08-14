@@ -120,6 +120,8 @@ export class MidiDeviceAccess {
             })
     }
 
+    get access(): MIDIAccess {return this.#access}
+
     subscribeMessageEvents(observer: Observer<MIDIMessageEvent>, channel?: byte): Subscription {
         return MIDIMessageSubscriber.subscribeMessageEvents(this.#access, observer, channel)
     }

@@ -31,7 +31,8 @@ export class CaptureManager implements Terminable {
     }
 
     filterArmed(): ReadonlyArray<Capture> {
-        return this.#captures.values().filter(capture => capture.armed.getValue())
+        return this.#captures.values()
+            .filter(capture => capture.armed.getValue() && capture.box.input.pointerHub.nonEmpty())
     }
 
     getObservableArmedState(uuid: UUID.Format): MutableObservableValue<boolean> {
