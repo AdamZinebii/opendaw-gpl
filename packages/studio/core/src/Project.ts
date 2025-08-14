@@ -29,6 +29,7 @@ import {ProjectEnv} from "./ProjectEnv"
 import {Mixer} from "./Mixer"
 import {ProjectApi} from "./ProjectApi"
 import {ProjectMigration} from "./ProjectMigration"
+import {CaptureManager} from "./capture/CaptureManager"
 
 // Main Entry Point for a Project
 //
@@ -95,6 +96,7 @@ export class Project implements BoxAdaptersContext, Terminable, TerminableOwner 
     readonly timelineBox: TimelineBox
 
     readonly api: ProjectApi
+    readonly captureManager: CaptureManager
     readonly editing: Editing
     readonly selection: VertexSelection
     readonly boxAdapters: BoxAdapters
@@ -120,6 +122,7 @@ export class Project implements BoxAdaptersContext, Terminable, TerminableOwner 
         this.liveStreamReceiver = this.#terminator.own(new LiveStreamReceiver())
 
         this.api = new ProjectApi(this)
+        this.captureManager = this.#terminator.own(new CaptureManager(this))
         this.editing = new Editing(this.boxGraph)
         this.selection = new VertexSelection(this.editing, this.boxGraph)
         this.parameterFieldAdapters = new ParameterFieldAdapters()

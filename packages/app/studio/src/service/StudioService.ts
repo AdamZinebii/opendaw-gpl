@@ -65,7 +65,6 @@ import {AudioOfflineRenderer} from "@/audio/AudioOfflineRenderer"
 import {FilePickerAcceptTypes} from "@/ui/FilePickerAcceptTypes"
 import {Xml} from "@opendaw/lib-xml"
 import {MetaDataSchema} from "@opendaw/lib-dawproject"
-import DawprojectFileType = FilePickerAcceptTypes.DawprojectFileType
 
 /**
  * I am just piling stuff after stuff in here to boot the environment.
@@ -265,15 +264,8 @@ export class StudioService implements ProjectEnv {
             UUID.generate(), Project.new(this), ProjectMeta.init("Untitled"), Option.None)))
     }
 
-    startRecording(): void {
-        // TODO Arm recording tracks
-        this.engine.startRecording()
-    }
-
-    stopRecording(): void {
-        // TODO Stop recording tracks
-        this.engine.stopRecording()
-    }
+    startRecording(): void {this.project.captureManager.startRecording(this.engine)}
+    stopRecording(): void {this.engine.stopRecording()}
 
     isRecording(): boolean {return this.engine.isRecording.getValue()}
 
@@ -406,7 +398,8 @@ export class StudioService implements ProjectEnv {
         if (status === "rejected") {
             return showInfoDialog({headline: "Export Error", message: String(error)})
         } else {
-            const {status, error} = await Promises.tryCatch(Files.save(zip, {types: [DawprojectFileType]}))
+            const {status, error} = await Promises.tryCatch(Files.save(zip,
+                {types: [FilePickerAcceptTypes.DawprojectFileType]}))
             if (status === "rejected" && !Errors.isAbort(error)) {
                 return error
             } else {

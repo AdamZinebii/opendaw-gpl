@@ -170,8 +170,9 @@ export class EngineProcessor extends AudioWorkletProcessor implements EngineCont
                     if (this.#timeInfo.isRecording || this.#timeInfo.isCountingIn) {return}
                     if (!this.#timeInfo.transporting) {
                         const position = this.#timeInfo.position
+                        const nominator = this.#timelineBoxAdapter.box.signature.nominator.getValue()
                         const denominator = this.#timelineBoxAdapter.box.signature.denominator.getValue()
-                        this.#recordingStartTime = quantizeFloor(position, PPQN.Quarter)
+                        this.#recordingStartTime = quantizeFloor(position, PPQN.fromSignature(nominator, denominator))
                         this.#timeInfo.isCountingIn = true
                         this.#timeInfo.metronomeEnabled = true
                         this.#timeInfo.transporting = true
