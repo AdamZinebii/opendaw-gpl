@@ -93,7 +93,7 @@ export class BlockRenderer {
                     }
                 }
                 // --- LOOP SECTION ---
-                const {isRecording, isCountingIn} = this.#context.timeInfo
+                const {isRecording, isCountingIn} = this.#context.timeInfo // TODO We may find a better way to handling this
                 const {from, to, enabled} = timelineBox.loopArea
                 const loopEnabled = enabled.getValue()
                 if (loopEnabled && !(isRecording || isCountingIn)) {
