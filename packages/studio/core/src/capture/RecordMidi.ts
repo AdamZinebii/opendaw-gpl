@@ -1,6 +1,3 @@
-import {Engine} from "../Engine"
-import {Project} from "../Project"
-import {Capture} from "./Capture"
 import {
     asInstanceOf,
     byte,
@@ -9,14 +6,18 @@ import {
     Option,
     quantizeCeil,
     quantizeFloor,
+    Terminable,
     Terminator,
     UUID
 } from "@opendaw/lib-std"
+import {PPQN} from "@opendaw/lib-dsp"
+import {Events} from "@opendaw/lib-dom"
+import {MidiData} from "@opendaw/lib-midi"
 import {NoteEventBox, NoteEventCollectionBox, NoteRegionBox, TrackBox} from "@opendaw/studio-boxes"
 import {TrackType} from "@opendaw/studio-adapters"
-import {Events} from "@opendaw/lib-dom"
-import {MidiData} from "@opendaw/app-studio/src/midi/MidiData" // TODO Move to midi package???
-import {PPQN} from "@opendaw/lib-dsp"
+import {Engine} from "../Engine"
+import {Project} from "../Project"
+import {Capture} from "./Capture"
 
 export namespace RecordMidi {
     type RecordMidiContext = {
@@ -26,7 +27,7 @@ export namespace RecordMidi {
         capture: Capture
     }
 
-    export const start = ({midi, engine, project, capture}: RecordMidiContext): void => {
+    export const start = ({midi, engine, project, capture}: RecordMidiContext): Terminable => {
         console.debug("RecordMidi.start", midi)
         const beats = PPQN.fromSignature(1, project.timelineBox.signature.denominator.getValue())
         const trackBox: Nullish<TrackBox> = capture.box.tracks.pointerHub.incoming()
@@ -36,22 +37,30 @@ export namespace RecordMidi {
                 const acceptsNotes = box.type.getValue() === TrackType.Notes
                 return hasNoRegions && acceptsNotes
             })
-        if (isUndefined(trackBox)) {return}
+        if (isUndefined(trackBox)) {return Terminable.Empty} // TODO Create a new track
         const {editing, boxGraph} = project
         const terminator = new Terminator()
         const activeNotes = new Map<byte, NoteEventBox>()
         let writing: Option<{ region: NoteRegionBox, collection: NoteEventCollectionBox }> = Option.None
         terminator.own(engine.position.catchupAndSubscribe(owner => {
             if (writing.isEmpty()) {return}
-            const position = owner.getValue()
+            const writePosition = owner.getValue()
             const {region} = writing.unwrap()
             editing.modify(() => {
-                const duration = quantizeCeil(position, beats) - region.position.getValue()
-                console.debug("duration", duration)
-                region.duration.setValue(duration)
-                region.loopDuration.setValue(duration)
-                for (const [_, event] of activeNotes) {
-                    event.duration.setValue(position - event.position.getValue())
+                if (region.isAttached()) {
+                    const {position, duration, loopDuration} = region
+                    const newDuration = quantizeCeil(writePosition, beats) - position.getValue()
+                    duration.setValue(newDuration)
+                    loopDuration.setValue(newDuration)
+                    for (const event of activeNotes.values()) {
+                        if (event.isAttached()) {
+                            event.duration.setValue(writePosition - event.position.getValue())
+                        } else {
+                            activeNotes.delete(event.pitch.getValue())
+                        }
+                    }
+                } else {
+                    writing = Option.None
                 }
             }, false)
         }))
@@ -88,12 +97,6 @@ export namespace RecordMidi {
                     activeNotes.delete(pitch)
                 }
             })))
-        const {isRecording, isCountingIn} = engine
-        const stop = (): void => {
-            if (isRecording.getValue() || isCountingIn.getValue()) {return}
-            terminator.terminate()
-        }
-        terminator.own(engine.isRecording.subscribe(stop))
-        terminator.own(engine.isCountingIn.subscribe(stop))
+        return terminator
     }
 }

@@ -13,10 +13,10 @@ import {
     Terminator
 } from "@opendaw/lib-std"
 import {showInfoDialog} from "@/ui/components/dialogs"
-import {MidiData} from "@/midi/MidiData"
 import {RouteLocation} from "@opendaw/lib-jsx"
 import {AnimationFrame, Browser, ConsoleCommands} from "@opendaw/lib-dom"
 import {MIDIMessageSubscriber} from "@/midi/devices/MIDIMessageSubscriber"
+import {MidiData} from "@opendaw/lib-midi"
 
 export class MidiDeviceAccess {
     static get(): Option<MidiDeviceAccess> {return this.#instance}

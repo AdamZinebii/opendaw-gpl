@@ -1,6 +1,6 @@
 import {byte, isDefined, isInstanceOf, Nullable, Observer, Subscription} from "@opendaw/lib-std"
 import {Events} from "@opendaw/lib-dom"
-import {MidiData} from "@/midi/MidiData"
+import {MidiData} from "@opendaw/lib-midi"
 
 export class MIDIMessageSubscriber {
     static subscribeMessageEvents(access: MIDIAccess, observer: Observer<MIDIMessageEvent>, channel?: byte): Subscription {
