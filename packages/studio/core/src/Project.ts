@@ -119,7 +119,6 @@ export class Project implements BoxAdaptersContext, Terminable, TerminableOwner 
         this.masterBusBox = masterBusBox
         this.masterAudioUnit = masterAudioUnit
         this.timelineBox = timelineBox
-        this.liveStreamReceiver = this.#terminator.own(new LiveStreamReceiver())
 
         this.api = new ProjectApi(this)
         this.captureManager = this.#terminator.own(new CaptureManager(this))
@@ -130,7 +129,7 @@ export class Project implements BoxAdaptersContext, Terminable, TerminableOwner 
         this.userEditingManager = new UserEditingManager(this.editing)
         this.userEditingManager.follow(this.userInterfaceBox)
         this.selection.switch(this.userInterfaceBox.selection)
-
+        this.liveStreamReceiver = this.#terminator.own(new LiveStreamReceiver())
         this.mixer = new Mixer(this.rootBoxAdapter.audioUnits)
 
         console.debug(`Project was created on ${this.rootBoxAdapter.created.toString()}`)

@@ -267,6 +267,7 @@ export class StudioService implements ProjectEnv {
 
     startRecording(): void {
         Recording.start({
+            sampleManager: this.sampleManager,
             project: this.project,
             worklets: this.worklets,
             engine: this.engine,

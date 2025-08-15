@@ -45,9 +45,9 @@ export namespace RecordMidi {
         terminator.own(engine.position.catchupAndSubscribe(owner => {
             if (writing.isEmpty()) {return}
             const writePosition = owner.getValue()
-            const {region} = writing.unwrap()
+            const {region, collection} = writing.unwrap()
             editing.modify(() => {
-                if (region.isAttached()) {
+                if (region.isAttached() && collection.isAttached()) {
                     const {position, duration, loopDuration} = region
                     const newDuration = quantizeCeil(writePosition, beats) - position.getValue()
                     duration.setValue(newDuration)
@@ -66,6 +66,7 @@ export namespace RecordMidi {
         }))
         terminator.ownAll(...midi.inputs.values()
             .map(input => Events.subscribeAny(input, "midimessage", (event: MIDIMessageEvent) => {
+                if (!engine.isRecording.getValue()) {return}
                 const data = event.data
                 if (isUndefined(data)) {return}
                 const position = engine.position.getValue()
