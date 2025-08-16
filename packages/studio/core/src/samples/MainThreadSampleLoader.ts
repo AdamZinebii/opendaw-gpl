@@ -17,7 +17,6 @@ import JSZip from "jszip"
 import {MainThreadSampleManager} from "./MainThreadSampleManager"
 import {WorkerAgents} from "../WorkerAgents"
 import {SampleStorage} from "./SampleStorage"
-import {SamplePeaks} from "./SamplePeaks"
 
 export class MainThreadSampleLoader implements SampleLoader {
     readonly #manager: MainThreadSampleManager
@@ -117,8 +116,11 @@ export class MainThreadSampleLoader implements SampleLoader {
 
     async #fetch(): Promise<void> {
         let version: int = this.#version
-        const split = Progress.split(progress => this.#setState({type: "progress", progress: 0.1 + 0.9 * progress}), 2)
-        const fetchResult = await Promises.tryCatch(this.#manager.fetch(this.#uuid, split[0]))
+        const [fetchProgress, peakProgress] = Progress.split(progress => this.#setState({
+            type: "progress",
+            progress: 0.1 + 0.9 * progress
+        }), 2)
+        const fetchResult = await Promises.tryCatch(this.#manager.fetch(this.#uuid, fetchProgress))
         if (this.#version !== version) {return}
         if (fetchResult.status === "rejected") {
             console.warn(fetchResult.error)
@@ -126,7 +128,13 @@ export class MainThreadSampleLoader implements SampleLoader {
             return
         }
         const [audio, meta] = fetchResult.value
-        const peaks = await SamplePeaks.generate(audio, split[1])
+        const shifts = Peaks.findBestFit(audio.numberOfFrames)
+        const peaks = await WorkerAgents.Peak.generateAsync(
+            peakProgress,
+            shifts,
+            audio.frames,
+            audio.numberOfFrames,
+            audio.numberOfChannels) as ArrayBuffer
         const storeResult = await Promises.tryCatch(SampleStorage.store(this.#uuid, audio, peaks, meta))
         if (this.#version !== version) {return}
         if (storeResult.status === "resolved") {

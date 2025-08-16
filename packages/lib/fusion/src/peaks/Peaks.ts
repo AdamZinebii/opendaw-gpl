@@ -1,4 +1,14 @@
-import {Arrays, assert, ByteArrayInput, ByteArrayOutput, float, Float16, int, Unhandled} from "@opendaw/lib-std"
+import {
+    Arrays,
+    assert,
+    ByteArrayInput,
+    ByteArrayOutput,
+    float,
+    Float16,
+    int,
+    Nullable,
+    Unhandled
+} from "@opendaw/lib-std"
 
 export class Peaks {
     static from(input: ByteArrayInput): Peaks {
@@ -26,12 +36,34 @@ export class Peaks {
 
     static readonly None = new Peaks([], [], 0, 0)
 
+    static readonly findBestFit = (numFrames: int, width: int = 1200): Uint8Array => {
+        const ratio = numFrames / width
+        if (ratio <= 1.0) {
+            return new Uint8Array(0)
+        }
+        const ShiftPadding = 3
+        const maxShift = Math.floor(Math.log(ratio) / Math.LN2)
+        const numStages = Math.max(1, Math.floor(maxShift / ShiftPadding))
+        return new Uint8Array(Arrays.create(index => ShiftPadding * (index + 1), numStages))
+    }
+
+    static readonly unpack = (bits: int, index: 0 | 1): float => {
+        switch (index) {
+            case 0:
+                return Float16.intBitsToFloat(bits)
+            case 1:
+                return Float16.intBitsToFloat(bits >> 16)
+            default:
+                return Unhandled(index)
+        }
+    }
+
     constructor(readonly stages: ReadonlyArray<Peaks.Stage>,
                 readonly data: ReadonlyArray<Int32Array>,
                 readonly numFrames: int,
                 readonly numChannels: int) {}
 
-    nearest(unitsPerPixel: number): Peaks.Stage | null {
+    nearest(unitsPerPixel: number): Nullable<Peaks.Stage> {
         if (this.stages.length === 0) {return null}
         const shift = Math.floor(Math.log(Math.abs(unitsPerPixel)) / Math.LN2)
         let i = this.stages.length
@@ -69,30 +101,9 @@ export class Peaks {
 }
 
 export namespace Peaks {
-    export const findBestFit = (numFrames: int, width: int = 1200): Uint8Array => {
-        const ratio = numFrames / width
-        if (ratio <= 1.0) {
-            return new Uint8Array(0)
-        }
-        const ShiftPadding = 3
-        const maxShift = Math.floor(Math.log(ratio) / Math.LN2)
-        const numStages = Math.max(1, Math.floor(maxShift / ShiftPadding))
-        return new Uint8Array(Arrays.create(index => ShiftPadding * (index + 1), numStages))
-    }
-
     export class Stage {
         constructor(readonly mask: int, readonly shift: int, readonly numPeaks: int, readonly dataOffset: int) {}
-        unitsEachPeak(): int {return 1 << this.shift}
-    }
 
-    export const unpack = (bits: int, index: 0 | 1): float => {
-        switch (index) {
-            case 0:
-                return Float16.intBitsToFloat(bits)
-            case 1:
-                return Float16.intBitsToFloat(bits >> 16)
-            default:
-                return Unhandled(index)
-        }
+        unitsEachPeak(): int {return 1 << this.shift}
     }
 }

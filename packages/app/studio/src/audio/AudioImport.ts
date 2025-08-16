@@ -2,7 +2,8 @@ import {Arrays, ProgressHandler, UUID} from "@opendaw/lib-std"
 import {estimateBpm} from "@opendaw/lib-dsp"
 import {Promises} from "@opendaw/lib-runtime"
 import {AudioData, Sample, SampleMetaData} from "@opendaw/studio-adapters"
-import {SamplePeaks, SampleStorage} from "@opendaw/studio-core"
+import {SampleStorage, WorkerAgents} from "@opendaw/studio-core"
+import {Peaks} from "@opendaw/lib-fusion"
 
 export namespace AudioImporter {
     export type Creation = {
@@ -24,7 +25,13 @@ export namespace AudioImporter {
             numberOfChannels: audioBuffer.numberOfChannels,
             frames: Arrays.create(index => audioBuffer.getChannelData(index), audioBuffer.numberOfChannels)
         }
-        const peaks = await SamplePeaks.generate(audioData, progressHandler)
+        const shifts = Peaks.findBestFit(audioData.numberOfFrames)
+        const peaks = await WorkerAgents.Peak.generateAsync(
+            progressHandler,
+            shifts,
+            audioData.frames,
+            audioData.numberOfFrames,
+            audioData.numberOfChannels) as ArrayBuffer
         const meta: SampleMetaData = {
             bpm: estimateBpm(audioBuffer.duration),
             name: name.substring(0, name.lastIndexOf(".")),
