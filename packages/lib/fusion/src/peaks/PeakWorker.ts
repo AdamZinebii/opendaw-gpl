@@ -1,6 +1,6 @@
 import {Arrays, float, Float16, FloatArray, int, panic, Procedure} from "@opendaw/lib-std"
 import {Communicator, Messenger, stopwatch} from "@opendaw/lib-runtime"
-import {Peaks} from "./Peaks"
+import {Peaks, SamplePeaks} from "./Peaks"
 import {PeakProtocol} from "./PeakProtocol"
 
 export namespace PeakWorker {
@@ -19,7 +19,7 @@ export namespace PeakWorker {
                            shifts: Uint8Array,
                            frames: ReadonlyArray<FloatArray>,
                            numFrames: int,
-                           numChannels: int): Peaks => {
+                           numChannels: int): SamplePeaks => {
         if (frames.length !== numChannels) {
             return panic(`Invalid numberOfChannels. Expected: ${numChannels}. Got ${frames.length}`)
         }
@@ -70,7 +70,7 @@ export namespace PeakWorker {
         }
         progress(1.0)
         time.lab(`Peak-Gen '${self.constructor.name}'`)
-        return new Peaks(stages, data, numFrames, numChannels)
+        return new SamplePeaks(stages, data, numFrames, numChannels)
     }
 
     const initStages = (shifts: Uint8Array, numFrames: int): [Peaks.Stage[], int] => {

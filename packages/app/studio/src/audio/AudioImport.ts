@@ -3,7 +3,7 @@ import {estimateBpm} from "@opendaw/lib-dsp"
 import {Promises} from "@opendaw/lib-runtime"
 import {AudioData, Sample, SampleMetaData} from "@opendaw/studio-adapters"
 import {SampleStorage, WorkerAgents} from "@opendaw/studio-core"
-import {Peaks} from "@opendaw/lib-fusion"
+import {SamplePeaks} from "@opendaw/lib-fusion"
 
 export namespace AudioImporter {
     export type Creation = {
@@ -25,7 +25,7 @@ export namespace AudioImporter {
             numberOfChannels: audioBuffer.numberOfChannels,
             frames: Arrays.create(index => audioBuffer.getChannelData(index), audioBuffer.numberOfChannels)
         }
-        const shifts = Peaks.findBestFit(audioData.numberOfFrames)
+        const shifts = SamplePeaks.findBestFit(audioData.numberOfFrames)
         const peaks = await WorkerAgents.Peak.generateAsync(
             progressHandler,
             shifts,

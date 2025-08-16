@@ -10,7 +10,35 @@ import {
     Unhandled
 } from "@opendaw/lib-std"
 
-export class Peaks {
+export interface Peaks {
+    readonly stages: ReadonlyArray<Peaks.Stage>
+    readonly data: ReadonlyArray<Int32Array>
+    readonly numFrames: int
+    readonly numChannels: int
+
+    nearest(unitsPerPixel: number): Nullable<Peaks.Stage>
+}
+
+export namespace Peaks {
+    export class Stage {
+        constructor(readonly mask: int, readonly shift: int, readonly numPeaks: int, readonly dataOffset: int) {}
+
+        unitsEachPeak(): int {return 1 << this.shift}
+    }
+
+    export const unpack = (bits: int, index: 0 | 1): float => {
+        switch (index) {
+            case 0:
+                return Float16.intBitsToFloat(bits)
+            case 1:
+                return Float16.intBitsToFloat(bits >> 16)
+            default:
+                return Unhandled(index)
+        }
+    }
+}
+
+export class SamplePeaks implements Peaks {
     static from(input: ByteArrayInput): Peaks {
         assert(input.readString() === "PEAKS", "Wrong header")
         const numStages = input.readInt()
@@ -31,10 +59,10 @@ export class Peaks {
         }
         const numFrames = input.readInt()
         const numChannels = input.readInt()
-        return new Peaks(stages, data, numFrames, numChannels)
+        return new SamplePeaks(stages, data, numFrames, numChannels)
     }
 
-    static readonly None = new Peaks([], [], 0, 0)
+    static readonly None = new SamplePeaks([], [], 0, 0)
 
     static readonly findBestFit = (numFrames: int, width: int = 1200): Uint8Array => {
         const ratio = numFrames / width
@@ -45,17 +73,6 @@ export class Peaks {
         const maxShift = Math.floor(Math.log(ratio) / Math.LN2)
         const numStages = Math.max(1, Math.floor(maxShift / ShiftPadding))
         return new Uint8Array(Arrays.create(index => ShiftPadding * (index + 1), numStages))
-    }
-
-    static readonly unpack = (bits: int, index: 0 | 1): float => {
-        switch (index) {
-            case 0:
-                return Float16.intBitsToFloat(bits)
-            case 1:
-                return Float16.intBitsToFloat(bits >> 16)
-            default:
-                return Unhandled(index)
-        }
     }
 
     constructor(readonly stages: ReadonlyArray<Peaks.Stage>,
@@ -97,13 +114,5 @@ export class Peaks {
         return output.toArrayBuffer()
     }
 
-    toString(): string {return `{Peaks num-stages: ${this.stages.length}}`}
-}
-
-export namespace Peaks {
-    export class Stage {
-        constructor(readonly mask: int, readonly shift: int, readonly numPeaks: int, readonly dataOffset: int) {}
-
-        unitsEachPeak(): int {return 1 << this.shift}
-    }
+    toString(): string {return `{SamplePeaks num-stages: ${this.stages.length}}`}
 }

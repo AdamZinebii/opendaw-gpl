@@ -10,7 +10,7 @@ import {
     Terminable,
     UUID
 } from "@opendaw/lib-std"
-import {Peaks} from "@opendaw/lib-fusion"
+import {Peaks, SamplePeaks} from "@opendaw/lib-fusion"
 import {Promises} from "@opendaw/lib-runtime"
 import {AudioData, SampleLoader, SampleLoaderState, SampleMetaData} from "@opendaw/studio-adapters"
 import JSZip from "jszip"
@@ -128,7 +128,7 @@ export class MainThreadSampleLoader implements SampleLoader {
             return
         }
         const [audio, meta] = fetchResult.value
-        const shifts = Peaks.findBestFit(audio.numberOfFrames)
+        const shifts = SamplePeaks.findBestFit(audio.numberOfFrames)
         const peaks = await WorkerAgents.Peak.generateAsync(
             peakProgress,
             shifts,
@@ -140,7 +140,7 @@ export class MainThreadSampleLoader implements SampleLoader {
         if (storeResult.status === "resolved") {
             this.#data = Option.wrap(audio)
             this.#meta = Option.wrap(meta)
-            this.#peaks = Option.wrap(Peaks.from(new ByteArrayInput(peaks)))
+            this.#peaks = Option.wrap(SamplePeaks.from(new ByteArrayInput(peaks)))
             this.#setState({type: "loaded"})
         } else {
             console.warn(storeResult.error)

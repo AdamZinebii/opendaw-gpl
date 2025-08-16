@@ -1,5 +1,5 @@
 import {Arrays, ByteArrayInput, EmptyExec, UUID} from "@opendaw/lib-std"
-import {Peaks} from "@opendaw/lib-fusion"
+import {Peaks, SamplePeaks} from "@opendaw/lib-fusion"
 import {AudioData, Sample, SampleMetaData} from "@opendaw/studio-adapters"
 import {WorkerAgents} from "../WorkerAgents"
 import {encodeWavFloat} from "../Wav"
@@ -37,7 +37,7 @@ export namespace SampleStorage {
             WorkerAgents.Opfs.read(`${path}/audio.wav`)
                 .then(bytes => context.decodeAudioData(bytes.buffer as ArrayBuffer)),
             WorkerAgents.Opfs.read(`${path}/peaks.bin`)
-                .then(bytes => Peaks.from(new ByteArrayInput(bytes.buffer))),
+                .then(bytes => SamplePeaks.from(new ByteArrayInput(bytes.buffer))),
             WorkerAgents.Opfs.read(`${path}/meta.json`)
                 .then(bytes => JSON.parse(new TextDecoder().decode(bytes)))
         ]).then(([buffer, peaks, meta]) => [{
