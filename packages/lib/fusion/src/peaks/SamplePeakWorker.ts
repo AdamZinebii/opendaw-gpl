@@ -1,11 +1,11 @@
 import {Arrays, float, Float16, FloatArray, int, panic, Procedure} from "@opendaw/lib-std"
 import {Communicator, Messenger, stopwatch} from "@opendaw/lib-runtime"
 import {Peaks, SamplePeaks} from "./Peaks"
-import {PeakProtocol} from "./PeakProtocol"
+import {SamplePeakProtocol} from "./SamplePeakProtocol"
 
-export namespace PeakWorker {
+export namespace SamplePeakWorker {
     export const install = (messenger: Messenger) =>
-        Communicator.executor(messenger.channel("peaks"), new class implements PeakProtocol {
+        Communicator.executor(messenger.channel("peaks"), new class implements SamplePeakProtocol {
             async generateAsync(progress: Procedure<number>,
                                 shifts: Uint8Array,
                                 frames: FloatArray[],
@@ -69,7 +69,7 @@ export namespace PeakWorker {
             }
         }
         progress(1.0)
-        time.lab(`Peak-Gen '${self.constructor.name}'`)
+        time.lab(`SamplePeaks '${self.constructor.name}'`)
         return new SamplePeaks(stages, data, numFrames, numChannels)
     }
 

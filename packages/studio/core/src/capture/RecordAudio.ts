@@ -59,6 +59,8 @@ export namespace RecordAudio {
         }))
         let writing: Option<{ fileBox: AudioFileBox, regionBox: AudioRegionBox }> = Option.None
 
+
+
         terminator.own(engine.position.catchupAndSubscribe(owner => {
             const writePosition = owner.getValue()
             if (writing.isEmpty() && engine.isRecording.getValue()) {
