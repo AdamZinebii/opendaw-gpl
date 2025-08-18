@@ -21,6 +21,7 @@
 * Store samples eventually in OPFS (to upload later into cloud)
 * Audio editor
 * Respect zero-crossing
+* Handle external changes to the project (deletion of audio-units, tracks, regions, etc. while recording)
 
 ## Level #2
 
