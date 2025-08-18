@@ -46,6 +46,7 @@ export namespace RecordAudio {
         }
         terminator.ownAll(
             recordingWorklet,
+            Terminable.create(() => streamSource.disconnect()),
             engine.position.catchupAndSubscribe(owner => {
                 if (writing.isEmpty() && engine.isRecording.getValue()) {
                     streamSource.connect(recordingWorklet)

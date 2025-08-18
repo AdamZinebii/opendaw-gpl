@@ -47,7 +47,7 @@ export namespace RecordMidi {
                 }
             }, false)
         }))
-        terminator.ownAll(...midiAccess.inputs.values()
+        terminator.ownAll(...midiAccess.inputs.values() // Implement input-device and channel filter
             .map(input => Events.subscribeAny(input, "midimessage", (event: MIDIMessageEvent) => {
                 if (!engine.isRecording.getValue()) {return}
                 const data = event.data
