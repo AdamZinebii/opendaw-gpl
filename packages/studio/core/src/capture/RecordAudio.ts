@@ -7,7 +7,6 @@ import {Project} from "../Project"
 import {Capture} from "./Capture"
 import {RecordTrack} from "./RecordTrack"
 import {RecordingWorklet} from "../RecordingWorklet"
-import {RenderQuantum} from "../RenderQuantum"
 
 export namespace RecordAudio {
     type RecordAudioContext = {

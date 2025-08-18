@@ -1,7 +1,19 @@
-import {int, isUndefined, Notifier, Observer, Option, Subscription, Terminable, UUID} from "@opendaw/lib-std"
+import {
+    ByteArrayInput,
+    int,
+    isUndefined,
+    Notifier,
+    Observer,
+    Option,
+    SilentProgressHandler,
+    Subscription,
+    Terminable,
+    UUID
+} from "@opendaw/lib-std"
 import {AudioData, mergeChunkPlanes, RingBuffer, SampleLoader, SampleLoaderState} from "@opendaw/studio-adapters"
-import {Peaks} from "@opendaw/lib-fusion"
+import {Peaks, SamplePeaks} from "@opendaw/lib-fusion"
 import {RenderQuantum} from "./RenderQuantum"
+import {WorkerAgents} from "./WorkerAgents"
 
 export class RecordingWorklet extends AudioWorkletNode implements Terminable, SampleLoader {
     readonly uuid: UUID.Format = UUID.generate()
@@ -64,14 +76,19 @@ export class RecordingWorklet extends AudioWorkletNode implements Terminable, Sa
         const sampleRate = this.context.sampleRate
         const numberOfFrames = this.#output.length * RenderQuantum
         const numberOfChannels = this.channelCount
+        const frames = mergeChunkPlanes(this.#output, RenderQuantum, numberOfFrames)
         this.#data = Option.wrap({
             sampleRate,
             numberOfChannels,
             numberOfFrames,
-            frames: mergeChunkPlanes(this.#output, RenderQuantum, numberOfFrames)
+            frames
         })
+
         // TODO Generate Peaks
-        this.#setState({type: "loaded"})
+        const shifts = SamplePeaks.findBestFit(numberOfFrames)
+        WorkerAgents.Peak.generateAsync(SilentProgressHandler, shifts, frames, numberOfFrames, numberOfChannels)
+            .then(peaks => this.#peaks = Option.wrap(SamplePeaks.from(new ByteArrayInput(peaks))))
+            .then(() => this.#setState({type: "loaded"}))
     }
 
     toString(): string {return `{RecordingWorklet}`}
