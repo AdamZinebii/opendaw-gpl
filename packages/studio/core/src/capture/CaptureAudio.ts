@@ -28,7 +28,7 @@ export class CaptureAudio extends Capture {
         assert(this.#stream.nonEmpty(), "Stream not prepared.")
         const mediaStream = this.#stream.unwrap()
         return RecordAudio.start({
-            recordingWorklet: worklets.createRecording(2, 128),
+            recordingWorklet: worklets.createRecording(2, 128, audioContext.outputLatency),
             mediaStream,
             sampleManager,
             audioContext,

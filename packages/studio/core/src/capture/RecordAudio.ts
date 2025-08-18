@@ -30,9 +30,21 @@ export namespace RecordAudio {
         const trackBox: TrackBox = RecordTrack.findOrCreate(editing, capture.box, TrackType.Audio)
         const uuid = recordingWorklet.uuid
         sampleManager.record(recordingWorklet)
-        console.debug(Math.floor(audioContext.outputLatency * audioContext.sampleRate / RenderQuantum))
         const streamSource = audioContext.createMediaStreamSource(mediaStream)
         let writing: Option<{ fileBox: AudioFileBox, regionBox: AudioRegionBox }> = Option.None
+        const resizeRegion = () => {
+            if (writing.isEmpty()) {return}
+            const {regionBox} = writing.unwrap()
+            editing.modify(() => {
+                if (regionBox.isAttached()) {
+                    const {duration, loopDuration} = regionBox
+                    const newDuration = Math.floor(PPQN.samplesToPulses(
+                        recordingWorklet.numberOfFrames, project.timelineBox.bpm.getValue(), audioContext.sampleRate))
+                    duration.setValue(newDuration)
+                    loopDuration.setValue(newDuration)
+                }
+            }, false)
+        }
         terminator.ownAll(
             recordingWorklet,
             engine.position.catchupAndSubscribe(owner => {
@@ -40,7 +52,6 @@ export namespace RecordAudio {
                     streamSource.connect(recordingWorklet)
                     writing = editing.modify(() => {
                         const position = quantizeFloor(owner.getValue(), beats)
-                        console.debug("position", PPQN.toString(position))
                         const fileBox = AudioFileBox.create(boxGraph, uuid, box => {
                             box.fileName.setValue("Recording")
                         })
@@ -52,18 +63,10 @@ export namespace RecordAudio {
                         return {fileBox, regionBox}
                     })
                 }
-                if (writing.isEmpty()) {return}
-                const {regionBox} = writing.unwrap()
-                editing.modify(() => {
-                    if (regionBox.isAttached()) {
-                        const {duration, loopDuration} = regionBox
-                        const newDuration = Math.floor(PPQN.samplesToPulses(
-                            recordingWorklet.numberOfFrames, project.timelineBox.bpm.getValue(), audioContext.sampleRate))
-                        duration.setValue(newDuration)
-                        loopDuration.setValue(newDuration)
-                    }
-                }, false)
-            }))
+                resizeRegion()
+            }),
+            Terminable.create(() => resizeRegion())
+        )
         return terminator
     }
 }
