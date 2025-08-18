@@ -1,6 +1,15 @@
-import {byte, isUndefined, Option, quantizeCeil, quantizeFloor, Terminable, Terminator, UUID} from "@opendaw/lib-std"
+import {
+    byte,
+    isUndefined,
+    Notifier,
+    Option,
+    quantizeCeil,
+    quantizeFloor,
+    Terminable,
+    Terminator,
+    UUID
+} from "@opendaw/lib-std"
 import {PPQN} from "@opendaw/lib-dsp"
-import {Events} from "@opendaw/lib-dom"
 import {MidiData} from "@opendaw/lib-midi"
 import {NoteEventBox, NoteEventCollectionBox, NoteRegionBox, TrackBox} from "@opendaw/studio-boxes"
 import {TrackType} from "@opendaw/studio-adapters"
@@ -11,14 +20,14 @@ import {RecordTrack} from "./RecordTrack"
 
 export namespace RecordMidi {
     type RecordMidiContext = {
-        midiAccess: MIDIAccess,
+        notifier: Notifier<MIDIMessageEvent>,
         engine: Engine,
         project: Project,
         capture: Capture
     }
 
-    export const start = ({midiAccess, engine, project, capture}: RecordMidiContext): Terminable => {
-        console.debug("RecordMidi.start", midiAccess)
+    export const start = ({notifier, engine, project, capture}: RecordMidiContext): Terminable => {
+        console.debug("RecordMidi.start")
         const beats = PPQN.fromSignature(1, project.timelineBox.signature.denominator.getValue())
         const {editing, boxGraph} = project
         const trackBox: TrackBox = RecordTrack.findOrCreate(editing, capture.box, TrackType.Notes)
@@ -47,40 +56,39 @@ export namespace RecordMidi {
                 }
             }, false)
         }))
-        terminator.ownAll(...midiAccess.inputs.values() // Implement input-device and channel filter
-            .map(input => Events.subscribeAny(input, "midimessage", (event: MIDIMessageEvent) => {
-                if (!engine.isRecording.getValue()) {return}
-                const data = event.data
-                if (isUndefined(data)) {return}
-                const position = engine.position.getValue()
-                if (MidiData.isNoteOn(data)) {
-                    const pitch = MidiData.readParam1(data)
-                    if (writing.isEmpty()) {
-                        editing.modify(() => {
-                            const collection = NoteEventCollectionBox.create(boxGraph, UUID.generate())
-                            const region = NoteRegionBox.create(boxGraph, UUID.generate(), box => {
-                                box.position.setValue(quantizeFloor(position, beats))
-                                box.events.refer(collection.owners)
-                                box.regions.refer(trackBox.regions)
-                            })
-                            writing = Option.wrap({region, collection})
-                        }, false)
-                    }
-                    const {collection} = writing.unwrap()
+        terminator.ownAll(notifier.subscribe((event: MIDIMessageEvent) => {
+            if (!engine.isRecording.getValue()) {return}
+            const data = event.data
+            if (isUndefined(data)) {return}
+            const position = engine.position.getValue()
+            if (MidiData.isNoteOn(data)) {
+                const pitch = MidiData.readParam1(data)
+                if (writing.isEmpty()) {
                     editing.modify(() => {
-                        activeNotes.set(pitch, NoteEventBox.create(boxGraph, UUID.generate(), box => {
-                            box.position.setValue(position)
-                            box.duration.setValue(1.0)
-                            box.pitch.setValue(pitch)
-                            box.velocity.setValue(MidiData.readParam2(data) / 127.0)
-                            box.events.refer(collection.events)
-                        }))
+                        const collection = NoteEventCollectionBox.create(boxGraph, UUID.generate())
+                        const region = NoteRegionBox.create(boxGraph, UUID.generate(), box => {
+                            box.position.setValue(quantizeFloor(position, beats))
+                            box.events.refer(collection.owners)
+                            box.regions.refer(trackBox.regions)
+                        })
+                        writing = Option.wrap({region, collection})
                     }, false)
-                } else if (MidiData.isNoteOff(data)) {
-                    const pitch = MidiData.readParam1(data)
-                    activeNotes.delete(pitch)
                 }
-            })))
+                const {collection} = writing.unwrap()
+                editing.modify(() => {
+                    activeNotes.set(pitch, NoteEventBox.create(boxGraph, UUID.generate(), box => {
+                        box.position.setValue(position)
+                        box.duration.setValue(1.0)
+                        box.pitch.setValue(pitch)
+                        box.velocity.setValue(MidiData.readParam2(data) / 127.0)
+                        box.events.refer(collection.events)
+                    }))
+                }, false)
+            } else if (MidiData.isNoteOff(data)) {
+                const pitch = MidiData.readParam1(data)
+                activeNotes.delete(pitch)
+            }
+        }))
         return terminator
     }
 }
