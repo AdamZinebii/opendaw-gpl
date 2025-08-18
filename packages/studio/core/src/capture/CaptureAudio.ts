@@ -47,7 +47,8 @@ export class CaptureAudio extends Capture {
                 audioContext,
                 engine,
                 project,
-                capture: this
+                capture: this,
+                gainDb: 6.0
             }),
             Terminable.create(() => mediaStream.getTracks().forEach(track => track.stop()))
         )

@@ -264,6 +264,7 @@ export class StudioService implements ProjectEnv {
     }
 
     startRecording(): void {
+        if (!this.hasProjectSession) {return}
         Recording.start({
             sampleManager: this.sampleManager,
             project: this.project,

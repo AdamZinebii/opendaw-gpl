@@ -1,5 +1,5 @@
 import {Option, quantizeFloor, Terminable, Terminator, UUID} from "@opendaw/lib-std"
-import {PPQN} from "@opendaw/lib-dsp"
+import {dbToGain, PPQN} from "@opendaw/lib-dsp"
 import {AudioFileBox, AudioRegionBox, TrackBox} from "@opendaw/studio-boxes"
 import {SampleManager, TrackType} from "@opendaw/studio-adapters"
 import {Engine} from "../Engine"
@@ -7,6 +7,7 @@ import {Project} from "../Project"
 import {Capture} from "./Capture"
 import {RecordTrack} from "./RecordTrack"
 import {RecordingWorklet} from "../RecordingWorklet"
+import {ColorCodes} from "../ColorCodes"
 
 export namespace RecordAudio {
     type RecordAudioContext = {
@@ -17,10 +18,20 @@ export namespace RecordAudio {
         engine: Engine
         project: Project
         capture: Capture
+        gainDb: number
     }
 
     export const start = (
-        {recordingWorklet, mediaStream, sampleManager, audioContext, engine, project, capture}: RecordAudioContext
+        {
+            recordingWorklet,
+            mediaStream,
+            sampleManager,
+            audioContext,
+            engine,
+            project,
+            capture,
+            gainDb
+        }: RecordAudioContext
     ): Terminable => {
         console.debug("RecordAudio.start", audioContext)
         const terminator = new Terminator()
@@ -30,6 +41,9 @@ export namespace RecordAudio {
         const uuid = recordingWorklet.uuid
         sampleManager.record(recordingWorklet)
         const streamSource = audioContext.createMediaStreamSource(mediaStream)
+        const streamGain = audioContext.createGain()
+        streamGain.gain.value = dbToGain(gainDb)
+        streamSource.connect(streamGain)
         let writing: Option<{ fileBox: AudioFileBox, regionBox: AudioRegionBox }> = Option.None
         const resizeRegion = () => {
             if (writing.isEmpty()) {return}
@@ -46,10 +60,13 @@ export namespace RecordAudio {
         }
         terminator.ownAll(
             recordingWorklet,
-            Terminable.create(() => streamSource.disconnect()),
+            Terminable.create(() => {
+                streamGain.disconnect()
+                streamSource.disconnect()
+            }),
             engine.position.catchupAndSubscribe(owner => {
                 if (writing.isEmpty() && engine.isRecording.getValue()) {
-                    streamSource.connect(recordingWorklet)
+                    streamGain.connect(recordingWorklet)
                     writing = editing.modify(() => {
                         const position = quantizeFloor(owner.getValue(), beats)
                         const fileBox = AudioFileBox.create(boxGraph, uuid, box => {
@@ -59,6 +76,7 @@ export namespace RecordAudio {
                             box.file.refer(fileBox)
                             box.regions.refer(trackBox.regions)
                             box.position.setValue(position)
+                            box.hue.setValue(ColorCodes.forTrackType(TrackType.Audio))
                         })
                         return {fileBox, regionBox}
                     })

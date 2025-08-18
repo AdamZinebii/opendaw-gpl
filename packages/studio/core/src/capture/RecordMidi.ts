@@ -17,6 +17,7 @@ import {Engine} from "../Engine"
 import {Project} from "../Project"
 import {Capture} from "./Capture"
 import {RecordTrack} from "./RecordTrack"
+import {ColorCodes} from "../ColorCodes"
 
 export namespace RecordMidi {
     type RecordMidiContext = {
@@ -67,9 +68,10 @@ export namespace RecordMidi {
                     editing.modify(() => {
                         const collection = NoteEventCollectionBox.create(boxGraph, UUID.generate())
                         const region = NoteRegionBox.create(boxGraph, UUID.generate(), box => {
-                            box.position.setValue(quantizeFloor(position, beats))
-                            box.events.refer(collection.owners)
                             box.regions.refer(trackBox.regions)
+                            box.events.refer(collection.owners)
+                            box.position.setValue(quantizeFloor(position, beats))
+                            box.hue.setValue(ColorCodes.forTrackType(TrackType.Notes))
                         })
                         writing = Option.wrap({region, collection})
                     }, false)
