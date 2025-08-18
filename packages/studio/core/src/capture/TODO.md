@@ -5,7 +5,7 @@
 * If empty project, ask if the user wants to record audio or midi
 * If tracks, use the first available audio-unit to record
 * We need a flag to identify audio-unit's main content (audio or MIDI)
-* Recording-gain
+* ~~Recording-gain~~
 * Fully implement capture
     * List all devices
     * If MIDI, select all channels or specific channel
