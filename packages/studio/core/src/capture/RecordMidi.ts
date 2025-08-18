@@ -11,17 +11,17 @@ import {RecordTrack} from "./RecordTrack"
 
 export namespace RecordMidi {
     type RecordMidiContext = {
-        midi: MIDIAccess,
+        midiAccess: MIDIAccess,
         engine: Engine,
         project: Project,
         capture: Capture
     }
 
-    export const start = ({midi, engine, project, capture}: RecordMidiContext): Terminable => {
-        console.debug("RecordMidi.start", midi)
+    export const start = ({midiAccess, engine, project, capture}: RecordMidiContext): Terminable => {
+        console.debug("RecordMidi.start", midiAccess)
         const beats = PPQN.fromSignature(1, project.timelineBox.signature.denominator.getValue())
-        const trackBox: TrackBox = RecordTrack.findOrCreate(capture.box, TrackType.Notes)
         const {editing, boxGraph} = project
+        const trackBox: TrackBox = RecordTrack.findOrCreate(editing, capture.box, TrackType.Notes)
         const terminator = new Terminator()
         const activeNotes = new Map<byte, NoteEventBox>()
         let writing: Option<{ region: NoteRegionBox, collection: NoteEventCollectionBox }> = Option.None
@@ -47,7 +47,7 @@ export namespace RecordMidi {
                 }
             }, false)
         }))
-        terminator.ownAll(...midi.inputs.values()
+        terminator.ownAll(...midiAccess.inputs.values()
             .map(input => Events.subscribeAny(input, "midimessage", (event: MIDIMessageEvent) => {
                 if (!engine.isRecording.getValue()) {return}
                 const data = event.data

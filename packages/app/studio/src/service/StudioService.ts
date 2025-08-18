@@ -251,9 +251,7 @@ export class StudioService implements ProjectEnv {
             try {
                 await showApproveDialog({headline: "Closing Project?", message: "You will lose all progress!"})
             } catch (error) {
-                if (!Errors.isAbort(error)) {
-                    panic(String(error))
-                }
+                if (!Errors.isAbort(error)) {panic(String(error))}
                 return
             }
             this.sessionService.setValue(Option.None)
@@ -271,9 +269,9 @@ export class StudioService implements ProjectEnv {
             project: this.project,
             worklets: this.worklets,
             engine: this.engine,
-            midiAccess: MidiDeviceAccess.get().map(x => x.access),
+            requestMIDIAccess: MidiDeviceAccess.requestMidiAccess,
             audioContext: this.context
-        })
+        }).catch(reason => showInfoDialog({headline: "Could not start recording", message: reason}))
     }
 
     stopRecording(): void {this.engine.stopRecording()}

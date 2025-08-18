@@ -7,6 +7,7 @@ import {Project} from "../Project"
 import {Capture} from "./Capture"
 import {RecordTrack} from "./RecordTrack"
 import {RecordingWorklet} from "../RecordingWorklet"
+import {RenderQuantum} from "../RenderQuantum"
 
 export namespace RecordAudio {
     type RecordAudioContext = {
@@ -23,22 +24,22 @@ export namespace RecordAudio {
         {recordingWorklet, mediaStream, sampleManager, audioContext, engine, project, capture}: RecordAudioContext
     ): Terminable => {
         console.debug("RecordAudio.start", audioContext)
-        const beats = PPQN.fromSignature(1, project.timelineBox.signature.denominator.getValue())
-        const trackBox: TrackBox = RecordTrack.findOrCreate(capture.box, TrackType.Audio)
-        const {editing, boxGraph} = project
         const terminator = new Terminator()
+        const beats = PPQN.fromSignature(1, project.timelineBox.signature.denominator.getValue())
+        const {editing, boxGraph} = project
+        const trackBox: TrackBox = RecordTrack.findOrCreate(editing, capture.box, TrackType.Audio)
         const uuid = recordingWorklet.uuid
         sampleManager.record(recordingWorklet)
+        console.debug(Math.floor(audioContext.outputLatency * audioContext.sampleRate / RenderQuantum))
         const streamSource = audioContext.createMediaStreamSource(mediaStream)
         let writing: Option<{ fileBox: AudioFileBox, regionBox: AudioRegionBox }> = Option.None
         terminator.ownAll(
             recordingWorklet,
             engine.position.catchupAndSubscribe(owner => {
-                const writePosition = owner.getValue()
                 if (writing.isEmpty() && engine.isRecording.getValue()) {
                     streamSource.connect(recordingWorklet)
                     writing = editing.modify(() => {
-                        const position = quantizeFloor(engine.position.getValue(), beats)
+                        const position = quantizeFloor(owner.getValue(), beats)
                         console.debug("position", PPQN.toString(position))
                         const fileBox = AudioFileBox.create(boxGraph, uuid, box => {
                             box.fileName.setValue("Recording")

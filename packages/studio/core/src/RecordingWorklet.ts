@@ -48,8 +48,10 @@ export class RecordingWorklet extends AudioWorkletNode implements Terminable, Sa
     }
 
     terminate(): void {
+        this.#reader.stop()
         this.#isRecording = false
         const sampleRate = this.context.sampleRate
+        this.#output.splice(0, 10)
         const numberOfFrames = this.#output.length * RenderQuantum
         const numberOfChannels = this.channelCount
         this.#data = Option.wrap({
