@@ -5,6 +5,7 @@ import {Engine} from "../Engine"
 import {RecordMidi} from "./RecordMidi"
 import {SampleManager} from "@opendaw/studio-adapters"
 import {RecordAudio} from "./RecordAudio"
+import {RecordingWorklet} from "../RecordingWorklet"
 
 export interface RecordingContext {
     project: Project
@@ -20,15 +21,26 @@ export interface RecordingContext {
 //  Add RecordAudio
 
 export class Recording {
-    static start(context: RecordingContext): void {
+    static async start(context: RecordingContext) {
         assert(this.#instance.isEmpty(), "Recording already in progress")
-        this.#instance = Option.wrap(new Recording(context))
+
+        const mediaStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+                sampleRate: context.audioContext.sampleRate,
+                sampleSize: 32,
+                echoCancellation: false,
+                noiseSuppression: false,
+                autoGainControl: false
+            }
+        })
+
+        this.#instance = Option.wrap(new Recording(context, mediaStream))
     }
 
     static #instance: Option<Recording> = Option.None
 
-    private constructor(readonly context: RecordingContext) {
-        const {engine, project, midiAccess, audioContext} = this.context
+    private constructor(readonly context: RecordingContext, mediaStream: MediaStream) {
+        const {engine, project, midiAccess, audioContext, worklets} = this.context
         const {captureManager, editing, sampleManager} = project
         const terminator = new Terminator()
         engine.startRecording()
@@ -38,6 +50,8 @@ export class Recording {
             const audio = true
             if (audio) {
                 terminator.own(RecordAudio.start({
+                    recordingWorklet: worklets.createRecording(2, 128),
+                    mediaStream,
                     sampleManager,
                     audioContext,
                     capture,

@@ -85,6 +85,8 @@ export class MainThreadSampleLoader implements SampleLoader {
         }
     }
 
+    toString(): string {return `{MainThreadSampleLoader}`}
+
     #setState(value: SampleLoaderState): void {
         this.#state = value
         this.#notifier.notify(this.#state)

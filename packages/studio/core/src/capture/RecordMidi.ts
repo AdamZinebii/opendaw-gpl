@@ -1,15 +1,4 @@
-import {
-    asInstanceOf,
-    byte,
-    isUndefined,
-    Nullish,
-    Option,
-    quantizeCeil,
-    quantizeFloor,
-    Terminable,
-    Terminator,
-    UUID
-} from "@opendaw/lib-std"
+import {byte, isUndefined, Option, quantizeCeil, quantizeFloor, Terminable, Terminator, UUID} from "@opendaw/lib-std"
 import {PPQN} from "@opendaw/lib-dsp"
 import {Events} from "@opendaw/lib-dom"
 import {MidiData} from "@opendaw/lib-midi"
@@ -18,6 +7,7 @@ import {TrackType} from "@opendaw/studio-adapters"
 import {Engine} from "../Engine"
 import {Project} from "../Project"
 import {Capture} from "./Capture"
+import {RecordTrack} from "./RecordTrack"
 
 export namespace RecordMidi {
     type RecordMidiContext = {
@@ -30,14 +20,7 @@ export namespace RecordMidi {
     export const start = ({midi, engine, project, capture}: RecordMidiContext): Terminable => {
         console.debug("RecordMidi.start", midi)
         const beats = PPQN.fromSignature(1, project.timelineBox.signature.denominator.getValue())
-        const trackBox: Nullish<TrackBox> = capture.box.tracks.pointerHub.incoming()
-            .map(({box}) => asInstanceOf(box, TrackBox))
-            .find(box => {
-                const hasNoRegions = box.regions.pointerHub.isEmpty()
-                const acceptsNotes = box.type.getValue() === TrackType.Notes
-                return hasNoRegions && acceptsNotes
-            })
-        if (isUndefined(trackBox)) {return Terminable.Empty} // TODO Create a new track
+        const trackBox: TrackBox = RecordTrack.findOrCreate(capture.box, TrackType.Notes)
         const {editing, boxGraph} = project
         const terminator = new Terminator()
         const activeNotes = new Map<byte, NoteEventBox>()
