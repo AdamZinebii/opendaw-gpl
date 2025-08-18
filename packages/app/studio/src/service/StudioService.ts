@@ -271,7 +271,10 @@ export class StudioService implements ProjectEnv {
             engine: this.engine,
             requestMIDIAccess: MidiDeviceAccess.requestMidiAccess,
             audioContext: this.context
-        }).catch(reason => showInfoDialog({headline: "Could not start recording", message: reason}))
+        }).catch(reason => {
+            console.debug(reason)
+            showInfoDialog({headline: "Could not start recording", message: String(reason)}).then()
+        })
     }
 
     stopRecording(): void {this.engine.stopRecording()}

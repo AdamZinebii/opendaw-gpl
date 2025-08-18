@@ -9,7 +9,8 @@ export * from "./samples/SampleProvider"
 
 export * from "./capture/Capture"
 export * from "./capture/CaptureManager"
-export * from "./capture/Recording" // TODO Move to?
+export * from "./capture/Recording"
+export * from "./capture/RecordingContext"
 
 export * from "./dawproject/DawProject"
 export * from "./dawproject/DawProjectExporter"
@@ -36,5 +37,3 @@ export * from "./ProjectEnv"
 export * from "./Wav"
 export * from "./WorkerAgents"
 export * from "./Worklets"
-export {Capture} from "./capture/Capture"
-export {RecordingContext} from "./capture/RecordingContext"

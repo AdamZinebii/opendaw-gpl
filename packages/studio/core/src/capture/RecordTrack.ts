@@ -17,6 +17,7 @@ export namespace RecordTrack {
             box.type.setValue(type)
             box.index.setValue(index + 1)
             box.tracks.refer(audioUnitBox.tracks)
+            box.target.refer(audioUnitBox)
         })).unwrap("Could not create TrackBox")
     }
 }

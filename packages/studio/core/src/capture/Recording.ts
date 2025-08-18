@@ -10,12 +10,18 @@ export class Recording {
         const terminator = new Terminator()
         const captures = captureManager.filterArmed()
         console.debug("Arming captures")
+        if (captures.length === 0) {
+            return panic("No track is armed for Recording")
+        }
         const {status, error} =
             await Promises.tryCatch(Promise.all(captures.map(capture => capture.prepareRecording(context))))
-        if (status === "rejected") {return panic(error)}
+        if (status === "rejected") {
+            console.warn(error)
+            return panic(error)
+        }
         console.debug("start recording")
-        engine.startRecording()
         terminator.ownAll(...captures.map(capture => capture.startRecording(context)))
+        engine.startRecording()
         const {isRecording, isCountingIn} = engine
         const stop = (): void => {
             if (isRecording.getValue() || isCountingIn.getValue()) {return}

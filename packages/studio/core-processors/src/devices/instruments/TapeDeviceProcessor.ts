@@ -63,7 +63,6 @@ export class TapeDeviceProcessor extends AbstractProcessor implements DeviceProc
                                 for (const region of trackBoxAdapter.regions.collection.iterateRange(p0, p1)) {
                                     if (region.mute || !isInstanceOf(region, AudioRegionBoxAdapter)) {continue}
                                     const loader: SampleLoader = region.file.getOrCreateLoader()
-                                    console.debug(loader.constructor.name)
                                     const optData = loader.data
                                     if (optData.isEmpty()) {return}
                                     const data = optData.unwrap()
