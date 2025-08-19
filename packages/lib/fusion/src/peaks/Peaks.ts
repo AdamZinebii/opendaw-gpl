@@ -21,7 +21,7 @@ export interface Peaks {
 
 export namespace Peaks {
     export class Stage {
-        constructor(readonly mask: int, readonly shift: int, readonly numPeaks: int, readonly dataOffset: int) {}
+        constructor(readonly shift: int, readonly numPeaks: int, readonly dataOffset: int) {}
 
         unitsEachPeak(): int {return 1 << this.shift}
     }
@@ -47,8 +47,8 @@ export class SamplePeaks implements Peaks {
             const dataOffset = input.readInt()
             const numPeaks = input.readInt()
             const shift = input.readInt()
-            const mask = input.readInt()
-            stages[i] = new Peaks.Stage(mask, shift, numPeaks, dataOffset)
+            input.readInt() // TODO deprecate (was mask)
+            stages[i] = new Peaks.Stage(shift, numPeaks, dataOffset)
         }
         const numData = input.readInt()
         const data: Array<Int32Array> = []
@@ -97,11 +97,11 @@ export class SamplePeaks implements Peaks {
         output.writeString("PEAKS")
         output.writeInt(this.stages.length)
         for (let i = 0; i < this.stages.length; i++) {
-            const {dataOffset, numPeaks, shift, mask} = this.stages[i]
+            const {dataOffset, numPeaks, shift} = this.stages[i]
             output.writeInt(dataOffset)
             output.writeInt(numPeaks)
             output.writeInt(shift)
-            output.writeInt(mask)
+            output.writeInt((1 << shift) - 1) // TODO deprecate (was mask)
         }
         output.writeInt(this.data.length)
         for (let i = 0; i < this.data.length; i++) {

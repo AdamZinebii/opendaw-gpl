@@ -1,8 +1,10 @@
 import {
+    Arrays,
     ByteArrayInput,
     int,
     isUndefined,
     Notifier,
+    Nullable,
     Observer,
     Option,
     Subscription,
@@ -17,11 +19,49 @@ import {
     SampleLoaderState,
     SampleMetaData
 } from "@opendaw/studio-adapters"
-import {Peaks, SamplePeaks} from "@opendaw/lib-fusion"
+import {Peaks, SamplePeaks, SamplePeakWorker} from "@opendaw/lib-fusion"
 import {RenderQuantum} from "./RenderQuantum"
 import {WorkerAgents} from "./WorkerAgents"
 import {SampleStorage} from "./samples/SampleStorage"
 import {BPMTools} from "@opendaw/lib-dsp"
+
+class PeaksWriter implements Peaks, Peaks.Stage {
+    readonly data: ReadonlyArray<Int32Array>
+    readonly stages: ReadonlyArray<Peaks.Stage>
+    readonly dataOffset: int = 0
+    readonly shift: int = 7
+    readonly dataIndex: Int32Array
+
+    numFrames: int = 0 | 0
+
+    constructor(readonly numChannels: int) {
+        this.data = Arrays.create(() => new Int32Array(1 << 20), numChannels) // TODO auto-resize
+        this.dataIndex = new Int32Array(numChannels)
+        this.stages = [this]
+    }
+
+    get numPeaks(): int {return Math.ceil(this.numFrames / (1 << this.shift))}
+    unitsEachPeak(): int {return 1 << this.shift}
+
+    append(frames: ReadonlyArray<Float32Array>): void {
+        for (let channel = 0; channel < this.numChannels; ++channel) {
+            const channelFrames = frames[channel]
+            let min = Number.POSITIVE_INFINITY
+            let max = Number.NEGATIVE_INFINITY
+            for (let i = 0; i < RenderQuantum; ++i) {
+                const frame = channelFrames[i]
+                min = Math.min(frame, min)
+                max = Math.max(frame, max)
+            }
+            this.data[channel][this.dataIndex[channel]++] = SamplePeakWorker.pack(min, max)
+        }
+        this.numFrames += RenderQuantum
+    }
+
+    nearest(_unitsPerPixel: number): Nullable<Peaks.Stage> {
+        return this.stages.at(0) ?? null
+    }
+}
 
 export class RecordingWorklet extends AudioWorkletNode implements Terminable, SampleLoader {
     readonly uuid: UUID.Format = UUID.generate()
@@ -29,6 +69,7 @@ export class RecordingWorklet extends AudioWorkletNode implements Terminable, Sa
     readonly #output: Array<ReadonlyArray<Float32Array>>
     readonly #notifier: Notifier<SampleLoaderState>
     readonly #reader: RingBuffer.Reader
+    readonly #peakWriter: PeaksWriter
 
     #data: Option<AudioData> = Option.None
     #peaks: Option<Peaks> = Option.None
@@ -49,6 +90,8 @@ export class RecordingWorklet extends AudioWorkletNode implements Terminable, Sa
             console.warn("outputLatency is undefined. Please use Chrome.")
         }
 
+        this.#peakWriter = new PeaksWriter(config.numberOfChannels)
+
         this.#truncateLatency = Math.floor((outputLatency ?? 0) * this.context.sampleRate / RenderQuantum)
         this.#output = []
         this.#notifier = new Notifier<SampleLoaderState>()
@@ -56,8 +99,11 @@ export class RecordingWorklet extends AudioWorkletNode implements Terminable, Sa
             if (this.#isRecording) {
                 if (this.#truncateLatency === 0) {
                     this.#output.push(array)
+                    this.#peakWriter.append(array)
                 } else {
-                    this.#truncateLatency--
+                    if (--this.#truncateLatency === 0) {
+                        this.#peaks = Option.wrap(this.#peakWriter)
+                    }
                 }
             }
         })
