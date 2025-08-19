@@ -23,7 +23,7 @@ import {Dragging, Html} from "@opendaw/lib-dom"
 import {FlexSpacer} from "@/ui/components/FlexSpacer.tsx"
 import {Propagation} from "@opendaw/lib-box"
 
-const className = Html.adoptStyleSheet(css, "time-display")
+const className = Html.adoptStyleSheet(css, "TimeStateDisplay")
 
 type Construct = {
     lifecycle: Lifecycle

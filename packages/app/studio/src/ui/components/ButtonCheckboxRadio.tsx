@@ -42,10 +42,10 @@ export const ButtonCheckboxRadio = ({lifecycle, dataClass, style, className: ext
 
     if (appearance?.tooltip) {
         lifecycle.own(TextTooltip.simple(wrapper, () => {
-            const clientRect = wrapper.getBoundingClientRect()
+            const {left, bottom} = wrapper.getBoundingClientRect()
             return {
-                clientX: clientRect.left,
-                clientY: clientRect.bottom + 8,
+                clientX: left,
+                clientY: bottom + 8,
                 text: appearance.tooltip ?? ""
             }
         }))

@@ -38,7 +38,6 @@ import {SessionService} from "./SessionService"
 import {StudioSignal} from "./StudioSignal"
 import {Projects} from "@/project/Projects"
 import {SampleDialogs} from "@/ui/browse/SampleDialogs"
-import {TextTooltip} from "@/ui/surface/TextTooltip"
 import {AudioOutputDevice} from "@/audio/AudioOutputDevice"
 import {FooterLabel} from "@/service/FooterLabel"
 import {RouteLocation} from "@opendaw/lib-jsx"
@@ -223,10 +222,7 @@ export class StudioService implements ProjectEnv {
         }
 
         configLocalStorageBoolean(this.layout.helpVisible, "help-visible",
-            visible => {
-                TextTooltip.enabled = visible
-                document.body.classList.toggle("help-hidden", !visible)
-            }, true)
+            visible => document.body.classList.toggle("help-hidden", !visible), true)
 
         this.recovery.restoreSession().then(optSession => {
             if (optSession.nonEmpty()) {
