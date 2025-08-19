@@ -5,15 +5,23 @@ import {
     Notifier,
     Observer,
     Option,
-    SilentProgressHandler,
     Subscription,
     Terminable,
     UUID
 } from "@opendaw/lib-std"
-import {AudioData, mergeChunkPlanes, RingBuffer, SampleLoader, SampleLoaderState} from "@opendaw/studio-adapters"
+import {
+    AudioData,
+    mergeChunkPlanes,
+    RingBuffer,
+    SampleLoader,
+    SampleLoaderState,
+    SampleMetaData
+} from "@opendaw/studio-adapters"
 import {Peaks, SamplePeaks} from "@opendaw/lib-fusion"
 import {RenderQuantum} from "./RenderQuantum"
 import {WorkerAgents} from "./WorkerAgents"
+import {SampleStorage} from "./samples/SampleStorage"
+import {BPMTools} from "@opendaw/lib-dsp"
 
 export class RecordingWorklet extends AudioWorkletNode implements Terminable, SampleLoader {
     readonly uuid: UUID.Format = UUID.generate()
@@ -70,25 +78,39 @@ export class RecordingWorklet extends AudioWorkletNode implements Terminable, Sa
         return this.#notifier.subscribe(observer)
     }
 
-    terminate(): void {
+    async finalize() {
         this.#reader.stop()
         this.#isRecording = false
-        const sampleRate = this.context.sampleRate
+        const sample_rate = this.context.sampleRate
         const numberOfFrames = this.#output.length * RenderQuantum
         const numberOfChannels = this.channelCount
         const frames = mergeChunkPlanes(this.#output, RenderQuantum, numberOfFrames)
-        this.#data = Option.wrap({
-            sampleRate,
+        const audioData: AudioData = {
+            sampleRate: sample_rate,
             numberOfChannels,
             numberOfFrames,
             frames
-        })
-
-        // TODO Generate Peaks
+        }
+        this.#data = Option.wrap(audioData)
         const shifts = SamplePeaks.findBestFit(numberOfFrames)
-        WorkerAgents.Peak.generateAsync(SilentProgressHandler, shifts, frames, numberOfFrames, numberOfChannels)
-            .then(peaks => this.#peaks = Option.wrap(SamplePeaks.from(new ByteArrayInput(peaks))))
-            .then(() => this.#setState({type: "loaded"}))
+        const peaks = await WorkerAgents.Peak
+            .generateAsync(progress => this.#setState({
+                type: "progress",
+                progress
+            }), shifts, frames, numberOfFrames, numberOfChannels)
+        this.#peaks = Option.wrap(SamplePeaks.from(new ByteArrayInput(peaks)))
+        const bpm = BPMTools.detect(frames[0], sample_rate)
+        const duration = numberOfFrames / sample_rate
+        const meta: SampleMetaData = {
+            name: "Recording", bpm, sample_rate, duration, cloud: false
+        }
+        await SampleStorage.store(this.uuid, audioData, peaks as ArrayBuffer, meta)
+        this.#setState({type: "loaded"})
+    }
+
+    terminate(): void {
+        this.#reader.stop()
+        this.#isRecording = false
     }
 
     toString(): string {return `{RecordingWorklet}`}

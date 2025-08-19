@@ -59,8 +59,8 @@ export namespace RecordAudio {
             }, false)
         }
         terminator.ownAll(
-            recordingWorklet,
             Terminable.create(() => {
+                recordingWorklet.finalize().then()
                 streamGain.disconnect()
                 streamSource.disconnect()
             }),
@@ -77,6 +77,7 @@ export namespace RecordAudio {
                             box.regions.refer(trackBox.regions)
                             box.position.setValue(position)
                             box.hue.setValue(ColorCodes.forTrackType(TrackType.Audio))
+                            box.label.setValue("Recording")
                         })
                         return {fileBox, regionBox}
                     })

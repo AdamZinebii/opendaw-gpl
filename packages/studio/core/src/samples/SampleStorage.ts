@@ -5,7 +5,6 @@ import {WorkerAgents} from "../WorkerAgents"
 import {encodeWavFloat} from "../Wav"
 
 export namespace SampleStorage {
-    // CAUTION! Next time you would kill all locally imported files, so it is not that easy!
     export const clean = () => WorkerAgents.Opfs.delete("samples/v1").catch(EmptyExec)
 
     export const Folder = "samples/v2"

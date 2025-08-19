@@ -15,7 +15,7 @@ export namespace AudioImporter {
 
     export const run = async (context: AudioContext,
                               {uuid, name, arrayBuffer, progressHandler}: Creation): Promise<Sample> => {
-        uuid ??= await UUID.sha256(arrayBuffer) // Must run before decodeAudioData, because it will detach the ArrayBuffer
+        uuid ??= await UUID.sha256(arrayBuffer) // Must run before decodeAudioData laster, because it will detach the ArrayBuffer
         const audioResult = await Promises.tryCatch(context.decodeAudioData(arrayBuffer))
         if (audioResult.status === "rejected") {return Promise.reject(name)}
         const {value: audioBuffer} = audioResult

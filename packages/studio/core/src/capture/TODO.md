@@ -2,10 +2,11 @@
 
 ## Next
 
-* Store samples eventually in OPFS (to upload later into the cloud)
+* Generate peaks while recording
 
 ## Level #1
 
+* ~~Store samples in OPFS (to upload later into the cloud)~~
 * If empty project, ask if the user wants to record audio or midi
 * If tracks, use the first available audio-unit to record
 * We need a flag to identify audio-unit's main content (audio or MIDI)
@@ -15,7 +16,6 @@
     * List all devices
     * If MIDI, select all channels or specific channel
     * If Audio, let the user select the number of channels (max and default is 2)
-* Generate peaks while recording
 * Find a way to stop recording on quantized duration (audio)
 * Implement monitor
     * If audio, show peak-meter and allow monitoring
@@ -32,6 +32,6 @@
 
 * Record samples into Playfield and clips
 * Better audio playback algorithms
-  * time-stretch
-  * event-based warping
+    * time-stretch
+    * event-based warping
 * Allow recording from other audio-units (baking)
