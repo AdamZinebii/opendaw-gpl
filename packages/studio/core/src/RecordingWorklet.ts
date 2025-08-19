@@ -101,9 +101,7 @@ export class RecordingWorklet extends AudioWorkletNode implements Terminable, Sa
         this.#peaks = Option.wrap(SamplePeaks.from(new ByteArrayInput(peaks)))
         const bpm = BPMTools.detect(frames[0], sample_rate)
         const duration = numberOfFrames / sample_rate
-        const meta: SampleMetaData = {
-            name: "Recording", bpm, sample_rate, duration, cloud: false
-        }
+        const meta: SampleMetaData = {name: "Recording", bpm, sample_rate, duration}
         await SampleStorage.store(this.uuid, audioData, peaks as ArrayBuffer, meta)
         this.#setState({type: "loaded"})
     }
