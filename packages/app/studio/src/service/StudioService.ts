@@ -263,7 +263,7 @@ export class StudioService implements ProjectEnv {
             UUID.generate(), Project.new(this), ProjectMeta.init("Untitled"), Option.None)))
     }
 
-    startRecording(): void {
+    startRecording(countIn: boolean): void {
         if (!this.hasProjectSession) {return}
         Recording.start({
             sampleManager: this.sampleManager,
@@ -272,7 +272,7 @@ export class StudioService implements ProjectEnv {
             engine: this.engine,
             requestMIDIAccess: MidiDeviceAccess.requestMidiAccess,
             audioContext: this.context
-        }).catch(reason => {
+        }, countIn).catch(reason => {
             console.debug(reason)
             showInfoDialog({headline: "Could not start recording", message: String(reason)}).then()
         })

@@ -96,7 +96,7 @@ export class EngineWorklet extends AudioWorkletNode implements Engine {
                     play(): void {dispatcher.dispatchAndForget(this.play)}
                     stop(reset: boolean): void {dispatcher.dispatchAndForget(this.stop, reset)}
                     setPosition(position: number): void {dispatcher.dispatchAndForget(this.setPosition, position)}
-                    startRecording() {dispatcher.dispatchAndForget(this.startRecording)}
+                    startRecording(countIn: boolean) {dispatcher.dispatchAndForget(this.startRecording, countIn)}
                     stopRecording() {dispatcher.dispatchAndForget(this.stopRecording)}
                     setMetronomeEnabled(enabled: boolean): void {dispatcher.dispatchAndForget(this.setMetronomeEnabled, enabled)}
                     queryLoadingComplete(): Promise<boolean> {
@@ -158,7 +158,7 @@ export class EngineWorklet extends AudioWorkletNode implements Engine {
     play(): void {this.#commands.play()}
     stop(reset: boolean = false): void {this.#commands.stop(reset)}
     setPosition(position: ppqn): void {this.#commands.setPosition(position)}
-    startRecording(): void {this.#commands.startRecording()}
+    startRecording(countIn: boolean): void {this.#commands.startRecording(countIn)}
     stopRecording(): void {this.#commands.stopRecording()}
     panic(): void {this.#commands.panic()}
 

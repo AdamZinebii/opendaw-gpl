@@ -62,7 +62,7 @@ export class EngineFacade implements Engine {
     play(): void {this.#client.ifSome(client => client.play())}
     stop(reset: boolean = false): void {this.#client.ifSome(client => client.stop(reset))}
     setPosition(position: ppqn): void {this.#client.ifSome(client => client.setPosition(position))}
-    startRecording(): void {this.#client.ifSome(client => client.startRecording())}
+    startRecording(countIn: boolean): void {this.#client.ifSome(client => client.startRecording(countIn))}
     stopRecording(): void {this.#client.ifSome(client => client.stopRecording())}
 
     get position(): ObservableValue<ppqn> {return this.#position}

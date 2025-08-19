@@ -49,8 +49,6 @@ export class CaptureManager implements Terminable {
         })
     }
 
-    startRecording(engine: Engine): void {engine.startRecording()}
-
     filterArmed(): ReadonlyArray<Capture> {
         return this.#captures.values()
             .filter(capture => capture.armed.getValue() && capture.box.input.pointerHub.nonEmpty())

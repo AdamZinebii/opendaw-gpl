@@ -29,12 +29,12 @@ export const TransportGroup = ({lifecycle, service}: Construct) => {
     )
     const recordButton: HTMLElement = (
         <Button lifecycle={lifecycle}
-                appearance={{activeColor: "hsl(0, 50%, 60%)", tooltip: "Recording"}}
-                onClick={() => {
+                appearance={{activeColor: "hsl(0, 50%, 60%)", tooltip: "Record (Shift-Click to suppress count-in.)"}}
+                onClick={event => {
                     if (service.isRecording()) {
                         service.stopRecording()
                     } else {
-                        service.startRecording()
+                        service.startRecording(!event.shiftKey)
                     }
                 }}><Icon symbol={IconSymbol.Record}/></Button>)
     const countInLifecycle = lifecycle.own(new Terminator())

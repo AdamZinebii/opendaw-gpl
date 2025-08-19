@@ -166,9 +166,9 @@ export class EngineProcessor extends AudioWorkletProcessor implements EngineCont
                         this.#timeInfo.position = this.#playbackTimestamp = position
                     }
                 },
-                startRecording: () => {
+                startRecording: (countIn: boolean) => {
                     if (this.#timeInfo.isRecording || this.#timeInfo.isCountingIn) {return}
-                    if (!this.#timeInfo.transporting) {
+                    if (!this.#timeInfo.transporting && countIn) {
                         const position = this.#timeInfo.position
                         const nominator = this.#timelineBoxAdapter.box.signature.nominator.getValue()
                         const denominator = this.#timelineBoxAdapter.box.signature.denominator.getValue()
@@ -184,6 +184,7 @@ export class EngineProcessor extends AudioWorkletProcessor implements EngineCont
                             subscription.terminate()
                         })
                     } else {
+                        this.#timeInfo.transporting = true
                         this.#timeInfo.isRecording = true
                     }
                 },

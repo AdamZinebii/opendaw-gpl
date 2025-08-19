@@ -3,7 +3,7 @@ import {Promises} from "@opendaw/lib-runtime"
 import {RecordingContext} from "./RecordingContext"
 
 export class Recording {
-    static async start(context: RecordingContext): Promise<Terminable> {
+    static async start(context: RecordingContext, countIn: boolean): Promise<Terminable> {
         assert(this.#instance.isEmpty(), "Recording already in progress")
         const {engine, project} = context
         const {captureManager, editing} = project
@@ -21,7 +21,7 @@ export class Recording {
         }
         console.debug("start recording")
         terminator.ownAll(...captures.map(capture => capture.startRecording(context)))
-        engine.startRecording()
+        engine.startRecording(countIn)
         const {isRecording, isCountingIn} = engine
         const stop = (): void => {
             if (isRecording.getValue() || isCountingIn.getValue()) {return}
