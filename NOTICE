@@ -1,0 +1,3 @@
+This repository is based on openDAW (https://github.com/andremichelle/openDAW)
+frozen at commit e06a7d5d587409f25aa077953f7747c4055f094e (tag: gpl-base).
+Upstream later relicensed to AGPL; this fork remains on the GPL commit.
