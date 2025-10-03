@@ -29,9 +29,9 @@ export const ErrorsPage: PageFactory<StudioService> = ({}: PageContext<StudioSer
     return (
         <div className={className}>
             <h1>Errors</h1>
-            <p>This page shows all errors reported from users running openDAW in production, helping us identify and fix
+            <p>This page shows all errors reported from users running beatson in production, helping us identify and fix
                 issues.</p>
-            <Await factory={() => fetch(`https://logs.opendaw.studio/list.php`).then(x => x.json())}
+            <Await factory={() => fetch(`https://logs.beatson.studio/list.php`).then(x => x.json())}
                    failure={(error) => `Unknown request (${error.reason})`}
                    loading={() => <p>loading...</p>}
                    success={(json: ReadonlyArray<Entry>) => (

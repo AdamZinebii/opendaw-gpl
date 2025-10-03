@@ -56,7 +56,7 @@ export const TimeCodeInput = ({lifecycle, model, className, negativeWarning, sig
         Events.subscribe(element, "copy", (event: ClipboardEvent) => {
             event.preventDefault()
             event.clipboardData?.setData("application/json", JSON.stringify({
-                app: "openDAW",
+                app: "beatson",
                 content: "timecode",
                 value: model.getValue()
             }))
@@ -65,7 +65,7 @@ export const TimeCodeInput = ({lifecycle, model, className, negativeWarning, sig
             const data = event.clipboardData?.getData("application/json")
             if (isDefined(data)) {
                 const json = JSON.parse(data)
-                if (json.app === "openDAW" && json.content === "timecode") {
+                if (json.app === "beatson" && json.content === "timecode") {
                     event.preventDefault()
                     model.setValue(json.value)
                 }

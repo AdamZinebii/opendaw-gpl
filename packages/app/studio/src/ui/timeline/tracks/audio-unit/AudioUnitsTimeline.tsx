@@ -11,6 +11,7 @@ import {ClipsArea} from "./clips/ClipsArea.tsx"
 import {AudioUnitBoxAdapter, TrackBoxAdapter} from "@opendaw/studio-adapters"
 import {AnimationFrame, Events, Html} from "@opendaw/lib-dom"
 import {ExtraSpace} from "./Constants.ts"
+import {AddTrackRow} from "./AddTrackRow"
 
 const className = Html.adoptStyleSheet(css, "AudioUnitsTimeline")
 
@@ -22,10 +23,12 @@ type Construct = {
 export const AudioUnitsTimeline = ({lifecycle, service}: Construct) => {
     const {range} = service.timeline
     const scrollModel = new ScrollModel()
+    const addTrackRow = <AddTrackRow lifecycle={lifecycle} service={service}/>
     const scrollContainer: HTMLElement = (
         <div className="scrollable">
             <div className="fill"/>
             <div className="extra"/>
+            {addTrackRow}
         </div>
     )
     const factory: TrackFactory = {

@@ -16,52 +16,88 @@ const className = Html.adoptStyleSheet(css, "DevicesBrowser")
 type Construct = {
     lifecycle: Lifecycle
     service: StudioService
+    filter?: "instruments-only" | "effects-only" | "all"
+    onDeviceSelected?: () => void
 }
 
-export const DevicesBrowser = ({lifecycle, service}: Construct) => {
+export const DevicesBrowser = ({lifecycle, service, filter = "all", onDeviceSelected}: Construct) => {
     const {project} = service
+    const showInstruments = filter === "all" || filter === "instruments-only"
+    const showEffects = filter === "all" || filter === "effects-only"
+    
     return (
         <div className={className}>
             <div className="resources">
+            {showInstruments && (
                 <section className="instrument">
                     <h1>Instruments</h1>
-                    {createInstrumentList(lifecycle, project)}
+                    {createInstrumentList(lifecycle, project, onDeviceSelected)}
                 </section>
-                <section className="audio">
-                    <h1>Audio Effects</h1>
-                    {createEffectList(lifecycle, service, project, Objects.exclude(EffectFactories.AudioNamed, "Modular"), "audio-effect")}
-                </section>
-                <section className="midi">
-                    <h1>Midi Effects</h1>
-                    {createEffectList(lifecycle, service, project, EffectFactories.MidiNamed, "midi-effect")}
-                </section>
+            )}
+                {showEffects && (
+                    <section className="audio">
+                        <h1>Audio Effects</h1>
+                        {createEffectList(lifecycle, service, project, Objects.exclude(EffectFactories.AudioNamed, "Modular"), "audio-effect", onDeviceSelected)}
+                    </section>
+                )}
+                {/* MIDI Effects section - DISABLED FOR NOW, WILL BE RE-ENABLED IN THE FUTURE */}
+                {/* {showEffects && (
+                    <section className="midi">
+                        <h1>Midi Effects</h1>
+                        {createEffectList(lifecycle, service, project, EffectFactories.MidiNamed, "midi-effect", onDeviceSelected)}
+                    </section>
+                )} */}
             </div>
             <div className="manual help-section">
-                <section>
-                    <h1>Creating an Instrument</h1>
-                    <p>
-                        To start making sound, click on an instrument from the list. This will create a new instance in
-                        your
-                        project.
-                    </p>
-                </section>
-                <section>
-                    <h1>Adding EffectFactories</h1>
-                    <p>
-                        Once an instrument is created, you can add effects. To do this, simply drag an effect
-                        from the list and drop it into the instrument’s device chain.
-                    </p>
-                </section>
+                {showInstruments && (
+                    <section>
+                        <h1>Creating an Instrument</h1>
+                        <p>
+                            To start making sound, click on an instrument from the list. This will create a new instance in
+                            your
+                            project.
+                        </p>
+                    </section>
+                )}
+                {showEffects && (
+                    <section>
+                        <h1>Adding Effects</h1>
+                        <p>
+                            Once an instrument is created, you can add effects. To do this, simply drag an effect
+                            from the list and drop it into the instrument's device chain.
+                        </p>
+                    </section>
+                )}
             </div>
         </div>
     )
 }
 
-const createInstrumentList = (lifecycle: Lifecycle, project: Project) => (
+const deviceColors: Record<string, string> = {
+    // Instruments
+    "Tape": "hsl(0, 0%, 85%)",
+    "Nano": "hsl(0, 0%, 90%)",
+    "Playfield": "hsl(0, 0%, 95%)",
+    "Vaporisateur": "hsl(0, 0%, 75%)",
+    // Audio Effects
+    "StereoTool": "hsl(0, 0%, 82%)",
+    "Delay": "hsl(0, 0%, 92%)",
+    "Reverb": "hsl(0, 0%, 87%)",
+    "Revamp": "hsl(0, 0%, 88%)",
+    // MIDI Effects
+    "Arpeggio": "hsl(0, 0%, 90%)",
+    "Pitch": "hsl(0, 0%, 85%)",
+    "Zeitgeist": "hsl(0, 0%, 88%)"
+}
+
+const createInstrumentList = (lifecycle: Lifecycle, project: Project, onDeviceSelected?: () => void) => (
     <ul>{
         Object.entries(InstrumentFactories.Named).map(([key, factory]) => {
             const element = (
-                <li onclick={() => project.editing.modify(() => project.api.createInstrument(factory))}>
+                <li onclick={() => {
+                    project.editing.modify(() => project.api.createInstrument(factory))
+                    onDeviceSelected?.()
+                }} style={{"--device-color": deviceColors[key] || "hsl(290, 70%, 65%)"}}>
                     <div className="icon">
                         <Icon symbol={factory.defaultIcon}/>
                     </div>
@@ -86,7 +122,7 @@ const createInstrumentList = (lifecycle: Lifecycle, project: Project) => (
 
 const createEffectList = <
     R extends Record<string, EffectFactory>,
-    T extends DragDevice["type"]>(lifecycle: Lifecycle, service: StudioService, project: Project, records: R, type: T): HTMLUListElement => (
+    T extends DragDevice["type"]>(lifecycle: Lifecycle, service: StudioService, project: Project, records: R, type: T, onDeviceSelected?: () => void): HTMLUListElement => (
     <ul>{
         Object.entries(records).map(([key, entry]) => {
             const element = (
@@ -108,8 +144,9 @@ const createEffectList = <
                             }
                             return box
                         })
+                        onDeviceSelected?.()
                     })
-                }}>
+                }} style={{"--device-color": deviceColors[key] || "hsl(280, 65%, 58%)"}}>
                     <div className="icon">
                         <Icon symbol={entry.defaultIcon}/>
                     </div>

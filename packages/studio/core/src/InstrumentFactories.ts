@@ -16,7 +16,7 @@ import {Pointers} from "@opendaw/studio-enums"
 
 export namespace InstrumentFactories {
     export const Tape: InstrumentFactory = {
-        defaultName: "Tape",
+        defaultName: "Audio",
         defaultIcon: IconSymbol.Tape,
         description: "Plays audio regions & clips",
         trackType: TrackType.Audio,
@@ -33,7 +33,7 @@ export namespace InstrumentFactories {
     }
 
     export const Nano: InstrumentFactory = {
-        defaultName: "Nano",
+        defaultName: "Sampler MIDI",
         defaultIcon: IconSymbol.NanoWave,
         description: "Simple sampler",
         trackType: TrackType.Notes,
@@ -53,7 +53,7 @@ export namespace InstrumentFactories {
     }
 
     export const Playfield: InstrumentFactory = {
-        defaultName: "Playfield",
+        defaultName: "Drums",
         defaultIcon: IconSymbol.Playfield,
         description: "Drum computer",
         trackType: TrackType.Notes,
@@ -88,7 +88,7 @@ export namespace InstrumentFactories {
     }
 
     export const Vaporisateur: InstrumentFactory = {
-        defaultName: "Vaporisateur",
+        defaultName: "Synthesizer MIDI",
         defaultIcon: IconSymbol.Piano,
         description: "Classic subtractive synthesizer",
         trackType: TrackType.Notes,

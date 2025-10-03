@@ -7,7 +7,9 @@ import {TimeStateDisplay} from "@/ui/header/TimeStateDisplay.tsx"
 import {RadioGroup} from "@/ui/components/RadioGroup.tsx"
 import {createElement, Frag, RouteLocation} from "@opendaw/lib-jsx"
 import {StudioService} from "@/service/StudioService"
+import {AuthService} from "@/service/AuthService"
 import {MenuButton} from "@/ui/components/MenuButton.tsx"
+import {Button} from "@/ui/components/Button"
 import {Workspace} from "@/ui/workspace/Workspace.ts"
 import {IconSymbol} from "@opendaw/studio-adapters"
 import {Html} from "@opendaw/lib-dom"
@@ -20,14 +22,16 @@ const className = Html.adoptStyleSheet(css, "Header")
 type Construct = {
     lifecycle: Lifecycle
     service: StudioService
+    authService?: AuthService
+    chatbotToggle?: () => void
 }
 
-export const Header = ({lifecycle, service}: Construct) => {
+export const Header = ({lifecycle, service, authService, chatbotToggle}: Construct) => {
     return (
         <header className={className}>
             <MenuButton root={service.menu}
                         appearance={{color: Colors.gray, activeColor: Colors.bright, tinyTriangle: true}}>
-                <h5>openDAW</h5>
+                <h5>beatson</h5>
             </MenuButton>
             <hr/>
             <div style={{display: "flex"}}>
@@ -88,15 +92,61 @@ export const Header = ({lifecycle, service}: Construct) => {
                 <Icon symbol={IconSymbol.Metronome}/>
             </Checkbox>
             <hr/>
+            {chatbotToggle && (
+                <Frag>
+                    {(() => {
+                        const aiButton = (
+                            <Button lifecycle={lifecycle}
+                                    onClick={(event) => {
+                                        if (!service.hasProfile) {
+                                            event.preventDefault()
+                                            event.stopPropagation()
+                                            return
+                                        }
+                                        chatbotToggle()
+                                    }}
+                                    appearance={{
+                                        activeColor: Colors.green,
+                                        tooltip: "AI Assistant"
+                                    }}>
+                                AI
+                            </Button>
+                        ) as HTMLElement
+                        
+                        lifecycle.own(service.profileService.catchupAndSubscribe(owner => {
+                            const isDisabled = owner.getValue().isEmpty()
+                            aiButton.classList.toggle("disabled", isDisabled)
+                            aiButton.style.pointerEvents = isDisabled ? 'none' : 'auto'
+                            aiButton.style.opacity = isDisabled ? '0.5' : '1'
+                        }))
+                        
+                        return aiButton
+                    })()}
+                    <hr/>
+                </Frag>
+            )}
             <div style={{flex: "1 0 0"}}/>
-            <a className="support"
-               href="https://www.patreon.com/bePatron?u=61769481"
-               target="_blank"
-               rel="noopener noreferrer"
-               data-patreon-widget-type="become-patron-button">
-                <img src="/become_a_patron_button.png" alt="Patreon"/>
-            </a>
-            <div style={{flex: "2 0 0"}}/>
+            {authService && (
+                <Frag>
+                    <hr/>
+                    <Button lifecycle={lifecycle}
+                            onClick={async () => {
+                                console.log('🔐 Sign out clicked')
+                                const { error } = await authService.signOut()
+                                if (error) {
+                                    console.error('Sign out error:', error)
+                                } else {
+                                    console.log('✅ Successfully signed out')
+                                }
+                            }}
+                            appearance={{
+                                activeColor: Colors.red,
+                                tooltip: `Sign out (${authService.getCurrentUser()?.email || 'User'})`
+                            }}>
+                        <Icon symbol={IconSymbol.Close}/>
+                    </Button>
+                </Frag>
+            )}
             <hr/>
             <RadioGroup lifecycle={lifecycle}
                         model={new class implements ObservableValue<Nullable<Workspace.ScreenKeys>> {

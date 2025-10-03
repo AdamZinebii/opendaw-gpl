@@ -1,7 +1,11 @@
 .DS_Store
 .turbo
 .idea
+
+# Environment files (contain sensitive credentials)
 packages/app/studio/.env
+packages/app/studio/.env.local
+packages/app/studio/.env.production
 .cache
 *.log
 *.local
@@ -18,3 +22,7 @@ lerna-debug.log
 /packages/app/studio/public/build-info.json
 /packages/app/localhost.pem
 /packages/app/localhost-key.pem
+
+# Additional environment files
+.env.local
+.env.production

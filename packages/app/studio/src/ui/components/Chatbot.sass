@@ -1,0 +1,678 @@
+@use "@/colors"
+@use "@/mixins"
+
+component
+  position: fixed
+  top: 0
+  right: 0
+  width: 380px
+  height: 100vh
+  background: var(--glass-background)
+  backdrop-filter: blur(20px)
+  border-left: 1px solid var(--border-subtle)
+  box-shadow: var(--shadow-strong)
+  z-index: 1000
+  display: flex
+  flex-direction: column
+  transform: translateX(100%)
+  transition: var(--transition-smooth)
+  
+  &.open
+    transform: translateX(0)
+
+  .header
+    padding: 1rem
+    border-bottom: 1px solid var(--border-subtle)
+    background: linear-gradient(135deg, 
+      rgba(200, 200, 200, 0.05) 0%, 
+      transparent 100%)
+    position: relative
+    
+    h3
+      color: hsl(0, 0%, 85%)
+      font-size: 1.1rem
+      font-weight: 600
+      margin: 0
+      display: flex
+      align-items: center
+      gap: 0.5rem
+      
+      // Clean title without emoji
+
+    .header-status
+      position: absolute
+      top: 1rem
+      right: 3.5rem
+      
+      .network-status
+        display: inline-flex
+        align-items: center
+        margin-right: 0.5rem
+        
+        .network-arcs
+          position: relative
+          width: 18px
+          height: 14px
+          display: flex
+          align-items: flex-end
+          justify-content: center
+          
+          .arc
+            position: absolute
+            border: 1.5px solid hsl(0, 0%, 80%)
+            border-radius: 50%
+            border-bottom: none
+            border-left: none
+            border-right: none
+            transform-origin: center bottom
+            
+          .arc-1
+            width: 4px
+            height: 2px
+            bottom: 0
+            left: 50%
+            transform: translateX(-50%)
+            
+          .arc-2
+            width: 8px
+            height: 4px
+            bottom: 0
+            left: 50%
+            transform: translateX(-50%)
+            
+          .arc-3
+            width: 12px
+            height: 6px
+            bottom: 0
+            left: 50%
+            transform: translateX(-50%)
+            
+        &.offline .network-arcs .arc
+          border-color: var(--color-red)
+          opacity: 0.4
+          
+        &.online .network-arcs .arc
+          border-color: hsl(0, 0%, 80%)
+          opacity: 1
+      
+      .sync-status
+        display: inline-flex
+        align-items: center
+        justify-content: center
+        width: 1.5rem
+        height: 1.5rem
+        border-radius: 50%
+        font-size: 0.8rem
+        transition: var(--transition-quick)
+        
+        &.idle
+          background: rgba(200, 200, 200, 0.1)
+          color: hsl(0, 0%, 80%)
+          
+        &.syncing
+          background: rgba(200, 200, 200, 0.1)
+          color: hsl(0, 0%, 80%)
+          animation: pulse 2s ease-in-out infinite
+          
+        &.error
+          background: hsla(354, 95%, 75%, 0.1)
+          color: var(--color-red)
+
+    .close-btn
+      position: absolute
+      top: 1rem
+      right: 1rem
+      width: 2rem
+      height: 2rem
+      background: transparent
+      border: 1px solid var(--border-subtle)
+      border-radius: 50%
+      color: var(--color-gray)
+      cursor: pointer
+      display: flex
+      align-items: center
+      justify-content: center
+      font-size: 0.9rem
+      transition: var(--transition-quick)
+      
+      &:hover
+        background: hsla(354, 95%, 75%, 0.1)
+        border-color: var(--color-red)
+        color: var(--color-red)
+        transform: scale(1.05)
+
+  .chat-content
+    flex: 1
+    display: flex
+    flex-direction: column
+    overflow: hidden
+
+  .messages
+    flex: 1
+    padding: 1rem
+    overflow-y: auto
+    display: flex
+    flex-direction: column
+    gap: 1rem
+    
+    &::-webkit-scrollbar
+      width: 6px
+      
+    &::-webkit-scrollbar-track
+      background: transparent
+      
+    &::-webkit-scrollbar-thumb
+      background: var(--border-subtle)
+      border-radius: 3px
+      
+      &:hover
+        background: var(--color-shadow)
+
+  .message
+    display: flex
+    flex-direction: column
+    gap: 0.5rem
+    
+    &.user
+      align-items: flex-end
+      
+      .bubble
+        background: hsl(0, 0%, 10%)
+        color: hsl(0, 0%, 95%)
+        border: 1px solid rgba(200, 200, 200, 0.2)
+        
+    &.bot
+      align-items: flex-start
+      
+      .bubble
+        background: var(--panel-background-bright)
+        border: 1px solid var(--border-subtle)
+        color: var(--color-bright)
+        
+      &.direct
+        .bot-text
+          color: var(--color-bright)
+          font-size: 0.9rem
+          line-height: 1.5
+          padding: 0.5rem 0
+          
+          // Add markdown styling to direct bot messages
+          @include mixins.markdown
+          
+    // Message bubble for loading states (like opendaw-old)
+    .message-bubble
+      background: var(--panel-background-bright)
+      border: 1px solid var(--border-subtle)
+      border-radius: 12px
+      padding: 0.75rem
+      margin: 0.5rem 0
+
+  .bubble
+    max-width: 80%
+    padding: 0.75rem 1rem
+    border-radius: 1rem
+    font-size: 0.9rem
+    line-height: 1.4
+    box-shadow: var(--shadow-soft)
+    word-wrap: break-word
+    
+    // Add markdown styling to both user and bot bubbles
+    @include mixins.markdown
+
+  .input-area
+    padding: 1rem
+    border-top: 1px solid var(--border-subtle)
+    background: var(--panel-background-dark)
+    
+    .input-container
+      display: flex
+      gap: 0.75rem
+      align-items: flex-end
+      
+    textarea
+      flex: 1
+      resize: none
+      min-height: 2.5rem
+      max-height: 6rem
+      padding: 0.75rem
+      border: 1px solid var(--border-subtle)
+      border-radius: 1.25rem
+      background: var(--panel-background)
+      color: var(--color-bright)
+      font-family: inherit
+      font-size: 0.9rem
+      transition: var(--transition-quick)
+      
+      &:focus
+        outline: none
+        border-color: hsl(0, 0%, 80%)
+        box-shadow: 0 0 0 2px rgba(200, 200, 200, 0.2)
+        
+      &::placeholder
+        color: var(--color-shadow)
+
+    .send-btn
+      width: 2.5rem
+      height: 2.5rem
+      border: none
+      border-radius: 50%
+      background: hsl(0, 0%, 80%)
+      color: hsl(0, 0%, 10%)
+      cursor: pointer
+      display: flex
+      align-items: center
+      justify-content: center
+      font-size: 1rem
+      transition: var(--transition-quick)
+      
+      &:hover
+        transform: scale(1.05)
+        box-shadow: 0 4px 12px rgba(200, 200, 200, 0.4)
+        background: hsl(0, 0%, 90%)
+        
+      &:active
+        transform: scale(0.95)
+        
+        &:disabled
+          opacity: 0.5
+          cursor: not-allowed
+          transform: none
+
+    .debug-info
+      padding: 0.25rem 0.5rem
+      border-radius: 0.25rem
+      background: var(--panel-background-dark)
+      border: 1px solid var(--border-subtle)
+      font-family: monospace
+      font-size: 0.75rem
+      color: var(--color-shadow)
+      margin-top: 0.5rem
+      line-height: 1.2
+      text-align: center
+      
+      &:empty
+        display: none
+
+  .welcome-message
+    text-align: center
+    color: var(--color-shadow)
+    font-size: 0.9rem
+    padding: 2rem 1rem
+    line-height: 1.5
+    
+    .icon
+      font-size: 2rem
+      margin-bottom: 1rem
+      display: block
+      
+    p
+      margin: 0.5rem 0
+      
+  .tool-call
+    background: var(--panel-background-bright)
+    border: 1px solid var(--border-subtle)
+    border-radius: 0.75rem
+    padding: 1rem
+    margin: 0.5rem 0
+    
+    .tool-header
+      display: flex
+      align-items: center
+
+  .midi-display
+    background: var(--panel-background-bright)
+    border: 1px solid var(--border-subtle)
+    border-radius: 0.75rem
+    padding: 1rem
+    margin: 0.5rem 0
+    max-width: 420px
+    
+    .midi-header
+      display: flex
+      align-items: center
+      gap: 0.75rem
+      margin-bottom: 0.75rem
+      
+      .midi-icon
+        font-size: 1.2rem
+        
+      .midi-url
+        flex: 1
+        font-size: 0.85rem
+        color: var(--color-shadow)
+        font-family: monospace
+        
+      .midi-play-btn
+        width: 32px
+        height: 32px
+        border: none
+        border-radius: 50%
+        background: hsl(0, 0%, 80%)
+        color: hsl(0, 0%, 10%)
+        cursor: pointer
+        display: flex
+        align-items: center
+        justify-content: center
+        font-size: 0.9rem
+        transition: var(--transition-quick)
+        
+        &:hover
+          transform: scale(1.05)
+          box-shadow: 0 2px 8px rgba(200, 200, 200, 0.4)
+          background: hsl(0, 0%, 90%)
+          
+        &:active
+          transform: scale(0.95)
+          
+      .midi-status
+        font-size: 0.8rem
+        color: var(--color-shadow)
+        
+    canvas
+      width: 100%
+      height: 120px
+      border: 1px solid var(--border-subtle)
+      border-radius: 0.5rem
+      background: var(--panel-background-dark)
+
+  .tool-call .tool-header
+    gap: 0.5rem
+    font-weight: 600
+    margin-bottom: 0.5rem
+      
+    .status-icon
+      font-weight: normal
+        
+    .tool-name
+      color: hsl(0, 0%, 85%)
+      font-family: monospace
+        
+    .tool-details
+      color: var(--color-shadow)
+      font-size: 0.85rem
+      margin-bottom: 0.5rem
+      
+      .arg
+        display: inline-block
+        margin-right: 0.25rem
+        
+        strong
+          color: var(--color-bright)
+          
+    .tool-result
+      color: var(--color-green)
+      font-size: 0.85rem
+      font-weight: 500
+      
+    .tool-error
+      color: var(--color-red)
+      font-size: 0.85rem
+      font-weight: 500
+      
+    .loading-message
+      color: hsl(0, 0%, 80%)
+      font-size: 0.85rem
+      font-weight: 500
+      padding: 0.5rem 0
+      display: flex
+      align-items: center
+      gap: 0.5rem
+      font-style: italic
+      
+    &.executing
+      border-color: hsl(0, 0%, 80%)
+      background: rgba(200, 200, 200, 0.05)
+      animation: subtle-pulse 2s ease-in-out infinite
+      
+      .status-icon
+        animation: spin 1.5s linear infinite
+        color: hsl(0, 0%, 80%)
+        font-size: 1.1rem
+        
+    &.success
+      border-color: var(--color-green)
+      background: hsla(142, 85%, 60%, 0.05)
+      
+    &.error
+      border-color: var(--color-red)
+      background: hsla(354, 95%, 75%, 0.05)
+
+@keyframes spin
+  from
+    transform: rotate(0deg)
+  to
+    transform: rotate(360deg)
+    
+@keyframes pulse
+  0%, 100%
+    opacity: 1
+    transform: scale(1)
+  50%
+    opacity: 0.5
+    transform: scale(0.95)
+  50%
+    opacity: 0.7
+    transform: scale(1.05)
+
+@keyframes subtle-pulse
+  0%, 100%
+    background: rgba(200, 200, 200, 0.05)
+    border-color: hsl(0, 0%, 80%)
+  50%
+    background: rgba(200, 200, 200, 0.1)
+    border-color: hsl(0, 0%, 85%)
+
+// Mini tool loading indicator styles
+.tool-loading-mini
+  display: flex
+  align-items: center
+  justify-content: flex-start
+  padding: 0.25rem 0.5rem
+  margin: 0.125rem 0
+  gap: 0.375rem
+  
+  .mini-spinner
+    width: 12px
+    height: 12px
+    border: 1px solid transparent
+    border-top: 1px solid hsl(0, 0%, 80%)
+    border-radius: 50%
+    animation: spin 1s linear infinite
+    flex-shrink: 0
+    
+  .mini-text
+    color: hsl(0, 0%, 80%)
+    font-weight: 500
+    font-size: 0.75rem
+    opacity: 0.8
+
+// Mini tool call result styles
+.tool-call-mini
+  display: flex
+  align-items: center
+  justify-content: flex-start
+  padding: 0.25rem 0.5rem
+  margin: 0.125rem 0
+  gap: 0.375rem
+  opacity: 0.7
+  
+  .mini-spinner
+    width: 12px
+    height: 12px
+    border: 1px solid transparent
+    border-top: 1px solid hsl(0, 0%, 80%)
+    border-radius: 50%
+    animation: spin 1s linear infinite
+    flex-shrink: 0
+  
+  .mini-status-icon
+    font-size: 0.75rem
+    flex-shrink: 0
+    
+  .mini-tool-name
+    font-weight: 500
+    font-size: 0.75rem
+    
+  &.success
+    color: var(--color-green)
+    
+  &.error
+    color: var(--color-red)
+    
+  &.executing
+    color: hsl(0, 0%, 80%)
+    .mini-status-icon
+      animation: spin 1.5s linear infinite
+
+// Loading dots animation
+.loading-dots
+  display: flex
+  align-items: center
+  gap: 2px
+  padding: 0.25rem 0
+  
+  span
+    width: 4px
+    height: 4px
+    border-radius: 50%
+    background-color: hsl(0, 0%, 80%)
+    opacity: 0.4
+    animation: loading-bounce 1.4s ease-in-out infinite both
+    
+    &:nth-child(1)
+      animation-delay: -0.32s
+      
+    &:nth-child(2)
+      animation-delay: -0.16s
+      
+    &:nth-child(3)
+      animation-delay: 0s
+
+@keyframes loading-bounce
+  0%, 80%, 100%
+    opacity: 0.2
+    transform: scale(0.8)
+    
+  40%
+    opacity: 1
+    transform: scale(1)
+
+// Markdown styling in bot messages (for Marked.js output)
+.bot-text
+  line-height: 1.4
+  
+  // Paragraphs
+  p
+    margin: 8px 0
+    &:first-child
+      margin-top: 0
+    &:last-child
+      margin-bottom: 0
+  
+  // Code blocks
+  pre
+    background: rgba(255, 255, 255, 0.05)
+    border: 1px solid rgba(255, 255, 255, 0.1)
+    border-radius: 4px
+    padding: 8px
+    margin: 8px 0
+    overflow-x: auto
+    font-family: 'Courier New', monospace
+    font-size: 12px
+    
+    code
+      background: none
+      padding: 0
+      border-radius: 0
+    
+  // Inline code
+  code
+    background: rgba(255, 255, 255, 0.1)
+    border-radius: 3px
+    padding: 2px 4px
+    font-family: 'Courier New', monospace
+    font-size: 12px
+    
+  // Headers
+  h1, h2, h3, h4, h5, h6
+    margin: 12px 0 6px 0
+    color: rgba(255, 255, 255, 0.9)
+    font-weight: bold
+    
+  h1
+    font-size: 16px
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2)
+    padding-bottom: 4px
+    
+  h2
+    font-size: 14px
+    
+  h3
+    font-size: 13px
+    
+  h4, h5, h6
+    font-size: 12px
+    
+  // Bold and italic
+  strong
+    font-weight: bold
+    color: rgba(255, 255, 255, 0.95)
+    
+  em
+    font-style: italic
+    color: rgba(255, 255, 255, 0.85)
+    
+  // Lists
+  ul, ol
+    margin: 8px 0
+    padding-left: 16px
+    
+  li
+    margin: 4px 0
+    
+  ul li
+    list-style-type: disc
+    
+  ol li
+    list-style-type: decimal
+    
+  // Nested lists
+  li ul, li ol
+    margin: 4px 0
+    
+  // Links
+  a
+    color: rgba(59, 130, 246, 0.8)
+    text-decoration: underline
+    
+    &:hover
+      color: rgba(59, 130, 246, 1)
+      
+  // Blockquotes
+  blockquote
+    border-left: 3px solid rgba(255, 255, 255, 0.3)
+    margin: 8px 0
+    padding-left: 12px
+    color: rgba(255, 255, 255, 0.8)
+    font-style: italic
+    
+  // Tables
+  table
+    border-collapse: collapse
+    margin: 8px 0
+    width: 100%
+    
+  th, td
+    border: 1px solid rgba(255, 255, 255, 0.2)
+    padding: 6px 8px
+    text-align: left
+    
+  th
+    background: rgba(255, 255, 255, 0.05)
+    font-weight: bold
+    
+  // Horizontal rules
+  hr
+    border: none
+    border-top: 1px solid rgba(255, 255, 255, 0.2)
+    margin: 12px 0

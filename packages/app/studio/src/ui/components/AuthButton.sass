@@ -1,0 +1,146 @@
+@use "@/colors"
+
+component
+  display: inline-block
+  position: relative
+
+  &.loading
+    opacity: 0.7
+    
+  .user-info
+    display: flex
+    align-items: center
+    gap: 0.5rem
+    
+    .avatar
+      width: 24px
+      height: 24px
+      border-radius: 50%
+      object-fit: cover
+      border: 2px solid var(--color-blue)
+
+  // Modal styles
+  .modal-overlay
+    position: fixed
+    top: 0
+    left: 0
+    right: 0
+    bottom: 0
+    background: rgba(0, 0, 0, 0.5)
+    backdrop-filter: blur(4px)
+    display: flex
+    align-items: center
+    justify-content: center
+    z-index: 10000
+    animation: fade-in 0.2s ease-out
+    
+  .modal-content
+    background: var(--panel-background)
+    border: 1px solid var(--border-subtle)
+    border-radius: 12px
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3)
+    width: 400px
+    max-width: 90vw
+    animation: slide-up 0.3s ease-out
+    
+  .modal-header
+    padding: 1.5rem 1.5rem 1rem 1.5rem
+    display: flex
+    align-items: center
+    justify-content: space-between
+    border-bottom: 1px solid var(--border-subtle)
+    
+    h3
+      margin: 0
+      color: var(--color-bright)
+      font-size: 1.25rem
+      font-weight: 600
+      
+    .close-button
+      background: none
+      border: none
+      color: var(--color-shadow)
+      font-size: 1.5rem
+      cursor: pointer
+      padding: 0
+      width: 24px
+      height: 24px
+      display: flex
+      align-items: center
+      justify-content: center
+      border-radius: 4px
+      transition: all 0.15s ease
+      
+      &:hover
+        color: var(--color-bright)
+        background: var(--panel-background-bright)
+        
+  .modal-body
+    padding: 1.5rem
+    
+    p
+      margin: 0 0 1.5rem 0
+      color: var(--color-shadow)
+      line-height: 1.5
+      
+  .auth-buttons
+    display: flex
+    flex-direction: column
+    gap: 0.75rem
+    
+  .auth-button
+    display: flex
+    align-items: center
+    gap: 0.75rem
+    padding: 0.75rem 1rem
+    border: 1px solid var(--border-subtle)
+    border-radius: 8px
+    background: var(--panel-background-bright)
+    color: var(--color-bright)
+    font-size: 0.9rem
+    font-weight: 500
+    cursor: pointer
+    transition: all 0.2s ease
+    
+    &:hover
+      border-color: var(--color-blue)
+      background: var(--panel-background-bright)
+      transform: translateY(-1px)
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15)
+      
+    &:active
+      transform: translateY(0)
+      
+    .icon-text
+      width: 20px
+      height: 20px
+      display: flex
+      align-items: center
+      justify-content: center
+      font-weight: 600
+      font-size: 0.75rem
+      border-radius: 4px
+      
+    &.github
+      .icon-text
+        background: #333
+        color: white
+        
+    &.google
+      .icon-text
+        background: #4285f4
+        color: white
+
+@keyframes fade-in
+  from
+    opacity: 0
+  to
+    opacity: 1
+
+@keyframes slide-up
+  from
+    opacity: 0
+    transform: translateY(20px) scale(0.95)
+  to
+    opacity: 1
+    transform: translateY(0) scale(1)

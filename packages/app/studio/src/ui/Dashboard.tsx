@@ -3,8 +3,7 @@ import {Lifecycle, TimeSpan} from "@opendaw/lib-std"
 import {createElement, HTML, LocalLink} from "@opendaw/lib-jsx"
 import {StudioService} from "@/service/StudioService.ts"
 import {Html} from "@opendaw/lib-dom"
-import {ProjectBrowser} from "@/project/ProjectBrowser"
-import {Dialogs} from "@/ui/components/dialogs"
+import {ProjectBrowser} from "@/ui/components/ProjectBrowser"
 import {Colors} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "Dashboard")
@@ -14,38 +13,76 @@ type Construct = {
     service: StudioService
 }
 
-export const Dashboard = ({service}: Construct) => {
+export const Dashboard = ({lifecycle, service}: Construct) => {
     const time = TimeSpan.millis(new Date(service.buildInfo.date).getTime() - new Date().getTime()).toUnitString()
+    
+    // Use the StudioService's cloud services instead of creating new ones
+    const projectService = service.projectService
+    
     return (
         <div className={className}>
             <article>
-                <h1>Welcome to openDAW</h1>
-                <h2>A new holistic exploration of music creation inside your browser</h2>
-                <p style={{margin: "1em 0 0 0"}}>
-                    This is an <span className="highlight">early prototype</span> giving you an early glimpse of the
-                    development
-                    state.
-                </p>
+                <h1>Welcome to beatson</h1>
                 <div className="columns">
                     <div>
                         <h3>Templates</h3>
                         <div className="starters">
                             {[
-                                {name: "New", click: () => service.cleanSlate()},
-                                {name: "Sunset", click: () => service.loadTemplate("Sunset")},
-                                {name: "Breeze", click: () => service.loadTemplate("Breeze")},
-                                {name: "Shafted", click: () => service.loadTemplate("Shafted")},
-                                {name: "Seek Deeper", click: () => service.loadTemplate("SeekDeeper")},
-                                {name: "Fatso", click: () => service.loadTemplate("Fatso")},
-                                {name: "Bury Me", click: () => service.loadTemplate("BuryMe")},
-                                {
-                                    name: "Bury Me (BMX Remix)",
-                                    click: () => service.loadTemplate("BMX_Skyence_buryme_Remix")
-                                },
-                                {name: "Ben", click: () => service.loadTemplate("Ben")},
-                                {name: "Liquid", click: () => service.loadTemplate("BMX_LiquidDrums")},
-                                {name: "Release", click: () => service.loadTemplate("Release")},
-                                {name: "Dub Techno", click: () => service.loadTemplate("Dub-Techno")}
+                                {name: "New", click: async () => {
+                                    try {
+                                        // Create project in Supabase FIRST to get projectId for chatbot (like opendaw-old)
+                                        if (projectService && projectService.isReady) {
+                                            const newProject = await projectService.createProject({
+                                                name: "Untitled",
+                                                description: ""
+                                            })
+                                            
+                                            console.log('🆕 Created Supabase project for new local project:', newProject.id)
+                                            console.log('📌 Project set as current for save synchronization')
+                                        }
+                                        
+                        // Then create local project (same as opendaw-old)
+                        service.cleanSlate()
+                        
+                        // Trigger saveAs with "Untitled" to save project files
+                        const currentProfile = service.profileService.getValue()
+                        if (currentProfile.nonEmpty()) {
+                            await currentProfile.unwrap().saveAs({
+                                name: "Untitled",
+                                description: "",
+                                tags: [],
+                                created: new Date().toISOString(),
+                                modified: new Date().toISOString()
+                            })
+                            // Reset saved flag so user still gets Save As dialog later
+                            currentProfile.unwrap().saved = () => false
+                        }
+                        
+                        // Switch to project page with prompter
+                        service.switchScreen("project")
+                                    } catch (error) {
+                                        console.error('❌ Failed to create Supabase project:', error)
+                                        // Fallback: create local project anyway
+                        service.cleanSlate()
+                        
+                        // Trigger saveAs with "Untitled" to save project files
+                        const currentProfile = service.profileService.getValue()
+                        if (currentProfile.nonEmpty()) {
+                            await currentProfile.unwrap().saveAs({
+                                name: "Untitled",
+                                description: "",
+                                tags: [],
+                                created: new Date().toISOString(),
+                                modified: new Date().toISOString()
+                            })
+                            // Reset saved flag so user still gets Save As dialog later
+                            currentProfile.unwrap().saved = () => false
+                        }
+                        
+                        // Switch to project page with prompter
+                        service.switchScreen("project")
+                                    }
+                                }}
                             ].map(({name, click}, index) => {
                                 const svgSource = `viscious-speed/${String(index + 1).padStart(2, "0")}.svg`
                                 return (
@@ -59,20 +96,25 @@ export const Dashboard = ({service}: Construct) => {
                     </div>
                     <div>
                         <h3>Your Projects</h3>
-                        <ProjectBrowser service={service}
-                                        select={async ([uuid, meta]) => {
-                                            const handler = Dialogs.processMonolog("Loading...")
-                                            await service.profileService.loadExisting(uuid, meta)
-                                            handler.close()
-                                        }}/>
+                                {projectService ? (
+                                    <ProjectBrowser
+                                        lifecycle={lifecycle}
+                                        projectService={projectService}
+                                        studioService={service}
+                                    />
+                                ) : (
+                                    <div style={{color: "#666", fontStyle: "italic"}}>
+                                        Projects unavailable - check Supabase configuration
+                                    </div>
+                                )}
                     </div>
                 </div>
                 <p style={{marginTop: "1.5em", fontSize: "0.625em"}}>
                     Last built was <span style={{color: Colors.green}}>{time}</span>. Join our <a
-                    href="https://discord.opendaw.studio" target="discord" style={{color: Colors.blue}}>discord
-                    community</a> to stay updated! · <a href="https://github.com/andremichelle/opendaw"
+                    href="https://discord.beatson.studio" target="discord" style={{color: Colors.green}}>discord
+                    community</a> to stay updated! · <a href="https://github.com/beatson-studio/beatson"
                                                         target="github"
-                                                        style={{color: Colors.blue}}>sourcecode</a> · <LocalLink
+                                                        style={{color: Colors.green}}>sourcecode</a> · <LocalLink
                     href="/imprint">imprint</LocalLink> · Built with ❤️
                 </p>
             </article>

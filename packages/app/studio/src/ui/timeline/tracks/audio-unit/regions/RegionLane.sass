@@ -2,13 +2,16 @@
 @use "@/mixins"
 
 component
-  border-radius: 2px
+  border-radius: 3px
   position: relative
-  @include colors.panel-background
+  background: linear-gradient(135deg, hsl(0, 0%, 10%, 6%) 0%, hsl(0, 0%, 8%, 7%) 100%)
+  border: 1px solid rgba(200, 200, 200, 0.12)
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(200, 200, 200, 0.08)
   @include mixins.clips-aware
 
   &.deactive
     @include colors.panel-background-chess
+    opacity: 0.6
 
   > canvas
     top: 0
@@ -17,3 +20,4 @@ component
     height: 100%
     font-size: 0.625em
     position: absolute
+    filter: saturate(1.3) brightness(1.05)

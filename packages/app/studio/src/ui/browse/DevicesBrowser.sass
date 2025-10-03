@@ -6,88 +6,132 @@ component
   flex-direction: column
   row-gap: 2rem
   align-items: start
-  font-size: 0.6875rem
-  padding: 1em
-  @include colors.panel-background
+  font-size: 0.75rem
+  padding: 1.5em
+  background: linear-gradient(135deg, hsl(0, 0%, 12%, 6%) 0%, hsl(0, 0%, 10%, 8%) 100%)
+  overflow-y: auto
 
   > div.resources
     display: flex
     flex-direction: column
-    row-gap: 0.75em
+    row-gap: 1.25em
+    width: 100%
 
     > section
       display: flex
       flex-direction: column
-      row-gap: 0.25em
+      row-gap: 0.4em
       color: var(--color)
 
       &.instrument
-        --color: var(--color-green)
+        --color: hsl(0, 0%, 85%)
 
       &.audio
-        --color: var(--color-blue)
+        --color: hsl(0, 0%, 85%)
 
       &.midi
-        --color: var(--color-orange)
+        --color: hsl(0, 0%, 85%)
 
       > h1
         display: inline-block
         width: min-content
         white-space: nowrap
-        font-size: 1em
-        padding: 0.25em 0.5em
-        border-radius: 0.25em
-        background-color: rgba(black, 0.12)
+        font-size: 0.85em
+        font-weight: 500
+        padding: 0.4em 0.8em
+        margin-bottom: 0.2em
+        border-radius: 4px
+        background: rgba(200, 200, 200, 0.08)
+        backdrop-filter: blur(8px)
+        color: hsl(0, 0%, 85%)
+        border: 1px solid rgba(200, 200, 200, 0.15)
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1)
+        letter-spacing: 0.03em
+        text-transform: uppercase
 
       > ul
         margin: 0
-        padding: 0.25em 0.5em
-        font-size: 1em
+        padding: 0
+        font-size: 0.9em
         list-style: none
-        color: var(--color-dark)
+        color: hsl(0, 0%, 80%)
         display: flex
         flex-direction: column
-        row-gap: 0.375em
+        row-gap: 0.3em
 
         > li
           display: flex
           flex-direction: row
           align-items: center
-          column-gap: 0.75em
+          column-gap: 0.7em
+          padding: 0.5em 0.7em
           cursor: pointer
+          border-radius: 4px
+          background: rgba(200, 200, 200, 0.03)
+          backdrop-filter: blur(10px)
+          border: 1px solid rgba(200, 200, 200, 0.08)
+          transition: all 0.15s ease
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1)
 
           &[draggable]
             cursor: grab
 
+            &:active
+              cursor: grabbing
+              transform: scale(0.98)
+
           &:hover
-            color: var(--color-gray)
+            color: hsl(0, 0%, 95%)
+            background: rgba(200, 200, 200, 0.08)
+            backdrop-filter: blur(12px)
+            border-color: rgba(200, 200, 200, 0.2)
+            box-shadow: 0 2px 6px rgba(200, 200, 200, 0.15)
+            transform: translateX(2px)
 
           > div.icon
-            padding: 1px
-            border-radius: 0.125em
-            font-size: 1.5em
-            color: rgba(black, 0.86)
+            width: 24px
+            height: 24px
+            padding: 4px
+            border-radius: 4px
+            font-size: 1em
+            color: hsl(0, 0%, 10%)
             display: flex
             align-items: center
             justify-content: center
-            background-color: var(--color)
+            background: var(--device-color, var(--color))
+            backdrop-filter: blur(8px)
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15)
+            transition: all 0.15s ease
+
+          &:hover > div.icon
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)
+            transform: scale(1.08)
 
   > div.manual
     display: flex
     flex-direction: column
     row-gap: 1.5em
-    color: var(--color-dark)
+    color: hsl(0, 0%, 20%, 60%)
+    width: 100%
 
     > section
       display: flex
       flex-direction: column
-      row-gap: 0.25em
+      row-gap: 0.5em
+      padding: 1em
+      border-radius: 6px
+      background: linear-gradient(135deg, rgba(200, 200, 200, 0.03) 0%, rgba(200, 200, 200, 0.05) 100%)
+      border: 1px solid rgba(200, 200, 200, 0.1)
 
       > h1
-        font-size: 1em
+        font-size: 1.1em
+        font-weight: 600
+        color: hsl(0, 0%, 35%, 70%)
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3)
 
       > p
         max-width: 25em
         margin: 0
         font-size: 1em
-        color: var(--color-shadow)
+        line-height: 1.5
+        color: hsl(0, 0%, 15%, 55%)

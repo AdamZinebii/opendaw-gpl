@@ -68,7 +68,7 @@ export namespace EffectFactories {
     }
 
     export const StereoTool: EffectFactory = {
-        defaultName: "Stereo Tool",
+        defaultName: "Stereo",
         defaultIcon: IconSymbol.Stereo,
         description: "Computes a stereo transformation matrix with volume, panning, phase inversion and stereo width.",
         separatorBefore: false,
@@ -111,7 +111,7 @@ export namespace EffectFactories {
     }
 
     export const Revamp: EffectFactory = {
-        defaultName: "Revamp",
+        defaultName: "EQ",
         defaultIcon: IconSymbol.EQ,
         description: "Shapes the frequency balance of the sound",
         separatorBefore: false,

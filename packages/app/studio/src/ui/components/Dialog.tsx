@@ -21,7 +21,7 @@ export type Button = {
 
 type Construct = {
     headline: string
-    icon: IconSymbol
+    icon?: IconSymbol
     onCancel?: Exec
     cancelable?: boolean
     buttons?: ReadonlyArray<Button>
@@ -34,20 +34,32 @@ export const Dialog = (
     const lifecycle = new Terminator()
     const dialog: HTMLDialogElement = (
         <dialog className={Html.buildClassList(className, error && "error")} style={style}>
-            <h1><Icon symbol={icon}/> <span>{headline}</span></h1>
+            <div className="dialog-header">
+                <h1>
+                    {icon && <Icon symbol={icon}/>}
+                    <span>{headline}</span>
+                </h1>
+                {cancelable && (
+                    <button className="close-button" onclick={() => dialog.close()}>
+                        <Icon symbol={IconSymbol.Close}/>
+                    </button>
+                )}
+            </div>
             {children}
-            <footer>
-                {buttons?.map(({onClick, primary, text}) => (
-                    <Button lifecycle={lifecycle}
-                            onClick={() => onClick({close: () => dialog.close()})}
-                            appearance={primary === true ? {
-                                framed: true,
-                                color: Colors.blue
-                            } : {
-                                color: Colors.gray
-                            }}><span>{text}</span></Button>
-                ))}
-            </footer>
+            {buttons && buttons.length > 0 && (
+                <footer>
+                    {buttons.map(({onClick, primary, text}) => (
+                        <Button lifecycle={lifecycle}
+                                onClick={() => onClick({close: () => dialog.close()})}
+                                appearance={primary === true ? {
+                                    framed: true,
+                                    color: Colors.blue
+                                } : {
+                                    color: Colors.gray
+                                }}><span>{text}</span></Button>
+                    ))}
+                </footer>
+            )}
         </dialog>
     )
     if (cancelable === false) {

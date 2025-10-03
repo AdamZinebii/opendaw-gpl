@@ -45,7 +45,7 @@ export class ErrorHandler {
             logs: LogBuffer.get()
         } satisfies ErrorLog)
         if (import.meta.env.PROD) {
-            fetch("https://logs.opendaw.studio/log.php", {
+            fetch("https://logs.beatson.studio/log.php", {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
                 body

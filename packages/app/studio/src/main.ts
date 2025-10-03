@@ -1,4 +1,5 @@
 import "./main.sass"
+import "./global.css"
 import {App} from "@/ui/App.tsx"
 import {panic, Procedure, unitValue, UUID} from "@opendaw/lib-std"
 import {StudioService} from "@/service/StudioService"
@@ -10,7 +11,6 @@ import {Surface} from "@/ui/surface/Surface.tsx"
 import {replaceChildren} from "@opendaw/lib-jsx"
 import {ContextMenu} from "@/ui/ContextMenu.ts"
 import {Spotlight} from "@/ui/spotlight/Spotlight.tsx"
-import {SampleApi} from "@/service/SampleApi.ts"
 import {testFeatures} from "@/features.ts"
 import {MissingFeature} from "@/ui/MissingFeature.tsx"
 import {UpdateMessage} from "@/ui/UpdateMessage.tsx"
@@ -58,12 +58,17 @@ requestAnimationFrame(async () => {
                     console.debug(`AudioContext resumed (${context.state})`)), {capture: true, once: true})
         }
         const audioDevices = await AudioOutputDevice.create(context)
+        // Use Supabase samples API for all samples
+        const {SupabaseSampleAPI} = await import("@/service/SupabaseSampleAPI")
+        const sampleAPI = SupabaseSampleAPI.get()
+        console.debug("Using Supabase sample API")
+        
         const sampleManager = new MainThreadSampleManager({
             fetch: async (uuid: UUID.Format, progress: Procedure<unitValue>): Promise<[AudioData, SampleMetaData]> =>
-                SampleApi.load(context, uuid, progress)
+                sampleAPI.load(context, uuid, progress)
         } satisfies SampleProvider, context)
         const service: StudioService =
-            new StudioService(context, audioWorklets.value, audioDevices, sampleManager, buildInfo)
+            new StudioService(context, audioWorklets.value, audioDevices, sampleAPI, sampleManager, buildInfo)
         const errorHandler = new ErrorHandler(service)
         const surface = Surface.main({
             config: (surface: Surface) => {

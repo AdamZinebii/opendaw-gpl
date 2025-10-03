@@ -10,7 +10,8 @@ import {
     Devices,
     IndexedBoxAdapterCollection,
     MidiEffectDeviceAdapter,
-    PlayfieldSampleBoxAdapter
+    PlayfieldSampleBoxAdapter,
+    IconSymbol
 } from "@opendaw/studio-adapters"
 import {ScrollModel} from "@/ui/components/ScrollModel.ts"
 import {Orientation, Scroller} from "@/ui/components/Scroller"
@@ -25,8 +26,39 @@ import {DeviceMount} from "@/ui/devices/panel/DeviceMount"
 import {Box} from "@opendaw/lib-box"
 import {Pointers} from "@opendaw/studio-enums"
 import {Project, ProjectProfile} from "@opendaw/studio-core"
+import {Icon} from "@/ui/components/Icon"
+import {Dialog} from "@/ui/components/Dialog"
+import {DevicesBrowser} from "@/ui/browse/DevicesBrowser"
+import {Surface} from "@/ui/surface/Surface"
 
 const className = Html.adoptStyleSheet(css, "DevicePanel")
+
+const createAddEffectButton = (
+    lifecycle: Lifecycle,
+    service: StudioService,
+    type: "midi-effect" | "audio-effect"
+) => {
+    const openAddEffectDialog = () => {
+        const dialog: HTMLDialogElement = (
+            <Dialog headline={`Add ${type === "midi-effect" ? "MIDI" : "Audio"} Effect`}
+                    cancelable={true}>
+                <div style={{maxHeight: "60vh", overflow: "auto"}}>
+                    <DevicesBrowser lifecycle={lifecycle} service={service} filter="effects-only" onDeviceSelected={() => dialog.close()}/>
+                </div>
+            </Dialog>
+        )
+        Surface.get().body.appendChild(dialog)
+        dialog.showModal()
+        dialog.addEventListener("close", () => dialog.remove(), {once: true})
+    }
+
+    return (
+        <div className="add-effect-button" onclick={openAddEffectDialog}>
+            <Icon symbol={IconSymbol.Add}/>
+            <span>Add Effect</span>
+        </div>
+    )
+}
 
 type Construct = {
     lifecycle: Lifecycle
@@ -110,12 +142,18 @@ export const DevicePanel = ({lifecycle, service}: Construct) => {
         }
         const midiEffects = deviceHost.midiEffects
         appendChildren(midiEffectsContainer, midiEffects.adapters().map((adapter) => mounts.get(adapter.uuid).editor()))
+        // Add MIDI effects button - DISABLED FOR NOW, WILL BE RE-ENABLED IN THE FUTURE
+        // if (instrument.getValue().mapOr(input => input.accepts === "midi", false)) {
+        //     midiEffectsContainer.appendChild(createAddEffectButton(chainLifecycle, service, "midi-effect"))
+        // }
         appendChildren(instrumentContainer, instrument.getValue().match({
             none: () => <div/>,
             some: (type: AudioUnitInputAdapter) => mounts.get(type.uuid).editor()
         }))
         const audioEffects = deviceHost.audioEffects
         appendChildren(audioEffectsContainer, audioEffects.adapters().map((adapter) => mounts.get(adapter.uuid).editor()))
+        // Add audio effects button - always at the end after all effects
+        audioEffectsContainer.appendChild(createAddEffectButton(chainLifecycle, service, "audio-effect"))
         const hidden = !optEditing.nonEmpty() || !(audioEffects.isEmpty() && midiEffects.isEmpty())
         noEffectPlaceholder.classList.toggle("hidden", hidden)
         appendChildren(channelStripContainer, (

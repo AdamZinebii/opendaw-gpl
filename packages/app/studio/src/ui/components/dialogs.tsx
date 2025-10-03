@@ -268,7 +268,7 @@ export namespace Dialogs {
                         text: "EMail",
                         primary: true,
                         onClick: () => window.location.href =
-                            `mailto:support@opendaw.org?subject=${
+                            `mailto:support@beatson.org?subject=${
                                 encodeURI("Bug Report - openDAW")}&body=${encodeURI(EmailBody)}`
                     }] : Arrays.empty()}
                     cancelable={false}

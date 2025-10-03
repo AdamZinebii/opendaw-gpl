@@ -1,0 +1,47 @@
+@use "@/colors"
+
+component
+  display: grid
+  grid-template-columns: subgrid
+  grid-column: 1 / -1
+  height: var(--lane-height)
+  cursor: pointer
+  transition: all 0.2s ease
+  
+  > .header
+    padding: 0 0.5em
+    display: flex
+    align-items: center
+    justify-content: center
+    gap: 0.5em
+    background: linear-gradient(135deg, rgba(200, 200, 200, 0.05) 0%, rgba(200, 200, 200, 0.08) 100%)
+    border: 1px dashed rgba(200, 200, 200, 0.3)
+    border-radius: 4px
+    color: hsl(0, 0%, 30%, 65%)
+    margin: 2px
+    
+    > svg
+      font-size: 1.5rem
+      
+    > span
+      font-size: 0.875rem
+      font-weight: 600
+      text-transform: uppercase
+      letter-spacing: 0.05em
+  
+  &:hover > .header
+    background: linear-gradient(135deg, rgba(200, 200, 200, 0.12) 0%, rgba(200, 200, 200, 0.18) 100%)
+    border-color: rgba(200, 200, 200, 0.5)
+    color: hsl(0, 0%, 40%, 75%)
+    box-shadow: 0 2px 8px rgba(200, 200, 200, 0.2)
+    transform: translateY(-1px)
+  
+  > .clip-lane
+    grid-column: span var(--clips-count)
+    @include colors.panel-background
+  
+  > .region-lane
+    @include colors.panel-background
+
+
+

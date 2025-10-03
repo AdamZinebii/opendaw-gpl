@@ -233,3 +233,38 @@ If you redistribute openDAW or a derivative work **without** a commercial licens
 ## License
 
 [GPL v3](https://www.gnu.org/licenses/gpl-3.0.txt) © 2025 André Michelle
+
+## Configuration for AI Features
+
+This version includes optional AI-powered features for enhanced music production. To enable these features:
+
+### Environment Setup
+
+1. Copy the environment template:
+   ```bash
+   cp .env.example .env.local
+   ```
+
+2. Configure your Supabase credentials in `.env.local`:
+   ```bash
+   VITE_SUPABASE_URL=https://your-project-id.supabase.co
+   VITE_SUPABASE_ANON_KEY=your-anon-key-here
+   ```
+
+### Available AI Features
+
+When configured, you'll have access to:
+
+- **Smart Authentication**: Secure login with GitHub/Google OAuth
+- **Project Persistence**: Save and sync your projects across devices  
+- **AI Music Assistant**: Intelligent help with composition and production
+- **Advanced Analytics**: Track your creative progress
+
+### Privacy & Security
+
+- All sensitive configuration is managed via environment variables
+- No API keys or credentials are included in the source code
+- Your data remains under your control with self-hosted Supabase options
+
+> **Note**: AI features are completely optional. openDAW works fully offline without any configuration.
+

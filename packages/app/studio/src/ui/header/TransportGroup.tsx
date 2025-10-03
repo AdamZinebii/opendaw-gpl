@@ -35,7 +35,7 @@ export const TransportGroup = ({lifecycle, service}: Construct) => {
                 }}><Icon symbol={IconSymbol.Record}/></Button>)
     const playButton: HTMLElement = (
         <Button lifecycle={lifecycle}
-                appearance={{activeColor: "hsl(120, 50%, 60%)", tooltip: "Play"}}
+                appearance={{activeColor: "hsl(0, 0%, 85%)", tooltip: "Play"}}
                 onClick={() => {
                     if (engine.isPlaying.getValue()) {
                         engine.stop()

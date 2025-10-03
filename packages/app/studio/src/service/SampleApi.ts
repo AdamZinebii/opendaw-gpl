@@ -3,7 +3,7 @@ import {AudioData, Sample, SampleMetaData} from "@opendaw/studio-adapters"
 import {Dialogs} from "@/ui/components/dialogs.tsx"
 import {network, Promises} from "@opendaw/lib-runtime"
 
-const username = "openDAW"
+const username = "beatson"
 const password = "prototype"
 const base64Credentials = btoa(`${username}:${password}`)
 const headers: RequestInit = {
@@ -21,8 +21,8 @@ export interface FutureSampleApi {
 }
 
 export namespace SampleApi {
-    export const ApiRoot = "https://api.opendaw.studio/samples"
-    export const FileRoot = "https://assets.opendaw.studio/samples"
+    export const ApiRoot = "https://api.beatson.studio/samples"
+    export const FileRoot = "https://assets.beatson.studio/samples"
 
     export const all = async (): Promise<ReadonlyArray<Sample>> => {
         return await Promises.retry(() => fetch(`${ApiRoot}/list.php`, headers).then(x => x.json(), () => []))

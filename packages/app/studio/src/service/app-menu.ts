@@ -11,7 +11,7 @@ export const initAppMenu = (service: StudioService) => {
     return MenuItem.root()
         .setRuntimeChildrenProcedure(parent => {
                 parent.addMenuItem(
-                    MenuItem.header({label: "openDAW", icon: IconSymbol.OpenDAW}),
+                    MenuItem.header({label: "beatson", icon: IconSymbol.OpenDAW}),
                     MenuItem.default({label: "New"})
                         .setTriggerProcedure(() => service.closeProject()),
                     MenuItem.default({label: "Open...", shortcut: [ModfierKeys.System.Cmd, "O"]})

@@ -8,6 +8,7 @@ import {PanelResizer} from "@/ui/workspace/PanelResizer.tsx"
 import {PanelContents} from "@/ui/workspace/PanelContents.tsx"
 import {ContentGlue} from "@/ui/workspace/ContentGlue.ts"
 import {Html} from "@opendaw/lib-dom"
+import {Prompter} from "@/ui/components/Prompter"
 
 const className = Html.adoptStyleSheet(css, "WorkspacePage")
 
@@ -63,10 +64,90 @@ const buildScreen = (lifecycle: Lifecycle,
 
 export const WorkspacePage: PageFactory<StudioService> = ({lifecycle, service}: PageContext<StudioService>) => {
     const mainElement: HTMLElement = <main/>
+    const prompterElement: HTMLElement = <div/>
+    let currentPrompter: HTMLElement | null = null
+    
     const screenLifeTime = lifecycle.own(new Terminator())
     lifecycle.own(service.layout.screen.catchupAndSubscribe(owner => {
         screenLifeTime.terminate()
         buildScreen(screenLifeTime, service.panelLayout, mainElement, owner.getValue())
     }))
-    return (<div className={className}>{mainElement}</div>)
+    
+    // Handle prompter visibility with loading state
+    const updatePrompter = () => {
+        const showPrompter = service.layout.showPrompter.getValue()
+        const isCreating = service.layout.isSongCreating.getValue()
+        const progress = service.layout.songCreationProgress.getValue()
+        
+        if (showPrompter) {
+            // Only create new prompter if we don't have one or if creation state changed
+            if (!currentPrompter) {
+                Html.empty(prompterElement)
+                const prompter = (
+                    <Prompter 
+                        lifecycle={lifecycle}
+                        onStartFromScratch={() => service.hidePrompter()}
+                        onSubmitPrompt={(prompt) => service.handleSongPrompt(prompt)}
+                        isCreating={isCreating}
+                        progress={progress}
+                    />
+                )
+                prompter.dataset.isCreating = String(isCreating)
+                prompterElement.appendChild(prompter)
+                currentPrompter = prompter
+            }
+            // If prompter exists but creation state changed, recreate it
+            else if (currentPrompter && currentPrompter.dataset.isCreating !== String(isCreating)) {
+                Html.empty(prompterElement)
+                const prompter = (
+                    <Prompter 
+                        lifecycle={lifecycle}
+                        onStartFromScratch={() => service.hidePrompter()}
+                        onSubmitPrompt={(prompt) => service.handleSongPrompt(prompt)}
+                        isCreating={isCreating}
+                        progress={progress}
+                    />
+                )
+                prompter.dataset.isCreating = String(isCreating)
+                prompterElement.appendChild(prompter)
+                currentPrompter = prompter
+            }
+            // If only progress changed, update the progress bar directly
+            else if (isCreating && currentPrompter) {
+                const progressFill = currentPrompter.querySelector('.progress-fill') as HTMLElement
+                const progressText = currentPrompter.querySelector('.progress-text') as HTMLElement
+                if (progressFill && progressText) {
+                    progressFill.style.width = `${progress}%`
+                    progressText.textContent = `${Math.round(progress)}%`
+                }
+            }
+        } else {
+            // Hide prompter
+            Html.empty(prompterElement)
+            currentPrompter = null
+        }
+    }
+    
+    lifecycle.own(service.layout.showPrompter.catchupAndSubscribe(() => updatePrompter()))
+    lifecycle.own(service.layout.isSongCreating.catchupAndSubscribe(() => updatePrompter()))
+    lifecycle.own(service.layout.songCreationProgress.catchupAndSubscribe(() => updatePrompter()))
+    
+    // Add blur effect to main element when creating
+    lifecycle.own(service.layout.isSongCreating.catchupAndSubscribe(owner => {
+        const isCreating = owner.getValue()
+        if (isCreating) {
+            mainElement.style.filter = 'blur(1.5px)'
+            mainElement.style.pointerEvents = 'none'
+        } else {
+            mainElement.style.filter = ''
+            mainElement.style.pointerEvents = ''
+        }
+    }))
+
+    return (
+        <div className={className}>
+            {mainElement}
+            {prompterElement}
+        </div>
+    )
 }

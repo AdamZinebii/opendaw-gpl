@@ -65,7 +65,6 @@ export const DefaultWorkspace = Object.freeze({
             type: "layout",
             orientation: "horizontal",
             contents: [
-                BrowserPanel,
                 {
                     type: "layout",
                     orientation: "vertical",

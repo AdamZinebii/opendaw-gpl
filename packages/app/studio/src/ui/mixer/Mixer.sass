@@ -12,7 +12,7 @@ component
     flex: 1 0 0
     width: 100%
     overflow: hidden
-    @include colors.panel-background
+    background: linear-gradient(135deg, hsl(0, 0%, 12%, 5%) 0%, hsl(0, 0%, 10%, 7%) 100%)
 
     > div.channel-strips
       flex: 1 0 0
@@ -31,12 +31,14 @@ component
         grid-row: span 7
         padding: 0 0.5em 0.5em 1em
         border-radius: 0.125em
-        background-color: rgba(white, 0.01)
+        background: linear-gradient(135deg, rgba(200, 200, 200, 0.02) 0%, rgba(200, 200, 200, 0.04) 100%)
+        border: 1px solid rgba(200, 200, 200, 0.1)
 
         > h5
           font-size: 0.5em
           display: flex
           margin-top: 0.375em
           justify-content: right
-          color: rgba(white, 0.4)
+          color: hsl(0, 0%, 30%, 65%)
           pointer-events: none
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3)

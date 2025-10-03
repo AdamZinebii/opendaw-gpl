@@ -8,29 +8,38 @@ component
   justify-content: center
   font-size: 1.125em
   @include colors.panel-background
+  padding: 2rem
 
   .highlight
     color: rgba(black, 0.8)
     background-color: var(--color-red)
-    border-radius: 2px
-    padding: 0 2px
+    border-radius: 4px
+    padding: 0.25em 0.5em
+    font-weight: 600
 
   > article
     display: flex
     flex-direction: column
-    width: 720px
-    color: var(--color-dark)
+    width: 900px
+    max-width: 95vw
+    color: var(--color-gray)
 
     > h1, h2
       color: white
-      font-size: 2.5em
+      font-size: 3em
+      font-weight: 700
+      margin: 0
 
     > h1
       margin-left: -3px
+      color: hsl(0, 0%, 95%)
+      text-shadow: 0 2px 8px rgba(255, 255, 255, 0.3)
 
     > h2
-      font-size: 1.25em
-      color: var(--color-blue)
+      font-size: 1.35em
+      color: hsl(0, 0%, 70%)
+      margin-top: 0.5em
+      font-weight: 500
 
     p, ul
       margin: 0.3em 0
@@ -40,59 +49,71 @@ component
       color: var(--color-blue)
 
     > div.columns
-      margin: 1em 0 0 0
+      margin: 2em 0 0 0
       display: grid
-      column-gap: 2.5em
+      column-gap: 3em
       grid-template-columns: auto 1fr
 
       > div
         display: flex
         flex-direction: column
-        row-gap: 0.5em
+        row-gap: 1em
 
         > h3
-          font-size: 0.875em
-          color: var(--color-orange)
-          padding: 0.25em 0.375em
-          border-radius: 0.25em
-          background-color: rgba(black, 0.2)
+          font-size: 1em
+          color: hsl(0, 0%, 50%, 65%)
+          padding: 0.5em 1em
+          border-radius: 8px
+          background: linear-gradient(135deg, rgba(200, 200, 200, 0.08) 0%, rgba(200, 200, 200, 0.12) 100%)
+          backdrop-filter: blur(10px)
+          border: 1px solid rgba(200, 200, 200, 0.2)
           width: fit-content
+          font-weight: 600
+          letter-spacing: 0.02em
+          box-shadow: 0 2px 8px rgba(200, 200, 200, 0.1)
 
         > div.starters
           display: grid
           grid-template-columns: repeat(4, min-content)
-          gap: 0.5em
+          gap: 1em
 
           > div
             display: flex
             flex-direction: column
             align-items: center
-            background-color: var(--panel-background-dark)
-            padding: 0.25em
-            border-radius: 0.5em
-            font-size: 0.75em
+            background: linear-gradient(135deg, rgba(200, 200, 200, 0.03) 0%, rgba(200, 200, 200, 0.06) 100%)
+            backdrop-filter: blur(10px)
+            padding: 1em
+            border-radius: 12px
+            border: 1px solid rgba(200, 200, 200, 0.15)
+            font-size: 0.8em
             cursor: pointer
             overflow: hidden
-            transition: background-color 0.2s ease-out
+            transition: all 0.2s ease
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2)
 
             &:first-child
               fill: var(--color-green)
               color: var(--color-green)
 
             &:hover
-              outline: 1px var(--color-gray) solid
-              background-color: color-mix(in srgb, var(--color-green) 3%, transparent)
+              background: linear-gradient(135deg, rgba(200, 200, 200, 0.12) 0%, rgba(200, 200, 200, 0.18) 100%)
+              border-color: rgba(200, 200, 200, 0.4)
+              transform: translateY(-2px)
+              box-shadow: 0 4px 12px rgba(200, 200, 200, 0.2)
 
               > .icon
                 scale: 0.96
 
             > .icon
-              width: 64px
-              height: 64px
-              scale: 0.8
+              width: 80px
+              height: 80px
+              scale: 0.9
               transition: scale 0.2s ease-out
 
             > label
-              font-size: 0.6em
+              font-size: 0.75em
               text-align: center
               cursor: inherit
+              margin-top: 0.5em
+              font-weight: 500

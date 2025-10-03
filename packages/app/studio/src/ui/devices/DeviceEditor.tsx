@@ -15,15 +15,31 @@ import {Colors, Project} from "@opendaw/studio-core"
 
 const className = Html.adoptStyleSheet(css, "DeviceEditor")
 
-const getColorFor = (type: DeviceType) => {
+const getColorFor = (type: DeviceType, deviceName?: string) => {
+    // First try to get device-specific color
+    if (deviceName) {
+        const lowerName = deviceName.toLowerCase()
+        if (lowerName.includes('nano')) return "var(--device-nano-green)"
+        if (lowerName.includes('tape')) return "var(--device-tape-green)"
+        if (lowerName.includes('playfield') || lowerName.includes('drumset')) return "var(--device-playfield-green)"
+        if (lowerName.includes('vaporisateur') || lowerName.includes('synthesizer')) return "var(--device-vaporisateur-green)"
+        if (lowerName.includes('revamp') || lowerName.includes('eq')) return "var(--device-revamp-green)"
+        if (lowerName.includes('stereo')) return "var(--device-stereo-green)"
+        if (lowerName.includes('reverb')) return "var(--device-reverb-green)"
+        if (lowerName.includes('delay')) return "var(--device-delay-green)"
+        if (lowerName.includes('modular')) return "var(--device-modular-green)"
+    }
+    
+    // Fallback to type-based colors
     switch (type) {
         case "midi-effect":
-            return Colors.orange
+            return "hsl(120, 50%, 35%)" // Darker green for MIDI effects
         case "bus":
+            return "hsl(120, 60%, 40%)" // Medium green for bus
         case "instrument":
-            return Colors.green
+            return "hsl(120, 65%, 45%)" // Brighter green for instruments
         case "audio-effect":
-            return Colors.blue
+            return "hsl(120, 55%, 30%)" // Even darker green for audio effects
     }
 }
 
@@ -52,7 +68,7 @@ export const DeviceEditor =
     ({lifecycle, project, adapter, populateMenu, populateControls, populateMeter, createLabel, icon}: Construct) => {
         const {editing} = project
         const {box, type, enabledField, minimizedField, labelField} = adapter
-        const color = getColorFor(type)
+        const color = getColorFor(type, labelField.getValue() || adapter.constructor.name)
         const header: HTMLElement = (
             <header style={{color}}>
                 <div className="icon">
