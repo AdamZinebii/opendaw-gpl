@@ -46,12 +46,12 @@ const ModularSystem = PanelState.create({
 export const DefaultWorkspace = Object.freeze({
     "dashboard": {
         name: "Dashboard",
-        icon: IconSymbol.OpenDAW,
+        icon: IconSymbol.Box,
         hidden: true,
         content: PanelState.create({
             type: "panel",
             name: "Dashboard",
-            icon: IconSymbol.OpenDAW,
+            icon: IconSymbol.Box,
             panelType: PanelType.Dashboard,
             notPopoutable: true,
             notMinimizable: true,
@@ -172,7 +172,7 @@ export const DefaultWorkspace = Object.freeze({
                 PanelState.create({
                     type: "panel",
                     name: "Empty",
-                    icon: IconSymbol.OpenDAW,
+                    icon: IconSymbol.Box,
                     panelType: PanelType.EmptyFlexSpace,
                     constrains: {type: "flex", minSize: 0, flex: 1}
                 })

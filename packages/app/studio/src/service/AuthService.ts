@@ -16,7 +16,7 @@ export class AuthService {
             throw new Error('Supabase configuration missing. Please check your environment variables.')
         }
         
-        this.supabase = createClient(AuthService.SUPABASE_URL, AuthService.SUPABASE_ANON_KEY)
+            this.supabase = createClient(AuthService.SUPABASE_URL, AuthService.SUPABASE_ANON_KEY)
         this.initialize()
     }
     
@@ -37,6 +37,10 @@ export class AuthService {
             
             this._user.setValue(session?.user ?? null)
             this._loading.setValue(false)
+            if (session?.user) {
+                // Touch login RPC server-side to upsert user + session
+                await this.supabase.rpc('auth_on_login').catch(() => {})
+            }
             
             // Listen to auth changes
             this.supabase.auth.onAuthStateChange((event, session) => {
@@ -48,6 +52,12 @@ export class AuthService {
                 })
                 this._user.setValue(session?.user ?? null)
                 this._loading.setValue(false)
+                if (session?.user) {
+                    // Update activity + presence on any auth change
+                    await this.supabase.rpc('auth_on_login').catch(() => {})
+                } else {
+                    await this.supabase.rpc('auth_on_logout').catch(() => {})
+                }
             })
             
             console.log('AuthService: Initialization complete')

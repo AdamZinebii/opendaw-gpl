@@ -44,7 +44,7 @@ export const Header = ({lifecycle, service, authService, chatbotToggle}: Constru
                     .setRuntimeChildrenProcedure(parent => {
                         const helpVisible = service.layout.helpVisible
                         return parent.addMenuItem(
-                            MenuItem.header({label: "Manuals", icon: IconSymbol.OpenDAW, color: Colors.green}),
+                            MenuItem.header({label: "Manuals", icon: IconSymbol.Help, color: Colors.green}),
                             ...Manuals.slice(1).map(([label, url]) => MenuItem.default({
                                 label,
                                 checked: RouteLocation.get().path === url

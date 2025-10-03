@@ -15,7 +15,7 @@ type Construct = {
 }
 
 export const Cover = ({lifecycle, model}: Construct) => {
-    const placeholder = "/cover.png"
+    const placeholder = "/images/1icon.ico"
     const editIcon: Element = <Icon symbol={IconSymbol.EditBox} className="edit-icon"/>
     const image: HTMLImageElement = (<img src={placeholder} alt="Cover"/>)
     lifecycle.ownAll(

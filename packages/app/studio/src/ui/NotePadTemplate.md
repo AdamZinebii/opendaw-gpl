@@ -1,10 +1,9 @@
-# Introducing the OpenDAW Project Notepad
+# Beatson Project Notepad
 
 ## A Space for Your Thoughts, Lyrics, and Ideas
 
-Every musical project starts with an idea. Sometimes it’s a melody, a rhythm, or a lyric that sparks inspiration. To
-make
-it easier to capture and organize your thoughts, OpenDAW introduces the Project Notepad, a dedicated space where you can
+Every musical project starts with an idea. Sometimes it's a melody, a rhythm, or a lyric that sparks inspiration. To
+make it easier to capture and organize your thoughts, Beatson introduces the Project Notepad, a dedicated space where you can
 write down everything that matters for your project.
 
 ## What Can You Use It For?
