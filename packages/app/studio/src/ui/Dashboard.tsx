@@ -109,10 +109,10 @@ export const Dashboard = ({lifecycle, service}: Construct) => {
                 </div>
                 <p style={{marginTop: "1.5em", fontSize: "0.625em"}}>
                     This DAW is a clone of <a
-                    href="https://github.com/andremichelle/openDAW/commit/e06a7d5d587409f25aa077953f7747c4055f094e" 
+                    href="https://github.com/andremichelle/openDAW/tree/e06a7d5d587409f25aa077953f7747c4055f094e" 
                     target="_blank" 
                     style={{color: Colors.green}}>openDAW GPL commit</a>, and the release of the modified code is <a 
-                    href="https://github.com/AdamZinebii/opendaw-gpl"
+                    href="https://github.com/AdamZinebii/opendaw-gpl/tree/gpl-working"
                     target="_blank"
                     style={{color: Colors.green}}>here</a>.
                 </p>
