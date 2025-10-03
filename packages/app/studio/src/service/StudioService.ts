@@ -574,8 +574,6 @@ export class StudioService implements ProjectEnv {
                     console.log(`🔍 [EXTRACT-TRACKS] Instrument box: ${instrumentBox.constructor.name}`)
                     console.log(`🔍 [EXTRACT-TRACKS] Instrument name: ${instrumentBox.label?.getValue?.() || 'Unnamed'}`)
                     
-                    // CRITICAL: Use _originalType if available (survives minification)
-                    // Otherwise fallback to constructor.name (which breaks on Vercel)
                     const instrumentType = instrumentBox._originalType || this.translateToGenericType(instrumentBox.constructor.name)
                     console.log(`🔍 [EXTRACT-TRACKS] Type: ${instrumentType} (from ${instrumentBox._originalType ? '_originalType' : 'constructor.name'})`)
                     
@@ -630,10 +628,10 @@ export class StudioService implements ProjectEnv {
             if (box.release?.getValue) parameters.release = box.release.getValue()
             if (box.waveform?.getValue) parameters.waveform = box.waveform.getValue()
             
-            // 🔍 NEW: Extract instrument sample information for Nano devices
             console.log(`🔍 [EXTRACT-DEBUG] Processing ${box.constructor.name}: ${box.label?.getValue?.() || 'Unnamed'}`)
             
-            if (box.constructor.name === 'NanoDeviceBox') {
+            const boxType = (box as any)._originalType || box.constructor.name;
+            if (boxType === 'SamplerDeviceBox' || boxType === 'NanoDeviceBox') {
                 console.log(`🔍 [EXTRACT-DEBUG] Found Sampler device - checking for file pointer...`)
                 console.log(`🔍 [EXTRACT-DEBUG] Box object keys:`, Object.keys(box))
                 console.log(`🔍 [EXTRACT-DEBUG] Box prototype:`, Object.getPrototypeOf(box)?.constructor?.name)
@@ -736,8 +734,8 @@ export class StudioService implements ProjectEnv {
                         const region = regionPointer.box
                         console.log(`🔍 Processing region: ${region.constructor.name}`)
                         
-                        // Check if it's a note region
-                        if (region.constructor.name === 'NoteRegionBox') {
+                        const regionType = (region as any)._originalType || region.constructor.name;
+                        if (regionType === 'NoteRegionBox') {
                             console.log(`🔍 [DEBUG] Found NoteRegionBox:`)
                             console.log(`  - Constructor: ${region.constructor.name}`)
                             console.log(`  - Position: ${region.position?.getValue?.() || 'undefined'}`)
@@ -975,12 +973,12 @@ export class StudioService implements ProjectEnv {
      */
     private extractDrumSetSamples(instrumentBox: any): any[] {
         try {
-            // Only extract samples if this is a PlayfieldDeviceBox  
-            if (instrumentBox.constructor.name !== 'PlayfieldDeviceBox') {
+            const boxType = (instrumentBox as any)._originalType || instrumentBox.constructor.name;
+            if (boxType !== 'DrumSetDeviceBox' && boxType !== 'PlayfieldDeviceBox') {
                 return []
             }
             
-            console.log('🥁 Extracting DrumSet samples from:', instrumentBox.constructor.name)
+            console.log('🥁 Extracting DrumSet samples from:', boxType)
             
             const samples: any[] = []
             
@@ -1290,13 +1288,8 @@ export class StudioService implements ProjectEnv {
                 const result = project.api.createInstrument(factory, { name: trackData.name })
                 console.log(`🔍 [DRUMFIX-ADD-TRACK] Instrument created successfully`)
                 const instrumentBox = result.instrumentBox
-                trackBox = result.trackBox; // Store for MIDI notes
-                
-                // CRITICAL: Store original type on instrument box to survive minification
-                // On Vercel, constructor.name gets minified (e.g. "NanoDeviceBox" becomes "sl")
-                // So we store the original generic type for future extraction
+                trackBox = result.trackBox;
                 (instrumentBox as any)._originalType = trackData.type
-                console.log(`🔍 [DRUMFIX-ADD-TRACK] Stored _originalType: ${trackData.type}`)
                 
                 // Apply parameters (using any type to avoid TypeScript issues)
                 if (trackData.parameters) {
@@ -1437,29 +1430,29 @@ export class StudioService implements ProjectEnv {
                 for (const regionData of noteRegions) {
                     console.log(`🎵 Creating region with ${regionData.notes?.length || 0} notes at position ${regionData.position}`)
                     
-                    // Create note event collection (like ProjectApi.createNoteRegion)
-                    const collection = NoteEventCollectionBox.create(project.boxGraph, UUID.generate())
+                    const collection = NoteEventCollectionBox.create(project.boxGraph, UUID.generate());
+                    (collection as any)._originalType = 'NoteEventCollectionBox'
                     
-                    // Create note region (like ProjectApi.createNoteRegion)
                     NoteRegionBox.create(project.boxGraph, UUID.generate(), box => {
                         box.position.setValue(regionData.position || 0)
                         box.duration.setValue(regionData.duration || 1920)
                         box.label.setValue("Generated Melody")
-                        box.hue.setValue(ColorCodes.forTrackType(0)) // TrackType.Notes = 0
+                        box.hue.setValue(ColorCodes.forTrackType(0))
                         box.mute.setValue(false)
-                        box.loopDuration.setValue(regionData.duration || 1920) // Loop sur toute la durée de la mélodie
+                        box.loopDuration.setValue(regionData.duration || 1920)
                         box.events.refer(collection.owners)
-                        box.regions.refer(trackBox.regions)
+                        box.regions.refer(trackBox.regions);
+                        (box as any)._originalType = 'NoteRegionBox'
                     })
                     
-                    // Add individual note events (like RecordMidi)
                     for (const noteData of regionData.notes || []) {
                         NoteEventBox.create(project.boxGraph, UUID.generate(), box => {
                             box.position.setValue(noteData.position || 0)
                             box.duration.setValue(noteData.duration || 480)
                             box.pitch.setValue(noteData.pitch || 60)
                             box.velocity.setValue(noteData.velocity || 0.8)
-                            box.events.refer(collection.events)
+                            box.events.refer(collection.events);
+                            (box as any)._originalType = 'NoteEventBox'
                         })
                     }
                     
