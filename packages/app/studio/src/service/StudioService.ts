@@ -1197,7 +1197,16 @@ export class StudioService implements ProjectEnv {
         // This is where we'll rebuild the project from the modified data
         // For now, create a new project and add the tracks/effects
         
+        console.log(`🔍 [DRUMFIX-RECONSTRUCT] ========== RECONSTRUCTING PROJECT ==========`)
+        console.log(`🔍 [DRUMFIX-RECONSTRUCT] Tracks to add: ${projectData.tracks?.length || 0}`)
+        if (projectData.tracks) {
+            projectData.tracks.forEach((t: any, i: number) => {
+                console.log(`🔍 [DRUMFIX-RECONSTRUCT] Track ${i}: "${t.name}" (${t.type})`)
+            })
+        }
+        
         const newProject = Project.new(this)
+        console.log(`🔍 [DRUMFIX-RECONSTRUCT] New empty project created`)
         
         // Add tracks based on server modifications
         if (projectData.tracks) {
@@ -1205,6 +1214,8 @@ export class StudioService implements ProjectEnv {
                 await this.addTrackFromData(newProject, trackData)
             }
         }
+        
+        console.log(`🔍 [DRUMFIX-RECONSTRUCT] Project reconstruction complete`)
         
         // Handle effects separately (they modify existing tracks)
         if (projectData.tracks) {
@@ -1223,7 +1234,12 @@ export class StudioService implements ProjectEnv {
      */
     private async addTrackFromData(project: Project, trackData: any): Promise<void> {
         try {
+            console.log(`🔍 [DRUMFIX-ADD-TRACK] ========== ADDING TRACK FROM DATA ==========`)
+            console.log(`🔍 [DRUMFIX-ADD-TRACK] Track name: "${trackData.name}"`)
+            console.log(`🔍 [DRUMFIX-ADD-TRACK] Track type: "${trackData.type}"`)
+            
             const {InstrumentFactories} = await import('@opendaw/studio-core')
+            console.log(`🔍 [DRUMFIX-ADD-TRACK] InstrumentFactories loaded:`, Object.keys(InstrumentFactories))
             
             let trackBox: any = null
             
@@ -1256,14 +1272,18 @@ export class StudioService implements ProjectEnv {
                         break
                     // Skip non-instrument types
                     case 'AudioBusBox':
-                        console.log(`🚌 Skipping AudioBusBox track: ${trackData.name}`)
+                        console.log(`🔍 [DRUMFIX-ADD-TRACK] Skipping AudioBusBox track: ${trackData.name}`)
                         return
                     default:
+                        console.log(`🚨 [DRUMFIX-ADD-TRACK] Unknown instrument type: ${trackData.type}`)
                         console.warn(`Unknown instrument type: ${trackData.type}`)
                         return
                 }
                 
+                console.log(`🔍 [DRUMFIX-ADD-TRACK] Factory selected:`, factory?.name || 'undefined')
+                console.log(`🔍 [DRUMFIX-ADD-TRACK] Creating instrument with name: "${trackData.name}"`)
                 const result = project.api.createInstrument(factory, { name: trackData.name })
+                console.log(`🔍 [DRUMFIX-ADD-TRACK] Instrument created successfully`)
                 const instrumentBox = result.instrumentBox
                 trackBox = result.trackBox // Store for MIDI notes
                 
