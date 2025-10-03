@@ -1129,9 +1129,10 @@ export class StudioService implements ProjectEnv {
             if (audioEffectsPointer) {
                 for (const effectPointer of audioEffectsPointer) {
                     const effect = effectPointer.box
+                    const effectType = (effect as any)._originalType || this.translateToGenericType(effect.constructor.name)
                     effects.push({
                         uuid: effect.address.uuid,
-                        type: this.translateToGenericType(effect.constructor.name),
+                        type: effectType,
                         parameters: this.extractBoxParameters(effect)
                     })
                 }
@@ -1507,10 +1508,12 @@ export class StudioService implements ProjectEnv {
                             return
                     }
                     
-                    // Add effect to track
                     const effectBox = project.api.insertEffect(targetTrack.audioEffects, factory)
                     
-                    // Apply effect parameters if any
+                    if (effectBox) {
+                        (effectBox as any)._originalType = effectData.type
+                    }
+                    
                     if (effectData.parameters && effectBox) {
                         const anyEffectBox = effectBox as any
                         for (const [key, value] of Object.entries(effectData.parameters)) {
