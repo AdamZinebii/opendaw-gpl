@@ -111,14 +111,6 @@ export const LoginPage = ({ lifecycle: _lifecycle, authService }: Construct) => 
                         </div>
                     </div>
 
-                    <div className="features-section">
-                        <h3>Features:</h3>
-                        <ul>
-                            <li>💾 Save projects across devices</li>
-                            <li>🤖 AI composition assistance</li>
-                            <li>☁️ Cloud storage & sync</li>
-                        </ul>
-                    </div>
                 </div>
 
                 <div className="background-animation">
