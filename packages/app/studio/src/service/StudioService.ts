@@ -403,6 +403,11 @@ export class StudioService implements ProjectEnv {
                 // Apply the changes returned from server
                 await this.applyProjectChanges(result.modifiedProjectData)
                 console.log('✅ Secret tool execution completed and applied')
+                
+                // CRITICAL: Save project to server after changes (especially important for bringUpDrums flow)
+                // This ensures the server has the updated project data for subsequent tool calls
+                await this.saveProjectToServer()
+                console.log('💾 Project saved to server after tool execution')
             }
             
             return {
