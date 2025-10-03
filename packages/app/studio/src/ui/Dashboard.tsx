@@ -1,6 +1,6 @@
 import css from "./Dashboard.sass?inline"
-import {Lifecycle, TimeSpan} from "@opendaw/lib-std"
-import {createElement, HTML, LocalLink} from "@opendaw/lib-jsx"
+import {Lifecycle} from "@opendaw/lib-std"
+import {createElement, HTML} from "@opendaw/lib-jsx"
 import {StudioService} from "@/service/StudioService.ts"
 import {Html} from "@opendaw/lib-dom"
 import {ProjectBrowser} from "@/ui/components/ProjectBrowser"
@@ -14,8 +14,6 @@ type Construct = {
 }
 
 export const Dashboard = ({lifecycle, service}: Construct) => {
-    const time = TimeSpan.millis(new Date(service.buildInfo.date).getTime() - new Date().getTime()).toUnitString()
-    
     // Use the StudioService's cloud services instead of creating new ones
     const projectService = service.projectService
     
@@ -110,12 +108,13 @@ export const Dashboard = ({lifecycle, service}: Construct) => {
                     </div>
                 </div>
                 <p style={{marginTop: "1.5em", fontSize: "0.625em"}}>
-                    Last built was <span style={{color: Colors.green}}>{time}</span>. Join our <a
-                    href="https://discord.beatson.studio" target="discord" style={{color: Colors.green}}>discord
-                    community</a> to stay updated! · <a href="https://github.com/beatson-studio/beatson"
-                                                        target="github"
-                                                        style={{color: Colors.green}}>sourcecode</a> · <LocalLink
-                    href="/imprint">imprint</LocalLink> · Built with ❤️
+                    This DAW is a clone of <a
+                    href="https://github.com/andremichelle/openDAW/commit/e06a7d5d587409f25aa077953f7747c4055f094e" 
+                    target="_blank" 
+                    style={{color: Colors.green}}>openDAW GPL commit</a>, and the release of the modified code is <a 
+                    href="https://github.com/AdamZinebii/opendaw-gpl"
+                    target="_blank"
+                    style={{color: Colors.green}}>here</a>.
                 </p>
             </article>
         </div>
