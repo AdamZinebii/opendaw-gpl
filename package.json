@@ -7,6 +7,7 @@
     "cert": "bash ./scripts/cert.sh",
     "clean": "bash ./scripts/clean.sh",
     "build": "turbo build",
+    "build:studio": "turbo build --filter=@opendaw/app-studio",
     "dev:studio": "turbo run dev --filter=@opendaw/app-studio",
     "dev:headless": "turbo run dev --filter=@opendaw/app-headless",
     "dev:recording": "turbo run dev --filter=@opendaw/app-recording",
