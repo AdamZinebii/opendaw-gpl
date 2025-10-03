@@ -1290,7 +1290,7 @@ export class StudioService implements ProjectEnv {
                 const result = project.api.createInstrument(factory, { name: trackData.name })
                 console.log(`🔍 [DRUMFIX-ADD-TRACK] Instrument created successfully`)
                 const instrumentBox = result.instrumentBox
-                trackBox = result.trackBox // Store for MIDI notes
+                trackBox = result.trackBox; // Store for MIDI notes
                 
                 // CRITICAL: Store original type on instrument box to survive minification
                 // On Vercel, constructor.name gets minified (e.g. "NanoDeviceBox" becomes "sl")
