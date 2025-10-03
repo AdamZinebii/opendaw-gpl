@@ -1280,7 +1280,7 @@ export class StudioService implements ProjectEnv {
                         return
                 }
                 
-                console.log(`🔍 [DRUMFIX-ADD-TRACK] Factory selected:`, factory?.name || 'undefined')
+                console.log(`🔍 [DRUMFIX-ADD-TRACK] Factory selected:`, factory ? 'YES' : 'NO')
                 console.log(`🔍 [DRUMFIX-ADD-TRACK] Creating instrument with name: "${trackData.name}"`)
                 const result = project.api.createInstrument(factory, { name: trackData.name })
                 console.log(`🔍 [DRUMFIX-ADD-TRACK] Instrument created successfully`)
