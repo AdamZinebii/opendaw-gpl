@@ -574,10 +574,15 @@ export class StudioService implements ProjectEnv {
                     console.log(`🔍 [EXTRACT-TRACKS] Instrument box: ${instrumentBox.constructor.name}`)
                     console.log(`🔍 [EXTRACT-TRACKS] Instrument name: ${instrumentBox.label?.getValue?.() || 'Unnamed'}`)
                     
+                    // CRITICAL: Use _originalType if available (survives minification)
+                    // Otherwise fallback to constructor.name (which breaks on Vercel)
+                    const instrumentType = instrumentBox._originalType || this.translateToGenericType(instrumentBox.constructor.name)
+                    console.log(`🔍 [EXTRACT-TRACKS] Type: ${instrumentType} (from ${instrumentBox._originalType ? '_originalType' : 'constructor.name'})`)
+                    
                     const trackData = {
                         uuid: audioUnit.address.uuid,
                         name: instrumentBox.label?.getValue?.() || 'Unnamed',
-                        type: this.translateToGenericType(instrumentBox.constructor.name),
+                        type: instrumentType,
                         parameters: this.extractBoxParameters(instrumentBox),
                         noteRegions: this.extractNoteRegions(audioUnit),
                         audioRegions: this.extractAudioRegions(audioUnit),
@@ -1286,6 +1291,12 @@ export class StudioService implements ProjectEnv {
                 console.log(`🔍 [DRUMFIX-ADD-TRACK] Instrument created successfully`)
                 const instrumentBox = result.instrumentBox
                 trackBox = result.trackBox // Store for MIDI notes
+                
+                // CRITICAL: Store original type on instrument box to survive minification
+                // On Vercel, constructor.name gets minified (e.g. "NanoDeviceBox" becomes "sl")
+                // So we store the original generic type for future extraction
+                (instrumentBox as any)._originalType = trackData.type
+                console.log(`🔍 [DRUMFIX-ADD-TRACK] Stored _originalType: ${trackData.type}`)
                 
                 // Apply parameters (using any type to avoid TypeScript issues)
                 if (trackData.parameters) {
