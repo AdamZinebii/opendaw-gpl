@@ -320,6 +320,13 @@ export class StudioService implements ProjectEnv {
             const projectData = this.extractProjectData()
             
             // DEBUG: Check what we extract from current project
+            console.log(`🔍 [DRUMFIX-EXTRACT] ========== EXTRACTING PROJECT DATA ==========`)
+            console.log(`🔍 [DRUMFIX-EXTRACT] Extracted project with ${projectData.tracks?.length || 0} tracks`)
+            if (projectData.tracks) {
+                projectData.tracks.forEach((t: any, i: number) => {
+                    console.log(`🔍 [DRUMFIX-EXTRACT] Track ${i}: "${t.name}" (${t.type})`)
+                })
+            }
             console.log(`🎹 [DEBUG-EXTRACT] Extracted project with ${projectData.tracks?.length || 0} tracks`)
             if (projectData.tracks) {
                 projectData.tracks.forEach((track: any, index: number) => {
@@ -401,13 +408,24 @@ export class StudioService implements ProjectEnv {
             
             if (result.success && result.modifiedProjectData) {
                 // Apply the changes returned from server
+                console.log('🔍 [DRUMFIX-BEFORE] Project state BEFORE applyProjectChanges:')
+                console.log('🔍 [DRUMFIX-BEFORE] Current tracks:', this.extractProjectData().tracks?.length || 0)
+                if (this.extractProjectData().tracks) {
+                    this.extractProjectData().tracks.forEach((t: any, i: number) => {
+                        console.log(`🔍 [DRUMFIX-BEFORE] Track ${i}: ${t.name} (${t.type})`)
+                    })
+                }
+                
                 await this.applyProjectChanges(result.modifiedProjectData)
                 console.log('✅ Secret tool execution completed and applied')
                 
-                // CRITICAL: Save project to server after changes (especially important for bringUpDrums flow)
-                // This ensures the server has the updated project data for subsequent tool calls
-                await this.saveProjectToServer()
-                console.log('💾 Project saved to server after tool execution')
+                console.log('🔍 [DRUMFIX-AFTER] Project state AFTER applyProjectChanges:')
+                console.log('🔍 [DRUMFIX-AFTER] Current tracks:', this.extractProjectData().tracks?.length || 0)
+                if (this.extractProjectData().tracks) {
+                    this.extractProjectData().tracks.forEach((t: any, i: number) => {
+                        console.log(`🔍 [DRUMFIX-AFTER] Track ${i}: ${t.name} (${t.type})`)
+                    })
+                }
             }
             
             return {
@@ -1953,6 +1971,15 @@ export class StudioService implements ProjectEnv {
                     // Check if song-creator wants to execute more tools (iterative like chatbot)
                     if (followupResult.success && followupResult.send_to_execution && followupResult.secretAddress) {
                         console.log('🔄 Song creator returned more tools to execute - continuing iteratively')
+                        console.log('🔍 [DRUMFIX-RECURSIVE] ========== ABOUT TO MAKE RECURSIVE CALL ==========')
+                        console.log('🔍 [DRUMFIX-RECURSIVE] Current project state before recursive call:')
+                        console.log('🔍 [DRUMFIX-RECURSIVE] Tracks:', this.extractProjectData().tracks?.length || 0)
+                        if (this.extractProjectData().tracks) {
+                            this.extractProjectData().tracks.forEach((t: any, i: number) => {
+                                console.log(`🔍 [DRUMFIX-RECURSIVE] Track ${i}: "${t.name}" (${t.type})`)
+                            })
+                        }
+                        
                         // Recursively execute more tools
                         await this.executeToolCallsWithSecretAddress(
                             followupResult.secretAddress,
