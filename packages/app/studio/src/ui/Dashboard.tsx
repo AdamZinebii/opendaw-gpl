@@ -39,46 +39,20 @@ export const Dashboard = ({lifecycle, service}: Construct) => {
                                             console.log('📌 Project set as current for save synchronization')
                                         }
                                         
-                        // Then create local project (same as opendaw-old)
-                        service.cleanSlate()
-                        
-                        // Trigger saveAs with "Untitled" to save project files
-                        const currentProfile = service.profileService.getValue()
-                        if (currentProfile.nonEmpty()) {
-                            await currentProfile.unwrap().saveAs({
-                                name: "Untitled",
-                                description: "",
-                                tags: [],
-                                created: new Date().toISOString(),
-                                modified: new Date().toISOString()
-                            })
-                            // Reset saved flag so user still gets Save As dialog later
-                            currentProfile.unwrap().saved = () => false
-                        }
-                        
-                        // Switch to project page with prompter
-                        service.switchScreen("project")
+                                        // Create new project
+                                        service.cleanSlate()
+                                        
+                                        // Use saveAsDef to save project files (auto-silent, no dialog)
+                                        await service.saveAsDef()
+                                        
+                                        // Switch to project page with prompter
+                                        service.switchScreen("project")
                                     } catch (error) {
-                                        console.error('❌ Failed to create Supabase project:', error)
+                                        console.error('❌ Failed to create project:', error)
                                         // Fallback: create local project anyway
-                        service.cleanSlate()
-                        
-                        // Trigger saveAs with "Untitled" to save project files
-                        const currentProfile = service.profileService.getValue()
-                        if (currentProfile.nonEmpty()) {
-                            await currentProfile.unwrap().saveAs({
-                                name: "Untitled",
-                                description: "",
-                                tags: [],
-                                created: new Date().toISOString(),
-                                modified: new Date().toISOString()
-                            })
-                            // Reset saved flag so user still gets Save As dialog later
-                            currentProfile.unwrap().saved = () => false
-                        }
-                        
-                        // Switch to project page with prompter
-                        service.switchScreen("project")
+                                        service.cleanSlate()
+                                        await service.saveAsDef()
+                                        service.switchScreen("project")
                                     }
                                 }}
                             ].map(({name, click}, index) => {
