@@ -1,6 +1,6 @@
 import css from "./ProjectBrowser.sass?inline"
 import { Html } from "@opendaw/lib-dom"
-import { Lifecycle } from "@opendaw/lib-std"
+import { Lifecycle, TimeSpan } from "@opendaw/lib-std"
 import { ProjectService } from "@/service/ProjectService"
 import { StudioService } from "@/service/StudioService"
 
@@ -44,12 +44,18 @@ export const ProjectBrowser = ({ lifecycle: _lifecycle, projectService, studioSe
                     const card = document.createElement('div')
                     card.className = 'project-card'
                     
+                    // Calculate relative time
+                    const now = new Date().getTime()
+                    const projectTime = new Date(project.updated_at).getTime()
+                    const timeSpan = TimeSpan.millis(projectTime - now)
+                    const relativeTime = timeSpan.toUnitString()
+                    
                     const cardContent = document.createElement('div')
                     cardContent.className = 'project-content'
                     cardContent.innerHTML = `
                         <div class="project-name" title="${project.name}">${project.name}</div>
                         <div class="project-status">Status: ${project.status || 'unknown'}</div>
-                        <div class="project-date">${new Date(project.updated_at).toLocaleDateString()}</div>
+                        <div class="project-time">${relativeTime}</div>
                     `
                     
                     const deleteButton = document.createElement('button')
