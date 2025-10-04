@@ -39,11 +39,15 @@ export class AuthService {
             this._loading.setValue(false)
             if (session?.user) {
                 // Touch login RPC server-side to upsert user + session
-                await this.supabase.rpc('auth_on_login').catch(() => {})
+                try {
+                    await this.supabase.rpc('auth_on_login')
+                } catch (e) {
+                    console.warn('auth_on_login failed:', e)
+                }
             }
             
             // Listen to auth changes
-            this.supabase.auth.onAuthStateChange((event, session) => {
+            this.supabase.auth.onAuthStateChange(async (event, session) => {
                 console.log(`AuthService: Auth state changed [${event}]:`, session?.user?.email || 'No user')
                 console.log('Session details:', { 
                     hasUser: !!session?.user, 
@@ -54,9 +58,17 @@ export class AuthService {
                 this._loading.setValue(false)
                 if (session?.user) {
                     // Update activity + presence on any auth change
-                    await this.supabase.rpc('auth_on_login').catch(() => {})
+                    try {
+                        await this.supabase.rpc('auth_on_login')
+                    } catch (e) {
+                        console.warn('auth_on_login failed:', e)
+                    }
                 } else {
-                    await this.supabase.rpc('auth_on_logout').catch(() => {})
+                    try {
+                        await this.supabase.rpc('auth_on_logout')
+                    } catch (e) {
+                        console.warn('auth_on_logout failed:', e)
+                    }
                 }
             })
             
