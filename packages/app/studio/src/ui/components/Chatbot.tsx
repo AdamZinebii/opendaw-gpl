@@ -511,6 +511,19 @@ export const Chatbot = ({lifecycle, isOpen, studioService}: ChatbotProps) => {
                         )
                     }
                 }
+            } else {
+                // No tool execution needed - conversation is complete
+                // Trigger automatic save to cloud
+                console.log('💾 Conversation complete, triggering auto-save to cloud...')
+                if (studioService) {
+                    try {
+                        await studioService.save()
+                        console.log('✅ Project auto-saved to cloud successfully')
+                    } catch (error) {
+                        console.error('⚠️ Auto-save failed (non-critical):', error)
+                        // Don't throw - save failure shouldn't break the chat
+                    }
+                }
             }
 
         } catch (error) {
