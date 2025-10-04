@@ -514,15 +514,49 @@ export const Chatbot = ({lifecycle, isOpen, studioService}: ChatbotProps) => {
             } else {
                 // No tool execution needed - conversation is complete
                 // Trigger automatic save to cloud
-                console.log('💾 Conversation complete, triggering auto-save to cloud...')
+                console.log('💾 [AUTOSAVE] Conversation complete, checking project state...')
                 if (studioService) {
                     try {
-                        await studioService.save()
-                        console.log('✅ Project auto-saved to cloud successfully')
+                        // Get current profile and log its state
+                        const currentProfile = studioService.profileService?.getValue()
+                        console.log('🔍 [AUTOSAVE] Current profile exists:', currentProfile ? 'Yes' : 'No')
+                        
+                        if (currentProfile && 'unwrap' in currentProfile) {
+                            const profile = currentProfile.unwrap()
+                            console.log('📊 [AUTOSAVE] Project state - saved:', profile.saved(), 'name:', profile.meta?.name)
+                            
+                            // Log the entire profile for debugging
+                            console.log('📋 [AUTOSAVE] Full profile state:', {
+                                saved: profile.saved(),
+                                hasChanges: profile.hasChanges(),
+                                meta: profile.meta,
+                                uuid: profile.uuid
+                            })
+                            
+                            // Save based on project state
+                            if (!profile.saved()) {
+                                console.log('🆕 [AUTOSAVE] New project detected, using saveAsDef()')
+                                await studioService.saveAsDef()
+                            } else {
+                                console.log('💾 [AUTOSAVE] Existing project, using regular save()')
+                                await studioService.save()
+                            }
+                            
+                            // Verify the state after save
+                            const updatedProfile = studioService.profileService?.getValue()
+                            if (updatedProfile && 'unwrap' in updatedProfile) {
+                                const updated = updatedProfile.unwrap()
+                                console.log('✅ [AUTOSAVE] After save - saved:', updated.saved(), 'name:', updated.meta?.name)
+                            }
+                        } else {
+                            console.warn('⚠️ [AUTOSAVE] No active profile available')
+                        }
                     } catch (error) {
-                        console.error('⚠️ Auto-save failed (non-critical):', error)
+                        console.error('❌ [AUTOSAVE] Auto-save failed:', error)
                         // Don't throw - save failure shouldn't break the chat
                     }
+                } else {
+                    console.warn('⚠️ [AUTOSAVE] No studio service available')
                 }
             }
 

@@ -36,26 +36,38 @@ export class ProjectProfile {
     get cover(): Option<ArrayBuffer> {return this.#cover}
 
     async save(): Promise<void> {
+        console.log('[SAVEDEF] save() called, current saved state:', this.#saved);
         this.updateModifyDate()
-        return this.#saved
-            ? ProjectProfile.#writeFiles(this).then(() => {this.#hasChanges = false})
-            : Promise.reject("Project has not been saved")
+        if (this.#saved) {
+            console.log('[SAVEDEF] Project already saved, writing files...');
+            return ProjectProfile.#writeFiles(this).then(() => {
+                this.#hasChanges = false
+                console.log('[SAVEDEF] Files written, hasChanges set to:', this.#hasChanges);
+            })
+        } else {
+            console.warn('[SAVEDEF] Project has not been saved, rejecting save()');
+            return Promise.reject("Project has not been saved")
+        }
     }
 
     async saveAs(meta: ProjectMeta): Promise<Option<ProjectProfile>> {
+        console.log('[SAVEDEF] saveAs() called with meta:', meta.name, 'saved:', this.#saved);
         Object.assign(this.meta, meta)
         this.updateModifyDate()
         if (this.#saved) {
-            // Copy project
+            console.log('[SAVEDEF] Creating copy of existing project');
             const uuid = UUID.generate()
             const project = this.project.copy()
             const meta = ProjectMeta.copy(this.meta)
             const session = new ProjectProfile(uuid, project, meta, Option.None, true)
             await ProjectProfile.#writeFiles(session)
+            console.log('[SAVEDEF] Created new project copy, saved:', session.saved());
             return Option.wrap(session)
         } else {
+            console.log('[SAVEDEF] First save, saving as new project');
             return ProjectProfile.#writeFiles(this).then(() => {
                 this.#saved = true
+                console.log('[SAVEDEF] Project saved, setting saved =', this.#saved);
                 this.#hasChanges = false
                 this.#metaUpdated.notify(this.meta)
                 return Option.None

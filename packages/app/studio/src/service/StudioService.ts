@@ -1112,8 +1112,8 @@ export class StudioService implements ProjectEnv {
             console.log(`⚠️ [DEBUG] Could not extract UUID - returning null`)
             return null
         } catch (error) {
-            console.warn('❌ [DEBUG] Error extracting sample file UUID:', error)
-            console.warn('❌ [DEBUG] Error stack:', error instanceof Error ? error.stack : 'No stack trace available')
+            console.error('❌ [DEBUG] Error extracting sample file UUID:', error)
+            console.error('❌ [DEBUG] Error stack:', error instanceof Error ? error.stack : 'No stack trace available')
             return null
         }
     }
@@ -1766,17 +1766,24 @@ export class StudioService implements ProjectEnv {
         }
     }
     async saveAs(): Promise<void> {
-        // Step 1: Save locally to OPFS with user-chosen name
         await this.profileService.saveAs()
-        
-        // Step 2: Sync to cloud after successful local save
         const currentProfile = this.profileService.getValue()
         if (currentProfile.nonEmpty()) {
             try {
                 await this.syncProjectToCloud(currentProfile.unwrap())
             } catch (error) {
                 console.error('⚠️ Failed to sync project to cloud:', error)
-                // Don't fail the save operation, just log the sync error
+            }
+        }
+    }
+    async saveAsDef(): Promise<void> {
+        await this.profileService.saveAsDef()
+        const currentProfile = this.profileService.getValue()
+        if (currentProfile.nonEmpty()) {
+            try {
+                await this.syncProjectToCloud(currentProfile.unwrap())
+            } catch (error) {
+                console.error('⚠️ Failed to sync project to cloud:', error)
             }
         }
     }
@@ -2018,6 +2025,48 @@ export class StudioService implements ProjectEnv {
                         )
                     } else {
                         console.log('🎵 Song creator finished - no more tools to execute')
+                        
+                        // Trigger automatic save to cloud (similar to chatbot completion)
+                        console.log('💾 [SONG-AUTOSAVE] Song creation complete, checking project state...')
+                        try {
+                            // Get current profile and log its state
+                            const currentProfile = this.profileService?.getValue()
+                            console.log('🔍 [SONG-AUTOSAVE] Current profile exists:', currentProfile ? 'Yes' : 'No')
+                            
+                            if (currentProfile && 'unwrap' in currentProfile) {
+                                const profile = currentProfile.unwrap()
+                                console.log('📊 [SONG-AUTOSAVE] Project state - saved:', profile.saved(), 'name:', profile.meta?.name)
+                                
+                                // Log the entire profile for debugging
+                                console.log('📋 [SONG-AUTOSAVE] Full profile state:', {
+                                    saved: profile.saved(),
+                                    hasChanges: profile.hasChanges(),
+                                    meta: profile.meta,
+                                    uuid: profile.uuid
+                                })
+                                
+                                // Save based on project state
+                                if (!profile.saved()) {
+                                    console.log('🆕 [SONG-AUTOSAVE] New project detected, using saveAsDef()')
+                                    await this.saveAsDef()
+                                } else {
+                                    console.log('💾 [SONG-AUTOSAVE] Existing project, using regular save()')
+                                    await this.save()
+                                }
+                                
+                                // Verify the state after save
+                                const updatedProfile = this.profileService?.getValue()
+                                if (updatedProfile && 'unwrap' in updatedProfile) {
+                                    const updated = updatedProfile.unwrap()
+                                    console.log('✅ [SONG-AUTOSAVE] After save - saved:', updated.saved(), 'name:', updated.meta?.name)
+                                }
+                            } else {
+                                console.warn('⚠️ [SONG-AUTOSAVE] No active profile available')
+                            }
+                        } catch (error) {
+                            console.error('❌ [SONG-AUTOSAVE] Auto-save failed:', error)
+                            // Don't throw - save failure shouldn't break the song creation completion
+                        }
                     }
                 } else {
                     console.error('❌ Song creator follow-up failed:', followupResponse.status)
@@ -2137,6 +2186,49 @@ export class StudioService implements ProjectEnv {
             } else if (result.success) {
                 console.log('✅ Song creation completed:', result.message)
                 this.layout.songCreationProgress.setValue(100)
+                
+                // Trigger automatic save to cloud (similar to chatbot completion)
+                console.log('💾 [SONG-AUTOSAVE] Song creation complete, checking project state...')
+                try {
+                    // Get current profile and log its state
+                    const currentProfile = this.profileService?.getValue()
+                    console.log('🔍 [SONG-AUTOSAVE] Current profile exists:', currentProfile ? 'Yes' : 'No')
+                    
+                    if (currentProfile && 'unwrap' in currentProfile) {
+                        const profile = currentProfile.unwrap()
+                        console.log('📊 [SONG-AUTOSAVE] Project state - saved:', profile.saved(), 'name:', profile.meta?.name)
+                        
+                        // Log the entire profile for debugging
+                        console.log('📋 [SONG-AUTOSAVE] Full profile state:', {
+                            saved: profile.saved(),
+                            hasChanges: profile.hasChanges(),
+                            meta: profile.meta,
+                            uuid: profile.uuid
+                        })
+                        
+                        // Save based on project state
+                        if (!profile.saved()) {
+                            console.log('🆕 [SONG-AUTOSAVE] New project detected, using saveAsDef()')
+                            await this.saveAsDef()
+                        } else {
+                            console.log('💾 [SONG-AUTOSAVE] Existing project, using regular save()')
+                            await this.save()
+                        }
+                        
+                        // Verify the state after save
+                        const updatedProfile = this.profileService?.getValue()
+                        if (updatedProfile && 'unwrap' in updatedProfile) {
+                            const updated = updatedProfile.unwrap()
+                            console.log('✅ [SONG-AUTOSAVE] After save - saved:', updated.saved(), 'name:', updated.meta?.name)
+                        }
+                    } else {
+                        console.warn('⚠️ [SONG-AUTOSAVE] No active profile available')
+                    }
+                } catch (error) {
+                    console.error('❌ [SONG-AUTOSAVE] Auto-save failed:', error)
+                    // Don't throw - save failure shouldn't break the song creation completion
+                }
+                
                 setTimeout(() => {
                     this.hidePrompter()
                 }, 1000) // Wait 1 second at 100%
