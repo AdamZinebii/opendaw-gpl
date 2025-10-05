@@ -34,38 +34,62 @@ export class SupabaseSampleAPI implements FutureSampleApi {
     @Lazy
     static get(): SupabaseSampleAPI { return new SupabaseSampleAPI() }
 
-    private async loadManifest(): Promise<void> {
-        if (this.manifestCache) return
+    private async loadManifest(forceReload: boolean = false): Promise<void> {
+        if (this.manifestCache && !forceReload) {
+            console.debug('Using cached manifest, skipping reload')
+            return
+        }
 
         try {
-            console.debug('Loading samples manifest from Supabase...')
+            console.debug('Loading samples manifest from Supabase...', forceReload ? '(force reload)' : '')
             
-            // Try to fetch manifest.json from the samples bucket
-            const { data, error } = await this.supabase.storage
+            // Try to fetch manifest.json from the samples bucket with cache busting
+            const manifestUrl = this.supabase.storage
                 .from(SupabaseSampleAPI.BUCKET_NAME)
-                .download('manifest.json')
-
-            if (error) {
+                .getPublicUrl('manifest.json').data.publicUrl
+            
+            console.debug('Fetching manifest from:', manifestUrl)
+            
+            const response = await fetch(`${manifestUrl}?t=${Date.now()}`, {
+                method: 'GET',
+                headers: {
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
+                }
+            })
+            
+            if (!response.ok) {
                 console.warn('No manifest.json found in samples bucket, using empty list')
                 this.manifestCache = []
                 return
             }
 
-            const manifestText = await data.text()
+            const manifestText = await response.text()
             const manifest = JSON.parse(manifestText)
             
             console.debug(`Loaded ${manifest.samples?.length || 0} samples from manifest`)
             
             // Cache samples for quick lookup
+            this.samplesMap.clear() // Clear existing samples
             manifest.samples?.forEach((sample: any) => {
                 this.samplesMap.set(sample.uuid, sample)
             })
             
             this.manifestCache = manifest.samples || []
+            console.debug(`Loaded ${this.manifestCache?.length || 0} samples from manifest`)
         } catch (error) {
             console.error('Failed to load samples manifest:', error)
             this.manifestCache = []
         }
+    }
+
+    /**
+     * Invalidate the manifest cache to force reload on next access
+     */
+    public invalidateCache(): void {
+        console.debug('Invalidating samples manifest cache...')
+        this.manifestCache = null
+        this.samplesMap.clear()
     }
 
     private getStorageUrl(filename: string): string {
@@ -93,7 +117,15 @@ export class SupabaseSampleAPI implements FutureSampleApi {
         await this.loadManifest()
         
         const uuidString = UUID.toString(uuid)
-        const sampleInfo = this.samplesMap.get(uuidString)
+        let sampleInfo = this.samplesMap.get(uuidString)
+        
+        // If sample not found, try reloading manifest in case it's a newly added sample
+        if (!sampleInfo) {
+            console.debug(`Sample ${uuidString} not found in cache, reloading manifest...`)
+            await this.loadManifest(true)
+            sampleInfo = this.samplesMap.get(uuidString)
+        }
+        
         if (!sampleInfo) {
             throw new Error(`Sample not found: ${uuidString}`)
         }
@@ -112,7 +144,30 @@ export class SupabaseSampleAPI implements FutureSampleApi {
         await this.loadManifest()
         
         const uuidString = UUID.toString(uuid)
-        const sampleInfo = this.samplesMap.get(uuidString)
+        let sampleInfo = this.samplesMap.get(uuidString)
+        
+        // If sample not found, try reloading manifest in case it's a newly added sample
+        if (!sampleInfo) {
+            console.debug(`Sample ${uuidString} not found in cache, reloading manifest...`)
+            console.debug(`Current samplesMap has ${this.samplesMap.size} samples`)
+            await this.loadManifest(true)
+            console.debug(`After reload, samplesMap has ${this.samplesMap.size} samples`)
+            console.debug(`Looking for sample: ${uuidString}`)
+            const allUUIDs = Array.from(this.samplesMap.keys())
+            console.debug(`Available sample UUIDs (last 10):`, allUUIDs.slice(-10))
+            console.debug(`Total samples: ${allUUIDs.length}`)
+            console.debug(`Sample exists in map:`, this.samplesMap.has(uuidString))
+            
+            // Check if any recent samples contain part of our UUID
+            const recentSamples = allUUIDs.filter(uuid => 
+                uuid.includes(uuidString.substring(0, 8)) || 
+                uuidString.includes(uuid.substring(0, 8))
+            )
+            console.debug(`Similar UUIDs found:`, recentSamples)
+            
+            sampleInfo = this.samplesMap.get(uuidString)
+        }
+        
         if (!sampleInfo) {
             throw new Error(`Sample not found: ${uuidString}`)
         }

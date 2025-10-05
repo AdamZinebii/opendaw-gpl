@@ -531,8 +531,10 @@ export class StudioService implements ProjectEnv {
                 return 'SynthesizerDeviceBox'
             case 'RevampDeviceBox':
                 return 'EQDeviceBox'
+            case 'TapeDeviceBox':
+                return 'AudioPlayerDeviceBox'
             default:
-                return openDAWType // Keep other types as-is (TapeDeviceBox, etc.)
+                return openDAWType // Keep other types as-is
         }
     }
 
@@ -545,6 +547,7 @@ export class StudioService implements ProjectEnv {
         
         return {
             meta: profile.meta,
+            bpm: project.bpm, // Include project BPM
             tracks: this.extractTracksData(project),
             timeline: this.extractTimelineData(project),
             effects: this.extractEffectsData(project)
@@ -959,13 +962,79 @@ export class StudioService implements ProjectEnv {
         return notes
     }
     
-    /**
-     * Extract audio region references (no actual audio data)
-     */
-    private extractAudioRegions(_audioUnit: any): any[] {
-        // Similar to extractNoteRegions but for AudioRegionBox
-        // Returns references to audio files, not the files themselves
-        return []
+    private extractAudioRegions(audioUnit: any): any[] {
+        const audioRegions: any[] = []
+        
+        try {
+            const tracksPointer = audioUnit.tracks?.pointerHub?.incoming()
+            if (!tracksPointer || tracksPointer.length === 0) {
+                return audioRegions
+            }
+            
+            for (const trackPointer of tracksPointer) {
+                const track = trackPointer.box
+                const regionsPointer = track.regions?.pointerHub?.incoming()
+                
+                if (regionsPointer && regionsPointer.length > 0) {
+                    for (const regionPointer of regionsPointer) {
+                        const region = regionPointer.box
+                        const regionType = (region as any)._originalType || region.constructor.name
+                        
+                        if (regionType === 'AudioRegionBox') {
+                            const fileRef = this.extractAudioFileReference(region.file)
+                            
+                            const regionData = {
+                                position: region.position?.getValue() || 0,
+                                duration: region.duration?.getValue() || 0,
+                                loopDuration: region.loopDuration?.getValue() || 0,
+                                loopOffset: region.loopOffset?.getValue() || 0,
+                                hue: region.hue?.getValue() || 0,
+                                label: region.label?.getValue() || 'Audio Region',
+                                mute: region.mute?.getValue() || false,
+                                gain: region.gain?.getValue() || 1.0,
+                                file: fileRef
+                            }
+                            audioRegions.push(regionData)
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.warn('Warning: Could not extract audio regions:', error)
+        }
+        
+        return audioRegions
+    }
+    
+    private extractAudioFileReference(filePointer: any): any {
+        try {
+            if (!filePointer?.targetVertex) {
+                return null
+            }
+            
+            const targetVertex = filePointer.targetVertex
+            
+            if (targetVertex.nonEmpty && targetVertex.nonEmpty()) {
+                const vertex = targetVertex.unwrap()
+                const fileBox = vertex.box
+                
+                if (fileBox?.address?.uuid) {
+                    const uuid = fileBox.address.uuid
+                    const uuidString = UUID.toString(uuid)
+                    const fileName = fileBox.fileName?.getValue?.() || 'audio.wav'
+                    
+                    return {
+                        uuid: uuidString,
+                        fileName: fileName
+                    }
+                }
+            }
+            
+            return null
+        } catch (error) {
+            console.warn('Warning: Could not extract audio file reference:', error)
+            return null
+        }
     }
     
     /**
@@ -1221,11 +1290,13 @@ export class StudioService implements ProjectEnv {
         
         console.log(`🔍 [DRUMFIX-RECONSTRUCT] Project reconstruction complete`)
         
-        // Handle effects separately (they modify existing tracks)
         if (projectData.tracks) {
             for (const trackData of projectData.tracks) {
                 if (trackData.effects && trackData.effects.length > 0) {
                     await this.addEffectsToTrack(newProject, trackData)
+                }
+                if (trackData.audioRegions && trackData.audioRegions.length > 0) {
+                    await this.addAudioRegionsToTrack(newProject, trackData)
                 }
             }
         }
@@ -1252,6 +1323,7 @@ export class StudioService implements ProjectEnv {
                 let factory
                 switch (trackData.type) {
                     case 'TapeDeviceBox':
+                    case 'AudioPlayerDeviceBox':
                         factory = InstrumentFactories.Tape
                         break
                     // NEW generic names
@@ -1298,7 +1370,7 @@ export class StudioService implements ProjectEnv {
                         const anyInstrumentBox = instrumentBox as any
                         
                         // Apply parameters based on instrument type
-                        if (trackData.type === 'TapeDeviceBox') {
+                        if (trackData.type === 'TapeDeviceBox' || trackData.type === 'AudioPlayerDeviceBox') {
                             if (trackData.parameters.flutter !== undefined && anyInstrumentBox.flutter?.setValue) {
                                 anyInstrumentBox.flutter.setValue(trackData.parameters.flutter)
                             }
@@ -1538,6 +1610,115 @@ export class StudioService implements ProjectEnv {
     /**
      * Find a track by name in the project
      */
+    private async addAudioRegionsToTrack(project: Project, trackData: any): Promise<void> {
+        try {
+            const {AudioRegionBox, AudioFileBox} = await import('@opendaw/studio-boxes')
+            const {UUID} = await import('@opendaw/lib-std')
+            const {ColorCodes} = await import('@opendaw/studio-core')
+            
+            const targetTrack = this.findTrackByNameInProject(project, trackData.name)
+            if (!targetTrack) {
+                console.warn(`❌ Could not find track "${trackData.name}" to add audio regions`)
+                return
+            }
+            
+            const tracksPointer = targetTrack.tracks?.pointerHub?.incoming()
+            if (!tracksPointer || tracksPointer.length === 0) {
+                console.warn(`❌ No tracks found in audio unit for "${trackData.name}"`)
+                return
+            }
+            
+            const trackBox = tracksPointer[0].box
+            
+            // Pre-calculate durations for all audio regions
+            const regionDurations = new Map<string, number>()
+            for (const regionData of trackData.audioRegions) {
+                if (regionData.file && regionData.file.uuid) {
+                    const audioFileUUID = UUID.parse(regionData.file.uuid)
+                    const audioFileUUIDString = UUID.toString(audioFileUUID)
+                    try {
+                        const audioDurationSeconds = await this.getAudioDurationFromManifest(audioFileUUIDString)
+                        const projectBPM = this.getProjectBPM(project)
+                        const properDuration = Math.round(audioDurationSeconds * projectBPM / 60.0 * 960) // PPQN formula
+                        regionDurations.set(audioFileUUIDString, properDuration)
+                        
+                        console.log(`🎵 [AUDIO-DURATION] UUID: ${audioFileUUIDString}`)
+                        console.log(`🎵 [AUDIO-DURATION] Duration: ${audioDurationSeconds}s, BPM: ${projectBPM}, PPQN: ${properDuration}`)
+                    } catch (error) {
+                        console.warn(`⚠️ Could not calculate duration for ${audioFileUUIDString}, using fallback`)
+                        regionDurations.set(audioFileUUIDString, 38400) // Fallback: 20s at 120 BPM
+                    }
+                }
+            }
+            
+            project.editing.modify(() => {
+                for (const regionData of trackData.audioRegions) {
+                    if (!regionData.file || !regionData.file.uuid) {
+                        console.warn('⚠️ Audio region missing file reference, skipping')
+                        continue
+                    }
+                    
+                    const audioFileUUID = UUID.parse(regionData.file.uuid)
+                    const audioFileUUIDString = UUID.toString(audioFileUUID)
+                    const properDuration = regionDurations.get(audioFileUUIDString) || 38400 // Fallback
+                    
+                    const audioFileBox = project.boxGraph.findBox(audioFileUUID)
+                        .unwrapOrElse(() => AudioFileBox.create(project.boxGraph, audioFileUUID, box => {
+                            box.fileName.setValue(regionData.file.fileName || 'audio.wav')
+                        }))
+                    
+                    AudioRegionBox.create(project.boxGraph, UUID.generate(), box => {
+                        box.position.setValue(regionData.position || 0)
+                        box.duration.setValue(regionData.duration || properDuration)
+                        box.loopDuration.setValue(regionData.loopDuration || regionData.duration || properDuration)
+                        box.loopOffset.setValue(regionData.loopOffset || 0)
+                        box.hue.setValue(regionData.hue || ColorCodes.forTrackType(0))
+                        box.label.setValue(regionData.label || 'Audio Region')
+                        box.mute.setValue(regionData.mute || false)
+                        box.gain.setValue(regionData.gain || 1.0)
+                        box.file.refer(audioFileBox)
+                        box.regions.refer(trackBox.regions);
+                        (box as any)._originalType = 'AudioRegionBox'
+                    })
+                }
+                
+                console.log(`✅ Added ${trackData.audioRegions.length} audio regions to track: ${trackData.name}`)
+            })
+        } catch (error) {
+            console.error('❌ Failed to add audio regions to track:', error)
+        }
+    }
+
+    /**
+     * Get audio duration from manifest data
+     */
+    private async getAudioDurationFromManifest(audioFileUUID: string): Promise<number> {
+        try {
+            // Use the SupabaseSampleAPI to get sample info
+            const {SupabaseSampleAPI} = await import('@/service/SupabaseSampleAPI')
+            const sampleAPI = SupabaseSampleAPI.get()
+            const sample = await sampleAPI.get(audioFileUUID as any)
+            return sample.duration || 20.0 // Fallback to 20 seconds if not found
+        } catch (error) {
+            console.warn(`⚠️ Could not get audio duration for ${audioFileUUID}, using default 20s:`, error)
+            return 20.0 // Default fallback
+        }
+    }
+
+    /**
+     * Get project BPM
+     */
+    private getProjectBPM(project: Project): number {
+        try {
+            const bpm = project.bpm
+            console.log(`🎵 [PROJECT-BPM] Retrieved project BPM: ${bpm}`)
+            return bpm
+        } catch (error) {
+            console.warn(`⚠️ Could not get project BPM, using default 120: ${error}`)
+            return 120 // Default BPM fallback
+        }
+    }
+    
     private findTrackByNameInProject(project: Project, trackName: string): any {
         try {
             for (const audioUnitPointer of project.rootBox.audioUnits.pointerHub.incoming()) {
@@ -1956,6 +2137,52 @@ export class StudioService implements ProjectEnv {
         this.switchScreen("default")
     }
 
+    private completeSongCreation(): void {
+        // Guard against multiple completion attempts
+        if (this.layout.songCreationProgress.getValue() === 100) {
+            console.log('🎵 Song creation already completed, skipping duplicate completion')
+            return
+        }
+        
+        console.log('🎵 Completing song creation')
+        this.layout.songCreationProgress.setValue(100)
+        setTimeout(() => {
+            this.hidePrompter()
+        }, 1000) // Wait 1 second at 100%
+    }
+
+    /**
+     * Save project in background without blocking UI
+     */
+    private async saveProjectInBackground(): Promise<void> {
+        try {
+            // Get current profile and log its state
+            const currentProfile = this.profileService?.getValue()
+            console.log('🔍 [SONG-AUTOSAVE] Current profile exists:', currentProfile ? 'Yes' : 'No')
+            
+            if (currentProfile && 'unwrap' in currentProfile) {
+                const profile = currentProfile.unwrap()
+                console.log('📊 [SONG-AUTOSAVE] Project state - saved:', profile.saved(), 'name:', profile.meta?.name)
+                
+                // Save based on project state
+                if (!profile.saved()) {
+                    console.log('🆕 [SONG-AUTOSAVE] New project detected, using saveAsDef()')
+                    await this.saveAsDef()
+                } else {
+                    console.log('💾 [SONG-AUTOSAVE] Existing project, using regular save()')
+                    await this.save()
+                }
+                
+                console.log('✅ [SONG-AUTOSAVE] Background save completed')
+            } else {
+                console.warn('⚠️ [SONG-AUTOSAVE] No active profile available')
+            }
+        } catch (error) {
+            console.error('❌ [SONG-AUTOSAVE] Background save failed:', error)
+            throw error // Re-throw so caller's catch can log it
+        }
+    }
+
     private async executeToolCallsWithSecretAddress(
         secretAddress: string,
         userId: string,
@@ -1964,6 +2191,11 @@ export class StudioService implements ProjectEnv {
         isBringUpDrums?: boolean,
         searchQuery?: string
     ): Promise<void> {
+        // Guard against multiple completion attempts
+        if (this.layout.songCreationProgress.getValue() === 100) {
+            console.log('🎵 Song creation already completed, skipping duplicate execution')
+            return
+        }
         try {
             console.log('🔧 [DEBUG] Executing tools with secure payload')
             console.log('🔧 [DEBUG] isBringUpDrums:', isBringUpDrums, 'searchQuery:', searchQuery)
@@ -2026,62 +2258,50 @@ export class StudioService implements ProjectEnv {
                     } else {
                         console.log('🎵 Song creator finished - no more tools to execute')
                         
-                        // Trigger automatic save to cloud (similar to chatbot completion)
-                        console.log('💾 [SONG-AUTOSAVE] Song creation complete, checking project state...')
-                        try {
-                            // Get current profile and log its state
-                            const currentProfile = this.profileService?.getValue()
-                            console.log('🔍 [SONG-AUTOSAVE] Current profile exists:', currentProfile ? 'Yes' : 'No')
-                            
-                            if (currentProfile && 'unwrap' in currentProfile) {
-                                const profile = currentProfile.unwrap()
-                                console.log('📊 [SONG-AUTOSAVE] Project state - saved:', profile.saved(), 'name:', profile.meta?.name)
-                                
-                                // Log the entire profile for debugging
-                                console.log('📋 [SONG-AUTOSAVE] Full profile state:', {
-                                    saved: profile.saved(),
-                                    hasChanges: profile.hasChanges(),
-                                    meta: profile.meta,
-                                    uuid: profile.uuid
-                                })
-                                
-                                // Save based on project state
-                                if (!profile.saved()) {
-                                    console.log('🆕 [SONG-AUTOSAVE] New project detected, using saveAsDef()')
-                                    await this.saveAsDef()
-                                } else {
-                                    console.log('💾 [SONG-AUTOSAVE] Existing project, using regular save()')
-                                    await this.save()
-                                }
-                                
-                                // Verify the state after save
-                                const updatedProfile = this.profileService?.getValue()
-                                if (updatedProfile && 'unwrap' in updatedProfile) {
-                                    const updated = updatedProfile.unwrap()
-                                    console.log('✅ [SONG-AUTOSAVE] After save - saved:', updated.saved(), 'name:', updated.meta?.name)
-                                }
-                            } else {
-                                console.warn('⚠️ [SONG-AUTOSAVE] No active profile available')
-                            }
-                        } catch (error) {
-                            console.error('❌ [SONG-AUTOSAVE] Auto-save failed:', error)
-                            // Don't throw - save failure shouldn't break the song creation completion
-                        }
+                        // Complete loading and hide prompter FIRST (don't wait for save)
+                        console.log('🎵 All song creation iterations completed')
+                        this.completeSongCreation()
+                        
+                        // Trigger automatic save to cloud in background (non-blocking)
+                        console.log('💾 [SONG-AUTOSAVE] Song creation complete, saving in background...')
+                        // Don't await - let it happen in background without blocking UI
+                        this.saveProjectInBackground().catch(error => {
+                            console.error('❌ [SONG-AUTOSAVE] Background save failed:', error)
+                            // Error doesn't affect user experience - already at 100%
+                        })
                     }
                 } else {
                     console.error('❌ Song creator follow-up failed:', followupResponse.status)
+                    
+                    // Complete loading even if follow-up failed
+                    console.log('🎵 Song creation completed with errors')
+                    this.completeSongCreation()
                 }
             } else {
                 console.error('❌ Tool execution failed:', toolResults.message)
+                
+                // Complete loading even if tool execution failed
+                console.log('🎵 Song creation completed with tool execution errors')
+                this.completeSongCreation()
             }
             
         } catch (error) {
             console.error('❌ Tool execution error:', error)
+            
+            // Complete loading even if there was an error
+            console.log('🎵 Song creation completed with errors')
+            this.completeSongCreation()
         }
     }
 
     async handleSongPrompt(prompt: string): Promise<void> {
         console.log('🎵 Song prompt received:', prompt)
+        
+        // Guard against multiple song creation attempts
+        if (this.layout.isSongCreating.getValue()) {
+            console.log('🎵 Song creation already in progress, ignoring duplicate request')
+            return
+        }
         
         try {
             // Start loading state
@@ -2179,59 +2399,21 @@ export class StudioService implements ProjectEnv {
                 
                 // Complete loading and hide prompter after delay (only after ALL iterations are done)
                 console.log('🎵 All song creation iterations completed')
-                this.layout.songCreationProgress.setValue(100)
-                setTimeout(() => {
-                    this.hidePrompter()
-                }, 1000) // Wait 1 second at 100%
+                this.completeSongCreation()
             } else if (result.success) {
                 console.log('✅ Song creation completed:', result.message)
-                this.layout.songCreationProgress.setValue(100)
                 
-                // Trigger automatic save to cloud (similar to chatbot completion)
-                console.log('💾 [SONG-AUTOSAVE] Song creation complete, checking project state...')
-                try {
-                    // Get current profile and log its state
-                    const currentProfile = this.profileService?.getValue()
-                    console.log('🔍 [SONG-AUTOSAVE] Current profile exists:', currentProfile ? 'Yes' : 'No')
-                    
-                    if (currentProfile && 'unwrap' in currentProfile) {
-                        const profile = currentProfile.unwrap()
-                        console.log('📊 [SONG-AUTOSAVE] Project state - saved:', profile.saved(), 'name:', profile.meta?.name)
-                        
-                        // Log the entire profile for debugging
-                        console.log('📋 [SONG-AUTOSAVE] Full profile state:', {
-                            saved: profile.saved(),
-                            hasChanges: profile.hasChanges(),
-                            meta: profile.meta,
-                            uuid: profile.uuid
-                        })
-                        
-                        // Save based on project state
-                        if (!profile.saved()) {
-                            console.log('🆕 [SONG-AUTOSAVE] New project detected, using saveAsDef()')
-                            await this.saveAsDef()
-                        } else {
-                            console.log('💾 [SONG-AUTOSAVE] Existing project, using regular save()')
-                            await this.save()
-                        }
-                        
-                        // Verify the state after save
-                        const updatedProfile = this.profileService?.getValue()
-                        if (updatedProfile && 'unwrap' in updatedProfile) {
-                            const updated = updatedProfile.unwrap()
-                            console.log('✅ [SONG-AUTOSAVE] After save - saved:', updated.saved(), 'name:', updated.meta?.name)
-                        }
-                    } else {
-                        console.warn('⚠️ [SONG-AUTOSAVE] No active profile available')
-                    }
-                } catch (error) {
-                    console.error('❌ [SONG-AUTOSAVE] Auto-save failed:', error)
-                    // Don't throw - save failure shouldn't break the song creation completion
-                }
+                // Complete loading and hide prompter FIRST (don't wait for save)
+                console.log('🎵 All song creation iterations completed')
+                this.completeSongCreation()
                 
-                setTimeout(() => {
-                    this.hidePrompter()
-                }, 1000) // Wait 1 second at 100%
+                // Trigger automatic save to cloud in background (non-blocking)
+                console.log('💾 [SONG-AUTOSAVE] Song creation complete, saving in background...')
+                // Don't await - let it happen in background without blocking UI
+                this.saveProjectInBackground().catch(error => {
+                    console.error('❌ [SONG-AUTOSAVE] Background save failed:', error)
+                    // Error doesn't affect user experience - already at 100%
+                })
             } else {
                 throw new Error(result.error || 'Song creation failed')
             }
