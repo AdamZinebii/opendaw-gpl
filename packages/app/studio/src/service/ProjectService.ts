@@ -55,11 +55,12 @@ export class ProjectService {
         try {
             this._loading.setValue(true)
             
-            // Query user's projects
+            // Query user's projects (exclude deleted projects)
             const { data, error } = await this.supabase
                 .from('projects')
                 .select('id, user_id, name, description, updated_at, last_opened_at, status')
                 .eq('user_id', userId)
+                .neq('status', 'deleted')
                 .order('updated_at', { ascending: false })
 
             if (error) throw error

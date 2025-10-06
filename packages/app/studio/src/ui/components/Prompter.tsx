@@ -70,8 +70,8 @@ export const Prompter = ({lifecycle, onStartFromScratch, onSubmitPrompt, isCreat
     }
 
     const presetPrompts = [
-        "A chill lo-fi hip hop beat with piano and soft drums",
-        "An energetic EDM track with synth leads and powerful bass",
+        "A Dark Trap beat with heavy 808s and melancholic piano",
+        "A happy commercial pop beat with happy and energetci melodies",
         "A calm acoustic song with guitar and light percussion"
     ]
 
