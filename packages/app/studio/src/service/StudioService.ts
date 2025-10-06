@@ -2151,38 +2151,6 @@ export class StudioService implements ProjectEnv {
         }, 1000) // Wait 1 second at 100%
     }
 
-    /**
-     * Save project in background without blocking UI
-     */
-    private async saveProjectInBackground(): Promise<void> {
-        try {
-            // Get current profile and log its state
-            const currentProfile = this.profileService?.getValue()
-            console.log('🔍 [SONG-AUTOSAVE] Current profile exists:', currentProfile ? 'Yes' : 'No')
-            
-            if (currentProfile && 'unwrap' in currentProfile) {
-                const profile = currentProfile.unwrap()
-                console.log('📊 [SONG-AUTOSAVE] Project state - saved:', profile.saved(), 'name:', profile.meta?.name)
-                
-                // Save based on project state
-                if (!profile.saved()) {
-                    console.log('🆕 [SONG-AUTOSAVE] New project detected, using saveAsDef()')
-                    await this.saveAsDef()
-                } else {
-                    console.log('💾 [SONG-AUTOSAVE] Existing project, using regular save()')
-                    await this.save()
-                }
-                
-                console.log('✅ [SONG-AUTOSAVE] Background save completed')
-            } else {
-                console.warn('⚠️ [SONG-AUTOSAVE] No active profile available')
-            }
-        } catch (error) {
-            console.error('❌ [SONG-AUTOSAVE] Background save failed:', error)
-            throw error // Re-throw so caller's catch can log it
-        }
-    }
-
     private async executeToolCallsWithSecretAddress(
         secretAddress: string,
         userId: string,
@@ -2258,17 +2226,55 @@ export class StudioService implements ProjectEnv {
                     } else {
                         console.log('🎵 Song creator finished - no more tools to execute')
                         
-                        // Complete loading and hide prompter FIRST (don't wait for save)
+                        // Complete loading FIRST, before saving (so progress bar always reaches 100%)
                         console.log('🎵 All song creation iterations completed')
                         this.completeSongCreation()
                         
-                        // Trigger automatic save to cloud in background (non-blocking)
+                        // Trigger automatic save to cloud in background (don't block completion)
                         console.log('💾 [SONG-AUTOSAVE] Song creation complete, saving in background...')
-                        // Don't await - let it happen in background without blocking UI
-                        this.saveProjectInBackground().catch(error => {
-                            console.error('❌ [SONG-AUTOSAVE] Background save failed:', error)
-                            // Error doesn't affect user experience - already at 100%
-                        })
+                        
+                        // Don't await - let it run in background without blocking completion
+                        void (async () => {
+                            try {
+                                // Get current profile and log its state
+                                const currentProfile = this.profileService?.getValue()
+                                console.log('🔍 [SONG-AUTOSAVE] Current profile exists:', currentProfile ? 'Yes' : 'No')
+                                
+                                if (currentProfile && 'unwrap' in currentProfile) {
+                                    const profile = currentProfile.unwrap()
+                                    console.log('📊 [SONG-AUTOSAVE] Project state - saved:', profile.saved(), 'name:', profile.meta?.name)
+                                    
+                                    // Log the entire profile for debugging
+                                    console.log('📋 [SONG-AUTOSAVE] Full profile state:', {
+                                        saved: profile.saved(),
+                                        hasChanges: profile.hasChanges(),
+                                        meta: profile.meta,
+                                        uuid: profile.uuid
+                                    })
+                                    
+                                    // Save based on project state
+                                    if (!profile.saved()) {
+                                        console.log('🆕 [SONG-AUTOSAVE] New project detected, using saveAsDef()')
+                                        await this.saveAsDef()
+                                    } else {
+                                        console.log('💾 [SONG-AUTOSAVE] Existing project, using regular save()')
+                                        await this.save()
+                                    }
+                                    
+                                    // Verify the state after save
+                                    const updatedProfile = this.profileService?.getValue()
+                                    if (updatedProfile && 'unwrap' in updatedProfile) {
+                                        const updated = updatedProfile.unwrap()
+                                        console.log('✅ [SONG-AUTOSAVE] After save - saved:', updated.saved(), 'name:', updated.meta?.name)
+                                    }
+                                } else {
+                                    console.warn('⚠️ [SONG-AUTOSAVE] No active profile available')
+                                }
+                            } catch (error) {
+                                console.error('❌ [SONG-AUTOSAVE] Auto-save failed:', error)
+                                // Save failure won't affect user experience since completion already happened
+                            }
+                        })()
                     }
                 } else {
                     console.error('❌ Song creator follow-up failed:', followupResponse.status)
@@ -2403,17 +2409,54 @@ export class StudioService implements ProjectEnv {
             } else if (result.success) {
                 console.log('✅ Song creation completed:', result.message)
                 
-                // Complete loading and hide prompter FIRST (don't wait for save)
-                console.log('🎵 All song creation iterations completed')
+                // Complete loading FIRST, before saving (so progress bar always reaches 100%)
                 this.completeSongCreation()
                 
-                // Trigger automatic save to cloud in background (non-blocking)
+                // Trigger automatic save to cloud in background (don't block completion)
                 console.log('💾 [SONG-AUTOSAVE] Song creation complete, saving in background...')
-                // Don't await - let it happen in background without blocking UI
-                this.saveProjectInBackground().catch(error => {
-                    console.error('❌ [SONG-AUTOSAVE] Background save failed:', error)
-                    // Error doesn't affect user experience - already at 100%
-                })
+                
+                // Don't await - let it run in background without blocking completion
+                void (async () => {
+                    try {
+                        // Get current profile and log its state
+                        const currentProfile = this.profileService?.getValue()
+                        console.log('🔍 [SONG-AUTOSAVE] Current profile exists:', currentProfile ? 'Yes' : 'No')
+                        
+                        if (currentProfile && 'unwrap' in currentProfile) {
+                            const profile = currentProfile.unwrap()
+                            console.log('📊 [SONG-AUTOSAVE] Project state - saved:', profile.saved(), 'name:', profile.meta?.name)
+                            
+                            // Log the entire profile for debugging
+                            console.log('📋 [SONG-AUTOSAVE] Full profile state:', {
+                                saved: profile.saved(),
+                                hasChanges: profile.hasChanges(),
+                                meta: profile.meta,
+                                uuid: profile.uuid
+                            })
+                            
+                            // Save based on project state
+                            if (!profile.saved()) {
+                                console.log('🆕 [SONG-AUTOSAVE] New project detected, using saveAsDef()')
+                                await this.saveAsDef()
+                            } else {
+                                console.log('💾 [SONG-AUTOSAVE] Existing project, using regular save()')
+                                await this.save()
+                            }
+                            
+                            // Verify the state after save
+                            const updatedProfile = this.profileService?.getValue()
+                            if (updatedProfile && 'unwrap' in updatedProfile) {
+                                const updated = updatedProfile.unwrap()
+                                console.log('✅ [SONG-AUTOSAVE] After save - saved:', updated.saved(), 'name:', updated.meta?.name)
+                            }
+                        } else {
+                            console.warn('⚠️ [SONG-AUTOSAVE] No active profile available')
+                        }
+                    } catch (error) {
+                        console.error('❌ [SONG-AUTOSAVE] Auto-save failed:', error)
+                        // Save failure won't affect user experience since completion already happened
+                    }
+                })()
             } else {
                 throw new Error(result.error || 'Song creation failed')
             }
