@@ -1,5 +1,14 @@
 {
   "$schema": "https://turborepo.com/schema.json",
+  "globalEnv": [
+    "VITE_SUPABASE_URL",
+    "VITE_SUPABASE_ANON_KEY",
+    "VITE_API_BASE_URL",
+    "VITE_PROJECTS_QUERY",
+    "VITE_DELETE_PROJECT_QUERY",
+    "VITE_SEC_001",
+    "VITE_SEC_002"
+  ],
   "tasks": {
     "build": {
       "dependsOn": [
