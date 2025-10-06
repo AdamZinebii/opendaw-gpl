@@ -31,7 +31,25 @@ export const InstrumentSelector = ({lifecycle, service, adapter}: Construct) => 
     const sampleSelector = new SampleSelector(service, SampleSelectStrategy.forPointerField(adapter.box.file))
     
     const currentInstrumentLabel: HTMLElement = <span className="current-instrument">Rhode</span>
-    const dropdown: HTMLElement = <div className="dropdown"/>
+    
+    // Create dropdown manually to attach to body
+    const dropdown = document.createElement('div')
+    dropdown.className = 'dropdown'
+    dropdown.style.position = 'fixed'
+    dropdown.style.background = 'rgba(30, 30, 35, 0.98)'
+    dropdown.style.border = '1px solid rgba(255, 255, 255, 0.15)'
+    dropdown.style.borderRadius = '8px'
+    dropdown.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2)'
+    dropdown.style.backdropFilter = 'blur(20px)'
+    dropdown.style.zIndex = '99999'
+    dropdown.style.maxHeight = '0'
+    dropdown.style.width = '0'
+    dropdown.style.overflow = 'hidden'
+    dropdown.style.opacity = '0'
+    dropdown.style.visibility = 'hidden'
+    dropdown.style.transition = 'opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s 0.2s'
+    dropdown.style.pointerEvents = 'none'
+    
     let isDropdownOpen = false
     
     const selectInstrument = async (sample: typeof availableSamples[0]) => {
@@ -56,30 +74,65 @@ export const InstrumentSelector = ({lifecycle, service, adapter}: Construct) => 
         }
     }
     
+    const updateDropdownPosition = () => {
+        if (!isDropdownOpen) return
+        const buttonRect = button.getBoundingClientRect()
+        dropdown.style.top = `${buttonRect.bottom + 2}px`
+        dropdown.style.left = `${buttonRect.left}px`
+    }
+    
     const openDropdown = () => {
         isDropdownOpen = true
         Html.empty(dropdown)
         
         availableSamples.forEach(sample => {
-            const item: HTMLElement = (
-                <div className="dropdown-item" onclick={() => selectInstrument(sample)}>
-                    {sample.name}
-                </div>
-            )
+            const item = document.createElement('div')
+            item.className = 'dropdown-item'
+            item.textContent = sample.name
+            item.style.padding = '8px 12px'
+            item.style.fontSize = '11px'
+            item.style.color = 'rgba(255, 255, 255, 0.8)'
+            item.style.cursor = 'pointer'
+            item.style.transition = 'all 0.15s ease'
+            item.style.borderBottom = '1px solid rgba(255, 255, 255, 0.05)'
+            item.onclick = () => selectInstrument(sample)
+            
+            item.onmouseenter = () => {
+                item.style.background = 'rgba(255, 200, 100, 0.15)'
+                item.style.color = 'rgba(255, 200, 100, 1)'
+                item.style.paddingLeft = '16px'
+            }
+            item.onmouseleave = () => {
+                item.style.background = 'transparent'
+                item.style.color = 'rgba(255, 255, 255, 0.8)'
+                item.style.paddingLeft = '12px'
+            }
+            
             dropdown.appendChild(item)
         })
         
         // Position dropdown below button
-        const buttonRect = button.getBoundingClientRect()
-        dropdown.style.top = `${buttonRect.bottom + 2}px`
-        dropdown.style.left = `${buttonRect.left}px`
+        updateDropdownPosition()
         
-        dropdown.classList.add('open')
+        // Show dropdown
+        dropdown.style.maxHeight = '200px'
+        dropdown.style.width = '150px'
+        dropdown.style.opacity = '1'
+        dropdown.style.visibility = 'visible'
+        dropdown.style.overflowY = 'auto'
+        dropdown.style.overflowX = 'hidden'
+        dropdown.style.pointerEvents = 'auto'
+        dropdown.style.transition = 'opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
     }
     
     const closeDropdown = () => {
         isDropdownOpen = false
-        dropdown.classList.remove('open')
+        dropdown.style.maxHeight = '0'
+        dropdown.style.width = '0'
+        dropdown.style.opacity = '0'
+        dropdown.style.visibility = 'hidden'
+        dropdown.style.pointerEvents = 'none'
+        dropdown.style.transition = 'opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s 0.2s'
         Html.empty(dropdown)
     }
     
@@ -104,9 +157,11 @@ export const InstrumentSelector = ({lifecycle, service, adapter}: Construct) => 
     const element: HTMLElement = (
         <div className={className}>
             {button}
-            {dropdown}
         </div>
     )
+    
+    // Attach dropdown to body to escape parent z-index context
+    document.body.appendChild(dropdown)
     
     // Update label when sample changes
     lifecycle.ownAll(
@@ -117,12 +172,34 @@ export const InstrumentSelector = ({lifecycle, service, adapter}: Construct) => 
     )
     
     // Close dropdown when clicking outside
-    lifecycle.own(
+    lifecycle.ownAll(
         Events.subscribe(document, "click", (event) => {
-            if (!element.contains(event.target as Node)) {
+            if (!element.contains(event.target as Node) && !dropdown.contains(event.target as Node)) {
                 closeDropdown()
             }
-        })
+        }),
+        // Update dropdown position on scroll
+        Events.subscribe(window, "scroll", updateDropdownPosition, true),
+        Events.subscribe(window, "resize", updateDropdownPosition),
+        // Prevent scroll propagation from dropdown
+        Events.subscribe(dropdown, "wheel", (event) => {
+            event.stopPropagation()
+            const target = event.currentTarget as HTMLElement
+            const atTop = target.scrollTop === 0
+            const atBottom = target.scrollTop + target.clientHeight >= target.scrollHeight
+            
+            if ((atTop && event.deltaY < 0) || (atBottom && event.deltaY > 0)) {
+                event.preventDefault()
+            }
+        }),
+        // Cleanup: remove dropdown from body on terminate
+        {
+            terminate: () => {
+                if (dropdown.parentElement === document.body) {
+                    document.body.removeChild(dropdown)
+                }
+            }
+        }
     )
     
     return element
