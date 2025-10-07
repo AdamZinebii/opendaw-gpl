@@ -70,9 +70,9 @@ export const Prompter = ({lifecycle, onStartFromScratch, onSubmitPrompt, isCreat
     }
 
     const presetPrompts = [
-        "A Dark Trap beat with heavy 808s and melancholic piano",
-        "A happy commercial pop beat with happy and energetci melodies",
-        "A calm acoustic song with guitar and light percussion"
+        "Trap beat with aggressive mood",
+        "A happy commercial pop beat with happy and energetic melodies",
+        "A jazz beat with smooth and relaxed mood"
     ]
 
     const handlePresetClick = (prompt: string) => {
