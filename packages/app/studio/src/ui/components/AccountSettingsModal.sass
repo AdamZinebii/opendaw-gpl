@@ -1,0 +1,226 @@
+@use "@/colors"
+
+component
+  position: fixed
+  top: 0
+  left: 0
+  right: 0
+  bottom: 0
+  background: rgba(0, 0, 0, 0.7)
+  backdrop-filter: blur(4px)
+  display: flex
+  align-items: center
+  justify-content: center
+  z-index: 10000
+  animation: fadeIn 0.2s ease-out
+    
+  .modal-content
+    background: var(--panel-background)
+    border: 1px solid var(--border-subtle)
+    border-radius: 8px
+    width: 500px
+    max-width: 90vw
+    max-height: 90vh
+    overflow-y: auto
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6)
+    animation: slideUp 0.3s ease-out
+    
+  .modal-header
+    padding: 1.25rem 1.5rem
+    display: flex
+    align-items: center
+    justify-content: space-between
+    border-bottom: 1px solid var(--border-subtle)
+    
+    h3
+      margin: 0
+      color: var(--color-bright)
+      font-size: 1.125rem
+      font-weight: 600
+      
+    .close-button
+      background: none
+      border: none
+      color: var(--color-shadow)
+      font-size: 1.75rem
+      cursor: pointer
+      padding: 0
+      width: 28px
+      height: 28px
+      display: flex
+      align-items: center
+      justify-content: center
+      border-radius: 4px
+      transition: all 0.15s ease
+      line-height: 1
+      
+      &:hover
+        color: var(--color-bright)
+        background: var(--panel-background-bright)
+        
+  .modal-body
+    padding: 1.5rem
+    
+  .error-message
+    background: rgba(200, 50, 50, 0.15)
+    border: 1px solid rgba(200, 50, 50, 0.3)
+    color: var(--color-red)
+    padding: 0.75rem 1rem
+    border-radius: 4px
+    margin-bottom: 1.25rem
+    font-size: 0.85rem
+    line-height: 1.5
+    opacity: 0
+    transform: translateY(-10px)
+    transition: all 0.3s ease
+    
+    &.visible
+      opacity: 1
+      transform: translateY(0)
+      
+    &.success
+      background: rgba(50, 200, 50, 0.15)
+      border-color: rgba(50, 200, 50, 0.3)
+      color: var(--color-green)
+
+  .form-group
+    margin-bottom: 1.75rem
+    
+    label
+      display: block
+      font-size: 0.875rem
+      font-weight: 500
+      color: var(--color-bright)
+      margin-bottom: 0.625rem
+      letter-spacing: 0.01em
+      
+    .username-input
+      width: 100%
+      padding: 0.75rem 0.875rem
+      font-size: 0.9rem
+      background: var(--panel-background-bright)
+      border: 1px solid var(--border-subtle)
+      border-radius: 4px
+      color: var(--color-bright)
+      transition: all 0.2s ease
+      font-family: inherit
+      
+      &:focus
+        outline: none
+        background: var(--panel-background-bright)
+        border-color: var(--color-blue)
+        box-shadow: 0 0 0 2px rgba(100, 149, 237, 0.15)
+        
+      &::placeholder
+        color: var(--color-shadow)
+        
+    .field-hint
+      margin: 0.5rem 0 0 0
+      font-size: 0.75rem
+      color: var(--color-shadow)
+      line-height: 1.4
+
+  .skill-options
+    display: grid
+    grid-template-columns: repeat(3, 1fr)
+    gap: 0.5rem
+    
+  .skill-option
+    background: var(--panel-background-bright)
+    border: 1px solid var(--border-subtle)
+    border-radius: 4px
+    padding: 0.75rem 0.625rem
+    cursor: pointer
+    transition: all 0.2s ease
+    text-align: center
+    position: relative
+      
+    &:hover
+      background: var(--panel-background-bright)
+      border-color: var(--color-dark)
+      
+    &.selected
+      background: var(--panel-background-bright)
+      border-color: var(--color-bright)
+      box-shadow: 0 0 0 1px var(--color-bright)
+        
+    &:active
+      transform: translateY(0)
+      
+    .skill-name
+      font-size: 0.875rem
+      font-weight: 500
+      color: var(--color-bright)
+      margin-bottom: 0.25rem
+      
+    .skill-description
+      font-size: 0.7rem
+      color: var(--color-shadow)
+      line-height: 1.3
+
+  .button-group
+    display: flex
+    gap: 0.75rem
+    margin-top: 1.5rem
+    
+    button
+      flex: 1
+      padding: 0.75rem 1.5rem
+      font-size: 0.9rem
+      font-weight: 500
+      border-radius: 4px
+      cursor: pointer
+      transition: all 0.2s ease
+      border: 1px solid
+      
+  .cancel-button
+    background: var(--panel-background-bright)
+    border-color: var(--border-subtle)
+    color: var(--color-bright)
+      
+    &:hover
+      background: var(--panel-background-bright)
+      border-color: var(--color-dark)
+      
+  .submit-button
+    background: var(--color-bright)
+    border-color: var(--color-bright)
+    color: var(--panel-background-dark)
+      
+    &:hover:not(:disabled)
+      opacity: 0.9
+        
+    &:active:not(:disabled)
+      opacity: 0.8
+      
+    &:disabled
+      opacity: 0.4
+      cursor: not-allowed
+
+@keyframes fadeIn
+  from
+    opacity: 0
+  to
+    opacity: 1
+
+@keyframes slideUp
+  from
+    opacity: 0
+    transform: translateY(20px) scale(0.95)
+  to
+    opacity: 1
+    transform: translateY(0) scale(1)
+
+@media (max-width: 640px)
+  .modal-content
+    width: 95vw
+    
+  .skill-options
+    grid-template-columns: 1fr
+    
+  .skill-option
+    padding: 0.875rem 1rem
+    
+  .button-group
+    flex-direction: column-reverse
+

@@ -1,6 +1,15 @@
 import { createClient, User } from '@supabase/supabase-js'
 import { DefaultObservableValue, ObservableValue } from "@opendaw/lib-std"
 
+export interface UserProfile {
+    id: string
+    email: string
+    username: string | null
+    skill_level: 'beginner' | 'amateur' | 'professional' | null
+    onboarding_completed: boolean
+    display_name: string | null
+}
+
 export class AuthService {
     // Environment variables - these must be set in .env files
     private static readonly SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || ''
@@ -9,6 +18,7 @@ export class AuthService {
     private readonly supabase
     private readonly _user = new DefaultObservableValue<User | null>(null)
     private readonly _loading = new DefaultObservableValue<boolean>(true)
+    private readonly _userProfile = new DefaultObservableValue<UserProfile | null>(null)
     
     constructor() {
         if (!AuthService.SUPABASE_URL || !AuthService.SUPABASE_ANON_KEY) {
@@ -49,6 +59,9 @@ export class AuthService {
                 } catch (e) {
                     console.error('❌ auth_on_login RPC failed:', e)
                 }
+                
+                // Load user profile
+                await this.loadUserProfile(session.user.id)
             }
             
             // Listen to auth changes
@@ -73,6 +86,9 @@ export class AuthService {
                     } catch (e) {
                         console.error('❌ auth_on_login RPC failed:', e)
                     }
+                    
+                    // Load user profile
+                    await this.loadUserProfile(session.user.id)
                 } else {
                     console.log('🔐 Auth state change - calling auth_on_logout RPC')
                     try {
@@ -98,6 +114,10 @@ export class AuthService {
     
     get loading(): ObservableValue<boolean> {
         return this._loading
+    }
+    
+    get userProfile(): ObservableValue<UserProfile | null> {
+        return this._userProfile
     }
     
     // Allow external components to stop loading if needed
@@ -172,5 +192,144 @@ export class AuthService {
     
     getUserAvatar(): string | null {
         return this.getCurrentUser()?.user_metadata?.avatar_url ?? null
+    }
+    
+    /**
+     * Load user profile from database
+     */
+    async loadUserProfile(userId: string): Promise<void> {
+        try {
+            const { data, error } = await this.supabase
+                .from('users')
+                .select('id, email, username, skill_level, onboarding_completed, display_name')
+                .eq('id', userId)
+                .single()
+            
+            if (error) {
+                console.error('❌ Failed to load user profile:', error)
+                return
+            }
+            
+            console.log('✅ User profile loaded:', data)
+            this._userProfile.setValue(data)
+        } catch (error) {
+            console.error('❌ Error loading user profile:', error)
+        }
+    }
+    
+    /**
+     * Check if user needs onboarding
+     */
+    needsOnboarding(): boolean {
+        const profile = this._userProfile.getValue()
+        return profile ? !profile.onboarding_completed : false
+    }
+    
+    /**
+     * Complete user onboarding
+     */
+    async completeOnboarding(data: {
+        username: string
+        skill_level: 'beginner' | 'amateur' | 'professional'
+    }): Promise<{ success: boolean; error?: string }> {
+        const user = this.getCurrentUser()
+        if (!user) {
+            return { success: false, error: 'No authenticated user' }
+        }
+        
+        try {
+            // Check if username is already taken
+            const { data: existing } = await this.supabase
+                .from('users')
+                .select('id')
+                .ilike('username', data.username)
+                .neq('id', user.id)
+                .maybeSingle()
+            
+            if (existing) {
+                return { success: false, error: 'Username already taken' }
+            }
+            
+            // Update user profile
+            const { error } = await this.supabase
+                .from('users')
+                .update({
+                    username: data.username,
+                    skill_level: data.skill_level,
+                    onboarding_completed: true,
+                    onboarding_completed_at: new Date().toISOString(),
+                    display_name: data.username
+                })
+                .eq('id', user.id)
+            
+            if (error) {
+                console.error('❌ Failed to complete onboarding:', error)
+                return { success: false, error: error.message }
+            }
+            
+            // Reload profile
+            await this.loadUserProfile(user.id)
+            
+            console.log('✅ Onboarding completed successfully')
+            return { success: true }
+        } catch (error) {
+            console.error('❌ Error completing onboarding:', error)
+            return { success: false, error: String(error) }
+        }
+    }
+    
+    /**
+     * Update user profile (username and skill level)
+     */
+    async updateProfile(data: {
+        username: string
+        skill_level: 'beginner' | 'amateur' | 'professional'
+    }): Promise<{ success: boolean; error?: string }> {
+        const user = this.getCurrentUser()
+        if (!user) {
+            return { success: false, error: 'No authenticated user' }
+        }
+        
+        try {
+            // Check if username is already taken (if changed)
+            const currentProfile = this._userProfile.getValue()
+            if (currentProfile && data.username.toLowerCase() !== currentProfile.username?.toLowerCase()) {
+                const { data: existing } = await this.supabase
+                    .from('users')
+                    .select('id')
+                    .ilike('username', data.username)
+                    .neq('id', user.id)
+                    .maybeSingle()
+                
+                if (existing) {
+                    return { success: false, error: 'Username already taken' }
+                }
+            }
+            
+            // Update user profile
+            const { error } = await this.supabase
+                .from('users')
+                .update({
+                    username: data.username,
+                    skill_level: data.skill_level,
+                    display_name: data.username,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', user.id)
+            
+            if (error) {
+                console.error('❌ Failed to update profile:', error)
+                return { success: false, error: error.message }
+            }
+            
+            // Reload profile
+            await this.loadUserProfile(user.id)
+            
+            console.log('✅ Profile updated successfully')
+            return { success: true }
+        } catch (error) {
+            console.error('❌ Error updating profile:', error)
+            return { success: false, error: String(error) }
+        }
     }
 }

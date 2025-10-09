@@ -4,6 +4,7 @@ import {WorkspacePage} from "@/ui/workspace/WorkspacePage.tsx"
 import {StudioService} from "@/service/StudioService.ts"
 import {AuthService} from "@/service/AuthService"
 import {LoginPage} from "@/ui/pages/LoginPage"
+import {OnboardingPage} from "@/ui/pages/OnboardingPage"
 import {ComponentsPage} from "@/ui/pages/ComponentsPage.tsx"
 import {IconsPage} from "@/ui/pages/IconsPage.tsx"
 import {AutomationPage} from "@/ui/pages/AutomationPage.tsx"
@@ -146,6 +147,21 @@ VITE_SUPABASE_ANON_KEY=your-anon-key`}
         container.replaceChildren(loginElement)
     }
 
+    const showOnboardingScreen = () => {
+        currentState = 'onboarding'
+        const onboardingElement = (
+            <OnboardingPage 
+                lifecycle={new Terminator()} 
+                authService={authService!}
+                onComplete={() => {
+                    // Onboarding completed, profile will update and trigger re-render
+                    console.log('✅ Onboarding completed, transitioning to main app')
+                }}
+            />
+        ) as HTMLElement
+        container.replaceChildren(onboardingElement)
+    }
+
     const showMainApp = (user: any) => {
         if (currentState === 'main-app') {
             return
@@ -191,11 +207,23 @@ VITE_SUPABASE_ANON_KEY=your-anon-key`}
     const handleAuthChange = () => {
         const user = authService!.getCurrentUser()
         const loading = authService!.loading.getValue()
+        const userProfile = authService!.userProfile.getValue()
         
         if (loading) {
             showLoadingScreen()
         } else if (user) {
-            showMainApp(user)
+            // Check if user needs onboarding
+            if (userProfile && !userProfile.onboarding_completed) {
+                console.log('👤 User needs onboarding')
+                showOnboardingScreen()
+            } else if (userProfile && userProfile.onboarding_completed) {
+                console.log('✅ User onboarded, showing main app')
+                showMainApp(user)
+            } else {
+                // Profile not loaded yet, show loading
+                console.log('⏳ Waiting for user profile to load...')
+                showLoadingScreen()
+            }
         } else {
             // Cleanup MainApp if user logged out
             if (mainAppTerminator) {
@@ -210,6 +238,7 @@ VITE_SUPABASE_ANON_KEY=your-anon-key`}
     // Subscribe to auth changes (only once)
     authService.user.catchupAndSubscribe(handleAuthChange)
     authService.loading.catchupAndSubscribe(handleAuthChange)
+    authService.userProfile.catchupAndSubscribe(handleAuthChange)
     
     // Initial state
     handleAuthChange()

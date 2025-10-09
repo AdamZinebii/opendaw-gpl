@@ -16,6 +16,7 @@ import {Html} from "@opendaw/lib-dom"
 import {MenuItem} from "@/ui/model/menu-item"
 import {Colors, MidiDevices} from "@opendaw/studio-core"
 import {Manuals} from "@/ui/pages/Manuals"
+import {AccountSettingsModal} from "@/ui/components/AccountSettingsModal"
 
 const className = Html.adoptStyleSheet(css, "Header")
 
@@ -126,27 +127,71 @@ export const Header = ({lifecycle, service, authService, chatbotToggle}: Constru
                 </Frag>
             )}
             <div style={{flex: "1 0 0"}}/>
-            {authService && (
-                <Frag>
-                    <hr/>
-                    <Button lifecycle={lifecycle}
-                            onClick={async () => {
-                                console.log('🔐 Sign out clicked')
-                                const { error } = await authService.signOut()
-                                if (error) {
-                                    console.error('Sign out error:', error)
-                                } else {
-                                    console.log('✅ Successfully signed out')
+            {authService && (() => {
+                let modalElement: HTMLElement | null = null
+                
+                const openModal = () => {
+                    if (modalElement) return // Already open
+                    
+                    modalElement = (
+                        <AccountSettingsModal
+                            lifecycle={lifecycle}
+                            authService={authService}
+                            onClose={() => {
+                                if (modalElement) {
+                                    modalElement.remove()
+                                    modalElement = null
                                 }
                             }}
+                        />
+                    ) as HTMLElement
+                    
+                    document.body.appendChild(modalElement)
+                }
+                
+                const profile = authService.userProfile.getValue()
+                const displayName = profile?.username || authService.getUserDisplayName() || 'Account'
+                
+                return (
+                    <Frag>
+                        <hr/>
+                        <MenuButton root={MenuItem.root()
+                            .setRuntimeChildrenProcedure(parent => {
+                                const profile = authService.userProfile.getValue()
+                                return parent.addMenuItem(
+                                    MenuItem.header({
+                                        label: profile?.username || authService.getUserDisplayName() || 'Account',
+                                        icon: IconSymbol.Robot,
+                                        color: Colors.blue
+                                    }),
+                                    MenuItem.default({
+                                        label: "Account Settings",
+                                        separatorBefore: true
+                                    }).setTriggerProcedure(() => openModal()),
+                                    MenuItem.default({
+                                        label: "Sign Out"
+                                    }).setTriggerProcedure(async () => {
+                                        console.log('🔐 Sign out clicked')
+                                        const { error } = await authService.signOut()
+                                        if (error) {
+                                            console.error('Sign out error:', error)
+                                        } else {
+                                            console.log('✅ Successfully signed out')
+                                        }
+                                    })
+                                )
+                            })}
                             appearance={{
-                                activeColor: Colors.red,
-                                tooltip: `Sign out (${authService.getCurrentUser()?.email || 'User'})`
+                                color: Colors.blue,
+                                activeColor: Colors.bright,
+                                tinyTriangle: true,
+                                tooltip: displayName
                             }}>
-                        <Icon symbol={IconSymbol.Close}/>
-                    </Button>
-                </Frag>
-            )}
+                            <span style={{fontSize: "0.875rem", fontWeight: "500"}}>{displayName}</span>
+                        </MenuButton>
+                    </Frag>
+                )
+            })()}
             <hr/>
             <RadioGroup lifecycle={lifecycle}
                         model={new class implements ObservableValue<Nullable<Workspace.ScreenKeys>> {

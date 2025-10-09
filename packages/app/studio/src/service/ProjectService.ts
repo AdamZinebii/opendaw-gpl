@@ -17,10 +17,12 @@ export class ProjectService {
     private readonly _projects = new DefaultObservableValue<Project[]>([])
     private readonly _loading = new DefaultObservableValue<boolean>(false)
     private readonly _currentProject = new DefaultObservableValue<Project | null>(null)
+    private readonly _hasMore = new DefaultObservableValue<boolean>(true)
     
     // Store user_id to reuse throughout the session
     private userId: string | null = null
     private isInitialized = false
+    private readonly PAGE_SIZE = 12
 
     constructor() {
         const url = import.meta.env.VITE_SUPABASE_URL
@@ -50,26 +52,66 @@ export class ProjectService {
 
     get projects() { return this._projects }
     get loading() { return this._loading }
+    get hasMore() { return this._hasMore }
 
     async loadUserProjects(userId: string): Promise<void> {
         try {
             this._loading.setValue(true)
             
             // Query user's projects (exclude deleted projects)
+            // Load first page of projects
             const { data, error } = await this.supabase
                 .from('projects')
                 .select('id, user_id, name, description, updated_at, last_opened_at, status')
                 .eq('user_id', userId)
                 .neq('status', 'deleted')
                 .order('updated_at', { ascending: false })
+                .limit(this.PAGE_SIZE)
 
             if (error) throw error
 
-            console.log(`📊 Loaded ${data?.length || 0} projects`)
+            console.log(`📊 Loaded ${data?.length || 0} projects (page 1)`)
             this._projects.setValue(data || [])
+            this._hasMore.setValue((data?.length || 0) === this.PAGE_SIZE)
         } catch (error) {
             console.error('❌ Failed to load projects:', error)
             this._projects.setValue([])
+            this._hasMore.setValue(false)
+        } finally {
+            this._loading.setValue(false)
+        }
+    }
+
+    async loadMoreProjects(): Promise<void> {
+        if (!this.userId || this._loading.getValue() || !this._hasMore.getValue()) {
+            return
+        }
+
+        try {
+            this._loading.setValue(true)
+            const currentProjects = this._projects.getValue()
+            const offset = currentProjects.length
+
+            console.log(`📊 Loading more projects (offset: ${offset})`)
+
+            const { data, error } = await this.supabase
+                .from('projects')
+                .select('id, user_id, name, description, updated_at, last_opened_at, status')
+                .eq('user_id', this.userId)
+                .neq('status', 'deleted')
+                .order('updated_at', { ascending: false })
+                .range(offset, offset + this.PAGE_SIZE - 1)
+
+            if (error) throw error
+
+            console.log(`📊 Loaded ${data?.length || 0} more projects`)
+            
+            // Append new projects to existing list
+            this._projects.setValue([...currentProjects, ...(data || [])])
+            this._hasMore.setValue((data?.length || 0) === this.PAGE_SIZE)
+        } catch (error) {
+            console.error('❌ Failed to load more projects:', error)
+            this._hasMore.setValue(false)
         } finally {
             this._loading.setValue(false)
         }
@@ -484,6 +526,7 @@ export class ProjectService {
         this._projects.setValue([])
         this._currentProject.setValue(null)
         this._loading.setValue(false)
+        this._hasMore.setValue(true)
         this.userId = null
         this.isInitialized = false
         console.log('🧹 ProjectService: Cleaned up')

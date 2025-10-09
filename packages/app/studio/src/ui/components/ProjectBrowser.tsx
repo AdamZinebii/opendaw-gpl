@@ -15,19 +15,42 @@ type Props = {
 export const ProjectBrowser = ({ lifecycle: _lifecycle, projectService, studioService }: Props) => {
     const container = document.createElement('div')
     container.className = className
+    
+    let loadingTimeoutId: number | null = null
+    let showLoadingIndicator = false
 
     const renderProjects = () => {
         const projects = projectService.projects.getValue()
         const loading = projectService.loading.getValue()
+        const hasMore = projectService.hasMore.getValue()
         
         container.innerHTML = ''
 
-        if (loading) {
-            container.innerHTML = '<div class="loading">Loading projects...</div>'
-            return
+        // Only show loading if it's taking more than 2 seconds AND no projects yet
+        if (loading && projects.length === 0) {
+            if (loadingTimeoutId === null) {
+                // Start timer - only show loading after 2 seconds
+                loadingTimeoutId = window.setTimeout(() => {
+                    showLoadingIndicator = true
+                    renderProjects() // Re-render to show loading
+                }, 2000)
+                return // Don't show anything yet
+            } else if (showLoadingIndicator) {
+                container.innerHTML = '<div class="loading">Loading projects...</div>'
+                return
+            } else {
+                return // Still waiting for timeout
+            }
+        } else {
+            // Clear timeout if loading finished
+            if (loadingTimeoutId !== null) {
+                clearTimeout(loadingTimeoutId)
+                loadingTimeoutId = null
+                showLoadingIndicator = false
+            }
         }
 
-        if (projects.length === 0) {
+        if (projects.length === 0 && !loading) {
             container.innerHTML = `
                 <div class="empty-state">
                     <div class="empty-text">No projects yet</div>
@@ -39,6 +62,19 @@ export const ProjectBrowser = ({ lifecycle: _lifecycle, projectService, studioSe
 
                 const grid = document.createElement('div')
                 grid.className = 'projects-grid'
+
+                // Add scroll listener for infinite scroll
+                let isLoadingMore = false
+                grid.addEventListener('scroll', async () => {
+                    if (isLoadingMore) return
+                    
+                    const scrolledToBottom = grid.scrollHeight - grid.scrollTop - grid.clientHeight < 100
+                    if (scrolledToBottom && hasMore && !loading) {
+                        isLoadingMore = true
+                        await projectService.loadMoreProjects()
+                        isLoadingMore = false
+                    }
+                })
 
                 projects.forEach(project => {
                     const card = document.createElement('div')
@@ -152,6 +188,14 @@ export const ProjectBrowser = ({ lifecycle: _lifecycle, projectService, studioSe
                     grid.appendChild(card)
                 })
 
+                // Add loading indicator at bottom if loading more
+                if (loading && projects.length > 0) {
+                    const loadingMore = document.createElement('div')
+                    loadingMore.className = 'loading-more'
+                    loadingMore.textContent = 'Loading more...'
+                    grid.appendChild(loadingMore)
+                }
+
                 container.appendChild(grid)
     }
 
@@ -161,6 +205,7 @@ export const ProjectBrowser = ({ lifecycle: _lifecycle, projectService, studioSe
     // Listen to project changes
     projectService.projects.subscribe(() => renderProjects())
     projectService.loading.subscribe(() => renderProjects())
+    projectService.hasMore.subscribe(() => renderProjects())
 
     // Initial render
     renderProjects()
