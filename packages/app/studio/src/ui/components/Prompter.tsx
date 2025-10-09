@@ -70,9 +70,9 @@ export const Prompter = ({lifecycle, onStartFromScratch, onSubmitPrompt, isCreat
     }
 
     const presetPrompts = [
-        "Trap beat with aggressive mood",
-        "A happy commercial pop beat with happy and energetic melodies",
-        "A jazz beat with smooth and relaxed mood"
+        "Create an oldschool hiphop beat with 808s for the bass and a nice piano for the main melody. The mood should be energetic, with a bouncy groove and a classic boom bap drum pattern.",
+        "Create an EDM beat with a punchy kick and sidechained synths. Use a bright lead melody with pluck synths and layered pads for atmosphere. The mood should be euphoric and high-energy, perfect for a festival drop.",
+        "Create an Afrobeat instrumental with warm 808s for the bass and a rhythmic guitar loop for the main melody. Add percussive elements like shakers and congas to create a groovy, upbeat, danceable mood."
     ]
 
     const handlePresetClick = (prompt: string) => {
