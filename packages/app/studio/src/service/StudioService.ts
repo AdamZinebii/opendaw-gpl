@@ -81,6 +81,8 @@ range.showUnitInterval(0, PPQN.fromSignature(16, 1))
 const snapping = new Snapping(range)
 
 export class StudioService implements ProjectEnv {
+    #progressInterval: ReturnType<typeof setInterval> | null = null
+    
     readonly layout = {
         systemOpen: new DefaultObservableValue<boolean>(false),
         helpVisible: new DefaultObservableValue<boolean>(true),
@@ -353,13 +355,7 @@ export class StudioService implements ProjectEnv {
             }
             
             // Send secret address to tool-executor (no tool names/args visible)
-            // Simulate progress during tool execution (typical song creation has ~50 tools)
-            const progressInterval = setInterval(() => {
-                const current = this.layout.songCreationProgress.getValue()
-                if (current < 95) { // Don't go to 100% until completion
-                    this.layout.songCreationProgress.setValue(Math.min(95, current + 0.5))
-                }
-            }, 200) // Update every 200ms with 0.5% increments
+            // Progress is now tracked by startProgressInterval() called at the beginning of song creation
             
             const toolExecutorPayload = {
                 secretAddress: secretAddress,  // Only secret address, no tool data
@@ -385,9 +381,6 @@ export class StudioService implements ProjectEnv {
                     ...toolExecutorPayload
                 })
             })
-            
-            // Clear progress interval
-            clearInterval(progressInterval)
             
             if (!response.ok) {
                 const errorText = await response.text()
@@ -1281,6 +1274,15 @@ export class StudioService implements ProjectEnv {
         const newProject = Project.new(this)
         console.log(`🔍 [DRUMFIX-RECONSTRUCT] New empty project created`)
         
+        // Apply BPM if present in modified data
+        if (projectData.bpm) {
+            console.log(`🎵 [RECONSTRUCT] Applying BPM: ${projectData.bpm}`)
+            newProject.editing.modify(() => {
+                newProject.timelineBoxAdapter.box.bpm.setValue(projectData.bpm)
+            })
+            console.log(`✅ [RECONSTRUCT] BPM set to ${projectData.bpm}`)
+        }
+        
         // Add tracks based on server modifications
         if (projectData.tracks) {
             for (const trackData of projectData.tracks) {
@@ -2133,8 +2135,29 @@ export class StudioService implements ProjectEnv {
         this.layout.showPrompter.setValue(false)
         this.layout.isSongCreating.setValue(false)
         this.layout.songCreationProgress.setValue(0)
+        this.stopProgressInterval()
         // Switch to default view when starting from scratch
         this.switchScreen("default")
+    }
+
+    private startProgressInterval(): void {
+        // Clear any existing interval
+        this.stopProgressInterval()
+        
+        // Start continuous progress advancement: 0.5% every 0.2 seconds until 95%
+        this.#progressInterval = setInterval(() => {
+            const current = this.layout.songCreationProgress.getValue()
+            if (current < 95) {
+                this.layout.songCreationProgress.setValue(Math.min(95, current + 0.5))
+            }
+        }, 200) // Update every 200ms with 0.5% increments
+    }
+
+    private stopProgressInterval(): void {
+        if (this.#progressInterval) {
+            clearInterval(this.#progressInterval)
+            this.#progressInterval = null
+        }
     }
 
     private completeSongCreation(): void {
@@ -2145,6 +2168,7 @@ export class StudioService implements ProjectEnv {
         }
         
         console.log('🎵 Completing song creation')
+        this.stopProgressInterval()
         this.layout.songCreationProgress.setValue(100)
         setTimeout(() => {
             this.hidePrompter()
@@ -2157,7 +2181,8 @@ export class StudioService implements ProjectEnv {
         projectId: string,
         _secretLoadingCode?: string,
         isBringUpDrums?: boolean,
-        searchQuery?: string
+        searchQuery?: string,
+        stateAddress?: string
     ): Promise<void> {
         // Guard against multiple completion attempts
         if (this.layout.songCreationProgress.getValue() === 100) {
@@ -2174,8 +2199,15 @@ export class StudioService implements ProjectEnv {
             if (toolResults.success) {
                 console.log('✅ Tools executed successfully')
                 
-                // Send tool results back to song-creator-agent  
-                const followupPayload = {
+                // Determine which route to use based on presence of stateAddress
+                const route = stateAddress ? 'song-maker' : 'song-creator-agent'
+                
+                // Send tool results back to song-maker or song-creator-agent
+                const followupPayload = stateAddress ? {
+                    resultSecretAddress: stateAddress,  // Use stateAddress for song-maker
+                    userId: userId,
+                    projectId: projectId
+                } : {
                     resultSecretAddress: toolResults.resultSecretAddress,
                     userId: userId,
                     projectId: projectId,
@@ -2183,7 +2215,7 @@ export class StudioService implements ProjectEnv {
                     searchQuery: searchQuery || ''
                 };
                 
-                console.log('🔧 [DEBUG] Sending follow-up to song-creator-agent:', JSON.stringify(followupPayload, null, 2));
+                console.log(`🔧 [DEBUG] Sending follow-up to ${route}:`, JSON.stringify(followupPayload, null, 2));
                 
                 const followupResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/router`, {
                     method: 'POST',
@@ -2193,7 +2225,7 @@ export class StudioService implements ProjectEnv {
                         'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || ''
                     },
                     body: JSON.stringify({
-                        route: 'song-creator-agent',
+                        route: route,
                         ...followupPayload
                     })
                 })
@@ -2204,26 +2236,42 @@ export class StudioService implements ProjectEnv {
                     
                     // Check if song-creator wants to execute more tools (iterative like chatbot)
                     if (followupResult.success && followupResult.send_to_execution && followupResult.secretAddress) {
-                        console.log('🔄 Song creator returned more tools to execute - continuing iteratively')
-                        console.log('🔍 [DRUMFIX-RECURSIVE] ========== ABOUT TO MAKE RECURSIVE CALL ==========')
-                        console.log('🔍 [DRUMFIX-RECURSIVE] Current project state before recursive call:')
-                        console.log('🔍 [DRUMFIX-RECURSIVE] Tracks:', this.extractProjectData().tracks?.length || 0)
-                        if (this.extractProjectData().tracks) {
-                            this.extractProjectData().tracks.forEach((t: any, i: number) => {
-                                console.log(`🔍 [DRUMFIX-RECURSIVE] Track ${i}: "${t.name}" (${t.type})`)
-                            })
-                        }
+                        // For song-maker: If we had a stateAddress but followup doesn't return one, it means STEP 2 is done
+                        const isSongMakerStep2Complete = stateAddress && !followupResult.stateAddress
                         
-                        // Recursively execute more tools
-                        await this.executeToolCallsWithSecretAddress(
-                            followupResult.secretAddress,
-                            userId,
-                            projectId,
-                            followupResult.secretLoadingCode,
-                            followupResult.isBringUpDrums || isBringUpDrums,
-                            followupResult.searchQuery || searchQuery
-                        )
-                    } else {
+                        if (isSongMakerStep2Complete) {
+                            console.log('🎵 Song-maker STEP 2 - executing final tools (add content) without recursion')
+                            // Execute STEP 2 tools ONE LAST TIME (addMelodyGenerationToTrack, addAudioToAudioPlayer)
+                            const step2Results = await this.executeRemoteToolWithSecretAddress(followupResult.secretAddress)
+                            console.log('✅ Song-maker STEP 2 tools executed:', step2Results.success)
+                            // Fall through to completion below (no recursion)
+                        } else {
+                            console.log('🔄 Song creator returned more tools to execute - continuing iteratively')
+                            console.log('🔍 [DRUMFIX-RECURSIVE] ========== ABOUT TO MAKE RECURSIVE CALL ==========')
+                            console.log('🔍 [DRUMFIX-RECURSIVE] Current project state before recursive call:')
+                            console.log('🔍 [DRUMFIX-RECURSIVE] Tracks:', this.extractProjectData().tracks?.length || 0)
+                            if (this.extractProjectData().tracks) {
+                                this.extractProjectData().tracks.forEach((t: any, i: number) => {
+                                    console.log(`🔍 [DRUMFIX-RECURSIVE] Track ${i}: "${t.name}" (${t.type})`)
+                                })
+                            }
+                            
+                            // Recursively execute more tools
+                            await this.executeToolCallsWithSecretAddress(
+                                followupResult.secretAddress,
+                                userId,
+                                projectId,
+                                followupResult.secretLoadingCode,
+                                followupResult.isBringUpDrums || isBringUpDrums,
+                                followupResult.searchQuery || searchQuery,
+                                followupResult.stateAddress  // Only pass NEW stateAddress, not old one
+                            )
+                            return  // Don't fall through to completion - recursion will handle it
+                        }
+                    }
+                    
+                    // Completion (reached when no more tools OR song-maker STEP 2 is done)
+                    if (true) {
                         console.log('🎵 Song creator finished - no more tools to execute')
                         
                         // Complete loading FIRST, before saving (so progress bar always reaches 100%)
@@ -2310,9 +2358,10 @@ export class StudioService implements ProjectEnv {
         }
         
         try {
-            // Start loading state
+            // Start loading state and progress interval immediately
             this.layout.isSongCreating.setValue(true)
             this.layout.songCreationProgress.setValue(0)
+            this.startProgressInterval() // Démarre l'avancement automatique de 0.5% toutes les 0.2s jusqu'à 95%
             
             // Get current project and user info (using same pattern as Chatbot)
             const userId = this.authService?.getCurrentUser()?.id
@@ -2336,8 +2385,8 @@ export class StudioService implements ProjectEnv {
                 throw new Error('Missing user or project ID')
             }
             
-            // Call song-creator-agent through router
-            console.log('🔧 [DEBUG] Calling song-creator-agent with:', { message: prompt, userId, projectId })
+            // Call song-maker through router
+            console.log('🔧 [DEBUG] Calling song-maker with:', { message: prompt, userId, projectId })
             console.log('🔧 [DEBUG] Using router for song creation request')
             
             let response
@@ -2350,7 +2399,7 @@ export class StudioService implements ProjectEnv {
                         'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || ''
                     },
                     body: JSON.stringify({
-                        route: 'song-creator-agent',
+                        route: 'song-maker',
                         message: prompt,
                         userId: userId,
                         projectId: projectId
@@ -2387,19 +2436,20 @@ export class StudioService implements ProjectEnv {
             
             if (result.success && result.send_to_execution) {
                 // Handle tool execution similar to chatbot
-                console.log('🔧 [DEBUG] Song creator returned tools to execute')
-                console.log('🔧 [DEBUG] result.isBringUpDrums:', result.isBringUpDrums, 'result.searchQuery:', result.searchQuery)
+                console.log('🔧 [DEBUG] Song maker returned tools to execute')
+                console.log('🔧 [DEBUG] result.stateAddress:', result.stateAddress)
                 
                 if (result.secretAddress) {
                     // Execute server-side tools via tool-executor with progress tracking
-                    console.log('🔧 [DEBUG] Calling executeToolCallsWithSecretAddress with isBringUpDrums:', result.isBringUpDrums, 'searchQuery:', result.searchQuery)
+                    console.log('🔧 [DEBUG] Calling executeToolCallsWithSecretAddress with stateAddress:', result.stateAddress)
                     await this.executeToolCallsWithSecretAddress(
                         result.secretAddress,
                         userId,
                         projectId,
                         result.secretLoadingCode,
-                        result.isBringUpDrums,
-                        result.searchQuery
+                        false,  // Not bringUpDrums
+                        '',     // No search query
+                        result.stateAddress  // Pass state address for follow-up
                     )
                 }
                 
