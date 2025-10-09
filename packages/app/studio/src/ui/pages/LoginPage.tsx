@@ -13,33 +13,23 @@ type Construct = {
 
 export const LoginPage = ({ lifecycle: _lifecycle, authService }: Construct) => {
     const handleGitHubLogin = async () => {
-        console.log('🔘 GitHub login button clicked')
         try {
             const { error } = await authService.signInWithGithub()
             if (error) {
-                console.error('❌ GitHub sign in error:', error)
                 showError(`Failed to sign in with GitHub: ${error.message}`)
-            } else {
-                console.log('✅ GitHub sign in successful')
             }
         } catch (e) {
-            console.error('❌ GitHub sign in exception:', e)
             showError('Failed to sign in with GitHub. Please try again.')
         }
     }
 
     const handleGoogleLogin = async () => {
-        console.log('🔘 Google login button clicked')
         try {
             const { error } = await authService.signInWithGoogle()
             if (error) {
-                console.error('❌ Google sign in error:', error)
                 showError(`Failed to sign in with Google: ${error.message}`)
-            } else {
-                console.log('✅ Google sign in successful')
             }
         } catch (e) {
-            console.error('❌ Google sign in exception:', e)
             showError('Failed to sign in with Google. Please try again.')
         }
     }
@@ -62,13 +52,11 @@ export const LoginPage = ({ lifecycle: _lifecycle, authService }: Construct) => 
             <div className="login-container">
                 <div className="login-content">
                     <div className="logo-section">
-                        <img src="/favicon.svg" alt="beatson" className="logo" />
-                        <h1>Welcome to beatson</h1>
+                        <h1>Authenticate</h1>
                         <p className="subtitle">Professional music production in your browser</p>
                     </div>
 
                     <div className="auth-section">
-                        <h2>Sign In</h2>
                         <p className="description">
                             Sign in to save your projects and access AI-powered music features.
                         </p>
@@ -106,7 +94,11 @@ export const LoginPage = ({ lifecycle: _lifecycle, authService }: Construct) => 
 
                         <div className="privacy-note">
                             <p>
-                                🔒 Secure OAuth login. We never store your passwords.
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                </svg>
+                                Secure OAuth login. We never store your passwords.
                             </p>
                         </div>
                     </div>

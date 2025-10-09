@@ -28,7 +28,6 @@ const createMainAppWithCleanup = (service: StudioService, authService: AuthServi
     const toggleChatbot = () => {
         const currentState = chatbotOpen.getValue()
         chatbotOpen.setValue(!currentState)
-        console.log(`🤖 Chatbot ${!currentState ? 'opened' : 'closed'}`)
     }
     
     const element = (
@@ -68,7 +67,6 @@ export const App = (service: StudioService) => {
     try {
         authService = new AuthService()
     } catch (error) {
-        console.error('❌ Authentication required but not configured:', error)
         // Render configuration error page
         return (
             <div style={{
@@ -115,7 +113,6 @@ VITE_SUPABASE_ANON_KEY=your-anon-key`}
 
     // Functions to render different states
     const showLoadingScreen = () => {
-        console.log('🔄 Showing loading screen')
         currentState = 'loading'
         const loadingElement = (
             <div style={{
@@ -130,8 +127,8 @@ VITE_SUPABASE_ANON_KEY=your-anon-key`}
                     <div style={{
                         width: "40px", 
                         height: "40px", 
-                        border: "3px solid rgba(74, 125, 74, 0.3)",
-                        borderTop: "3px solid #4a7d4a",
+                        border: "3px solid rgba(255, 255, 255, 0.1)",
+                        borderTop: "3px solid rgba(255, 255, 255, 0.5)",
                         borderRadius: "50%",
                         animation: "spin 1s linear infinite",
                         margin: "0 auto 1rem"
@@ -144,7 +141,6 @@ VITE_SUPABASE_ANON_KEY=your-anon-key`}
     }
 
     const showLoginScreen = () => {
-        console.log('🔐 Showing login screen')
         currentState = 'login'
         const loginElement = <LoginPage lifecycle={new Terminator()} authService={authService!}/> as HTMLElement
         container.replaceChildren(loginElement)
@@ -152,11 +148,9 @@ VITE_SUPABASE_ANON_KEY=your-anon-key`}
 
     const showMainApp = (user: any) => {
         if (currentState === 'main-app') {
-            console.log('✅ MainApp already loaded, skipping recreation')
             return
         }
         
-        console.log('🚀 Creating MainApp for:', user.email)
         currentState = 'main-app'
         
         try {
@@ -166,10 +160,8 @@ VITE_SUPABASE_ANON_KEY=your-anon-key`}
             mainAppTerminator = terminator
             
             container.replaceChildren(element)
-            console.log('✅ MainApp loaded successfully')
             
         } catch (error) {
-            console.error('❌ MainApp failed to load:', error)
             // Fallback interface
             const fallback = (
                 <div style={{
@@ -200,13 +192,6 @@ VITE_SUPABASE_ANON_KEY=your-anon-key`}
         const user = authService!.getCurrentUser()
         const loading = authService!.loading.getValue()
         
-        console.log('🔐 Auth state changed:', { 
-            hasUser: !!user, 
-            userEmail: user?.email, 
-            loading,
-            currentState 
-        })
-        
         if (loading) {
             showLoadingScreen()
         } else if (user) {
@@ -214,7 +199,6 @@ VITE_SUPABASE_ANON_KEY=your-anon-key`}
         } else {
             // Cleanup MainApp if user logged out
             if (mainAppTerminator) {
-                console.log('🧹 User logged out, cleaning MainApp...')
                 mainAppTerminator.terminate()
                 mainAppTerminator = null
                 _mainAppElement = null
