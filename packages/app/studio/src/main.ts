@@ -21,11 +21,15 @@ import {AudioOutputDevice} from "@/audio/AudioOutputDevice"
 import {FontLoader} from "@/ui/FontLoader"
 import {ErrorHandler} from "@/errors/ErrorHandler.ts"
 import {MainThreadSampleManager, SampleProvider, SampleStorage, WorkerAgents, AudioWorklets} from "@opendaw/studio-core"
+import {inject} from "@vercel/analytics"
 
 import WorkersUrl from "@opendaw/studio-core/workers.js?worker&url"
 import WorkletsUrl from "@opendaw/studio-core/processors.js?worker&url"
 
 window.name = "main"
+
+// Initialize Vercel Analytics
+inject()
 
 const loadBuildInfo = async () => fetch(`/build-info.json?v=${Date.now()}`).then(x => x.json().then(x => x as BuildInfo))
 

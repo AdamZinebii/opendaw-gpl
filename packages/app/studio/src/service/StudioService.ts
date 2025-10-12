@@ -573,11 +573,25 @@ export class StudioService implements ProjectEnv {
                     const instrumentType = instrumentBox._originalType || this.translateToGenericType(instrumentBox.constructor.name)
                     console.log(`🔍 [EXTRACT-TRACKS] Type: ${instrumentType} (from ${instrumentBox._originalType ? '_originalType' : 'constructor.name'})`)
                     
+                    // Extract instrument parameters
+                    const instrumentParams = this.extractBoxParameters(instrumentBox)
+                    
+                    // Extract track-level parameters (volume, panning from audioUnit)
+                    if (audioUnit.volume?.getValue) {
+                        instrumentParams.volume = audioUnit.volume.getValue()
+                    }
+                    if (audioUnit.panning?.getValue) {
+                        instrumentParams.panning = audioUnit.panning.getValue()
+                    }
+                    if (audioUnit.mute?.getValue) {
+                        instrumentParams.mute = audioUnit.mute.getValue()
+                    }
+                    
                     const trackData = {
                         uuid: audioUnit.address.uuid,
                         name: instrumentBox.label?.getValue?.() || 'Unnamed',
                         type: instrumentType,
-                        parameters: this.extractBoxParameters(instrumentBox),
+                        parameters: instrumentParams,
                         noteRegions: this.extractNoteRegions(audioUnit),
                         audioRegions: this.extractAudioRegions(audioUnit),
                         effects: this.extractTrackEffects(audioUnit),
@@ -1437,6 +1451,44 @@ export class StudioService implements ProjectEnv {
             // Second transaction: Add MIDI notes (outside the first transaction)
             if (trackBox && trackData.noteRegions && trackData.noteRegions.length > 0) {
                 await this.addMidiNotesToTrack(project, trackBox, trackData.noteRegions)
+            }
+            
+            // Third transaction: Apply track-level parameters (volume, panning) to AudioUnitBox
+            if (trackData.parameters && (trackData.parameters.volume !== undefined || trackData.parameters.panning !== undefined)) {
+                // Find the AudioUnitBox by track name (much simpler than UUID comparison!)
+                const audioUnits = project.rootBox.audioUnits.pointerHub.incoming()
+                const audioUnitPointer = audioUnits.find(p => {
+                    const inputPointer = (p.box as any).input?.pointerHub?.incoming()?.at(0)
+                    if (!inputPointer) return false
+                    const instrumentBox = inputPointer.box as any
+                    const trackName = instrumentBox.label?.getValue?.() || ''
+                    return trackName === trackData.name
+                })
+                
+                if (audioUnitPointer) {
+                    const audioUnitBox = audioUnitPointer.box as any
+                    console.log(`🔍 [TRACK-PARAMS] Found AudioUnitBox for "${trackData.name}"`)
+                    console.log(`🔍 [TRACK-PARAMS] audioUnitBox.volume exists: ${!!audioUnitBox.volume}`)
+                    console.log(`🔍 [TRACK-PARAMS] audioUnitBox.panning exists: ${!!audioUnitBox.panning}`)
+                    
+                    project.editing.modify(() => {
+                        // Apply volume parameter if present
+                        if (trackData.parameters.volume !== undefined && audioUnitBox.volume?.setValue) {
+                            console.log(`🔊 [TRACK-PARAMS] Setting volume to ${trackData.parameters.volume}dB`)
+                            audioUnitBox.volume.setValue(trackData.parameters.volume)
+                            console.log(`🔊 [TRACK-PARAMS] Volume set successfully, new value: ${audioUnitBox.volume.getValue()}`)
+                        }
+                        
+                        // Apply panning parameter if present
+                        if (trackData.parameters.panning !== undefined && audioUnitBox.panning?.setValue) {
+                            console.log(`↔️ [TRACK-PARAMS] Setting panning to ${trackData.parameters.panning}`)
+                            audioUnitBox.panning.setValue(trackData.parameters.panning)
+                            console.log(`↔️ [TRACK-PARAMS] Panning set successfully, new value: ${audioUnitBox.panning.getValue()}`)
+                        }
+                    })
+                } else {
+                    console.warn(`⚠️ [TRACK-PARAMS] Could not find AudioUnitBox for track: ${trackData.name}`)
+                }
             }
             
         } catch (error) {

@@ -23,6 +23,7 @@
     "@opendaw/studio-core": "^0.0.24",
     "@opendaw/studio-enums": "^0.0.20",
     "@types/d3-force": "^3.0.10",
+    "@vercel/analytics": "^1.5.0",
     "d3-force": "^3.0.0",
     "force-graph": "^1.50.1",
     "jszip": "^3.10.1",

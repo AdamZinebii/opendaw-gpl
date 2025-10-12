@@ -54,7 +54,7 @@ export class AuthService {
                     const result = await this.supabase.rpc('auth_on_login')
                     console.log('✅ auth_on_login RPC result:', result)
                     if (result.error) {
-                        console.error('❌ auth_on_login RPC error details:', result.error)
+                        console.error('❌ auth_on_login RPC error details:', JSON.stringify(result.error, null, 2))
                     }
                 } catch (e) {
                     console.error('❌ auth_on_login RPC failed:', e)
@@ -81,7 +81,7 @@ export class AuthService {
                         const result = await this.supabase.rpc('auth_on_login')
                         console.log('✅ auth_on_login RPC result:', result)
                         if (result.error) {
-                            console.error('❌ auth_on_login RPC error details:', result.error)
+                            console.error('❌ auth_on_login RPC error details:', JSON.stringify(result.error, null, 2))
                         }
                     } catch (e) {
                         console.error('❌ auth_on_login RPC failed:', e)
@@ -206,7 +206,8 @@ export class AuthService {
                 .single()
             
             if (error) {
-                console.error('❌ Failed to load user profile:', error)
+                console.error('❌ Failed to load user profile:', JSON.stringify(error, null, 2))
+                console.error('❌ Error details - Code:', error.code, 'Message:', error.message, 'Details:', error.details)
                 return
             }
             

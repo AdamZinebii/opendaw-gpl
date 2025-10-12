@@ -18,6 +18,12 @@ interface MidiDisplayProps {
 }
 
 export const MidiDisplay = ({lifecycle: _lifecycle, url, studioService}: MidiDisplayProps) => {
+    console.log('🎼 ========== MIDI DISPLAY COMPONENT INIT START ==========')
+    console.log('🎼 URL:', url)
+    console.log('🎼 Has lifecycle?', !!_lifecycle)
+    console.log('🎼 Has studioService?', !!studioService)
+    console.log('🎼 StudioService type:', studioService?.constructor?.name)
+    
     let isPlaying = false
     let midiNotes: MidiNote[] = []
     let tempTrackName: string | null = null
@@ -267,6 +273,10 @@ export const MidiDisplay = ({lifecycle: _lifecycle, url, studioService}: MidiDis
             `}</style>
         </div>
     ) as HTMLElement
+    
+    console.log('🎼 Step 1: DOM element created')
+    console.log('🎼 Element type:', element?.constructor?.name)
+    console.log('🎼 Element className:', element?.className)
 
     // Track active oscillators for stop functionality
     let activeOscillators: OscillatorNode[] = []
@@ -283,26 +293,49 @@ export const MidiDisplay = ({lifecycle: _lifecycle, url, studioService}: MidiDis
 
     // Load and parse MIDI
     const loadMidi = async () => {
+        console.log('🎵 ========== LOAD MIDI START ==========')
+        console.log('🎵 URL to fetch:', url)
+        
         try {
-            console.log('🎵 Loading MIDI...')
-            
+            console.log('🎵 Step 1: Fetching MIDI file...')
             const response = await fetch(url)
+            console.log('🎵 Fetch response:', {
+                ok: response.ok,
+                status: response.status,
+                statusText: response.statusText,
+                contentType: response.headers.get('content-type')
+            })
+            
             if (!response.ok) {
-                throw new Error(`Failed to load MIDI: ${response.status}`)
+                throw new Error(`Failed to load MIDI: ${response.status} ${response.statusText}`)
             }
             
+            console.log('🎵 Step 2: Reading array buffer...')
             const arrayBuffer = await response.arrayBuffer()
+            console.log('🎵 Array buffer size:', arrayBuffer.byteLength, 'bytes')
+            
             const midiData = new Uint8Array(arrayBuffer)
+            console.log('🎵 MIDI data first 4 bytes:', Array.from(midiData.slice(0, 4)).map(b => '0x' + b.toString(16).toUpperCase()).join(' '))
             
             // Parse MIDI using basic parsing (since we can't import the full MIDI lib in this context)
+            console.log('🎵 Step 3: Parsing MIDI data...')
             midiNotes = await parseMidiData(midiData)
             
             console.log(`✅ Loaded ${midiNotes.length} notes`)
+            console.log('✅ First 3 notes:', midiNotes.slice(0, 3))
+            
+            console.log('🎵 Step 4: Rendering to canvas...')
             renderMidi()
-            console.log('✅ MIDI loading completed successfully')
+            
+            console.log('✅ ========== MIDI LOADING COMPLETE ==========')
             
         } catch (error) {
-            console.error('❌ Failed to load MIDI:', error)
+            console.error('❌ ========== LOAD MIDI ERROR ==========')
+            console.error('❌ URL:', url)
+            console.error('❌ Error type:', error?.constructor?.name)
+            console.error('❌ Error message:', error instanceof Error ? error.message : String(error))
+            console.error('❌ Full error:', error)
+            console.error('❌ Stack:', error instanceof Error ? error.stack : 'N/A')
         }
     }
     
@@ -877,19 +910,26 @@ export const MidiDisplay = ({lifecycle: _lifecycle, url, studioService}: MidiDis
     // const playMidi = playMidiWithTrack        // Alternative: Creates Nano track (integrates with DAW)
 
     // Setup event listeners
+    console.log('🎼 Step 2: Setting up event listeners...')
     playButton.addEventListener('click', playMidi)
     instrumentButton.addEventListener('click', selectInstrument)
+    console.log('🎼 Event listeners attached')
     
     // Initialize
+    console.log('🎼 Step 3: Starting MIDI load...')
     loadMidi()
     
     // Debug: Log component creation
-    console.log('🎵 MidiDisplay component created:', {
-        element,
-        className: element.className,
-        children: element.children.length,
-        innerHTML: element.innerHTML.substring(0, 200) + '...'
+    console.log('🎵 ========== MIDI DISPLAY COMPONENT INIT COMPLETE ==========')
+    console.log('🎵 Component details:', {
+        hasElement: !!element,
+        className: element?.className,
+        children: element?.children?.length || 0,
+        hasPlayButton: !!playButton,
+        hasInstrumentButton: !!instrumentButton,
+        hasCanvas: !!canvas
     })
+    console.log('🎵 Returning element to parent...')
     
     return element
 }

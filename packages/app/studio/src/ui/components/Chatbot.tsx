@@ -661,25 +661,42 @@ export const Chatbot = ({lifecycle, isOpen, studioService}: ChatbotProps) => {
      * Execute client-side tools (like displayGeneration)
      */
     const executeClientSideTools = async (clientToolCalls: any[], userId: string, projectId: string, isBringUpDrums?: boolean, searchQuery?: string) => {
+        console.log('🎵 ========== EXECUTE CLIENT-SIDE TOOLS START ==========')
+        console.log('🎵 Number of tool calls:', clientToolCalls.length)
+        console.log('🎵 Tool calls:', JSON.stringify(clientToolCalls, null, 2))
+        console.log('🎵 User ID:', userId)
+        console.log('🎵 Project ID:', projectId)
+        
         const toolResults: Array<{ tool_call_id: string; result: any }> = []
         
         try {
-            for (const toolCall of clientToolCalls) {
+            for (let i = 0; i < clientToolCalls.length; i++) {
+                const toolCall = clientToolCalls[i]
                 const { id, name, args } = toolCall
                 
+                console.log(`🎵 ===== Tool Call ${i + 1}/${clientToolCalls.length} =====`)
+                console.log(`🎵 Tool ID:`, id)
+                console.log(`🎵 Tool Name:`, name)
+                console.log(`🎵 Tool Args:`, JSON.stringify(args, null, 2))
+                
                 try {
-                    console.log(`🎵 Executing client-side tool: ${name}`, args)
+                    console.log(`🎵 Executing client-side tool: ${name}`)
                     
                     let result: any = null
                     
                     switch (name) {
                         case 'displayGeneration':
+                            console.log(`🎵 Calling handleDisplayGeneration...`)
                             result = await handleDisplayGeneration(args.generationId, id)
+                            console.log(`🎵 handleDisplayGeneration returned:`, result)
                             break
                         case 'displayDrums':
+                            console.log(`🎵 Calling handleDisplayDrums...`)
                             result = await handleDisplayDrums(args.assignmentId, id)
+                            console.log(`🎵 handleDisplayDrums returned:`, result)
                             break
                         default:
+                            console.error(`❌ Unknown client-side tool: ${name}`)
                             result = {
                                 success: false,
                                 message: `Unknown client-side tool: ${name}`
@@ -687,13 +704,18 @@ export const Chatbot = ({lifecycle, isOpen, studioService}: ChatbotProps) => {
                     }
                     
                     // Collect result for sending back to agent
+                    console.log(`🎵 Collecting result for tool ${id}`)
                     toolResults.push({ 
                         tool_call_id: id, 
                         result: result 
                     })
+                    console.log(`🎵 Tool result collected. Total results so far: ${toolResults.length}`)
                     
                 } catch (error) {
-                    console.error(`❌ Client-side tool ${name} failed:`, error)
+                    console.error(`❌ ===== Tool Call ${i + 1} FAILED =====`)
+                    console.error(`❌ Tool Name: ${name}`)
+                    console.error(`❌ Error:`, error)
+                    console.error(`❌ Stack:`, error instanceof Error ? error.stack : 'N/A')
                     
                     // Collect error result
                     toolResults.push({ 
@@ -706,8 +728,13 @@ export const Chatbot = ({lifecycle, isOpen, studioService}: ChatbotProps) => {
                 }
             }
             
+            console.log('🎵 All client-side tools executed')
+            console.log('🎵 Total results:', toolResults.length)
+            console.log('🎵 Results:', JSON.stringify(toolResults, null, 2))
+            
             // Send tool results back to agent-chat
             if (toolResults.length > 0) {
+                console.log('🎵 Sending tool results back to agent-chat...')
                 const loadingMessage = addLoadingMessage()
                 
                 await processStatelessMessage({
@@ -717,10 +744,18 @@ export const Chatbot = ({lifecycle, isOpen, studioService}: ChatbotProps) => {
                     isBringUpDrums: isBringUpDrums || false,
                     searchQuery: searchQuery || ''
                 }, loadingMessage)
+                
+                console.log('🎵 Tool results sent successfully')
+            } else {
+                console.warn('⚠️ No tool results to send back')
             }
             
+            console.log('🎵 ========== EXECUTE CLIENT-SIDE TOOLS COMPLETE ==========')
+            
         } catch (error) {
+            console.error('❌ ========== EXECUTE CLIENT-SIDE TOOLS ERROR ==========')
             console.error('❌ Error in client-side tool execution:', error)
+            console.error('❌ Stack:', error instanceof Error ? error.stack : 'N/A')
         }
     }
     
@@ -730,29 +765,54 @@ export const Chatbot = ({lifecycle, isOpen, studioService}: ChatbotProps) => {
     const handleDisplayGeneration = async (generationId: number, _toolCallId: string): Promise<any> => {
         return new Promise(async (resolve) => {
             try {
-                console.log('🎵 Handling displayGeneration for ID:', generationId)
+                console.log('🎵 ========== DISPLAY GENERATION START ==========')
+                console.log('🎵 Generation ID:', generationId)
+                console.log('🎵 Tool Call ID:', _toolCallId)
                 
                 // Fetch generation metadata
+                console.log('📊 Step 1: Fetching generation metadata...')
                 const metadata = await fetchGenerationMetadata(generationId.toString())
-                if (!metadata || !metadata.melody_link) {
-                    throw new Error(`Generation ${generationId} not found or no melody available`)
+                
+                console.log('📊 Step 2: Metadata fetch complete')
+                console.log('📊 Metadata exists?', !!metadata)
+                console.log('📊 Full metadata:', JSON.stringify(metadata, null, 2))
+                
+                if (!metadata) {
+                    console.error('❌ No metadata returned!')
+                    throw new Error(`Generation ${generationId} not found`)
+                }
+                
+                console.log('📊 Checking melody_link:', metadata.melody_link)
+                if (!metadata.melody_link) {
+                    console.error('❌ No melody_link in metadata!')
+                    throw new Error(`Generation ${generationId} has no melody available`)
                 }
                 
                 // ✨ NEW: Extract instrument information from metadata
+                console.log('🎹 Step 3: Extracting instrument info...')
+                console.log('🎹 input_parameters:', metadata.input_parameters)
                 const instrumentName = metadata.input_parameters?.instrument || 'unknown'
                 const mood = metadata.input_parameters?.mood || 'unknown'
                 const genre = metadata.input_parameters?.genre || 'unknown'
                 
-                console.log(`🎹 Generation uses instrument: ${instrumentName}`)
+                console.log(`🎹 Instrument: ${instrumentName}, Mood: ${mood}, Genre: ${genre}`)
                 
                 // Create MIDI display component (like opendaw-old)
+                console.log('🎼 Step 4: Creating MidiDisplay component...')
+                console.log('🎼 MIDI URL:', metadata.melody_link)
+                console.log('🎼 Has lifecycle?', !!lifecycle)
+                console.log('🎼 Has studioService?', !!studioService)
+                
                 const midiComponent = MidiDisplay({ 
                     lifecycle, 
                     url: metadata.melody_link, 
                     studioService: studioService || null
                 })
                 
+                console.log('🎼 MidiDisplay component created:', !!midiComponent)
+                
                 // ✨ NEW: Create instrument info header
+                console.log('📝 Step 5: Creating instrument info header...')
                 const instrumentHeader = document.createElement('div')
                 instrumentHeader.style.cssText = `
                     background: rgba(139, 69, 19, 0.1);
@@ -781,8 +841,10 @@ export const Chatbot = ({lifecycle, isOpen, studioService}: ChatbotProps) => {
                 
                 const icon = instrumentIcons[instrumentName] || '🎵'
                 instrumentHeader.innerHTML = `${icon} <strong>${instrumentName.replace('_', ' ')}</strong> • ${genre} • ${mood}`
+                console.log('📝 Instrument header created')
                 
                 // Create buttons container
+                console.log('🔘 Step 6: Creating buttons...')
                 const buttonsContainer = document.createElement('div')
                 buttonsContainer.style.cssText = `
                     display: flex;
@@ -813,6 +875,7 @@ export const Chatbot = ({lifecycle, isOpen, studioService}: ChatbotProps) => {
                 refuseButton.style.cssText = acceptButton.style.cssText
                 
                 // Handle Accept button click
+                console.log('🔘 Setting up button handlers...')
                 acceptButton.onclick = async () => {
                     console.log('✅ User accepted generation', generationId)
                     // Keep instrument header and MIDI component, just remove buttons
@@ -824,6 +887,7 @@ export const Chatbot = ({lifecycle, isOpen, studioService}: ChatbotProps) => {
                         user_feedback: 'User likes it'
                     }
                     
+                    console.log('✅ Resolving with:', result)
                     resolve(result)
                 }
                 
@@ -840,31 +904,52 @@ export const Chatbot = ({lifecycle, isOpen, studioService}: ChatbotProps) => {
                         user_feedback: 'User doesn\'t like it, regenerate'
                     }
                     
+                    console.log('❌ Resolving with:', result)
                     resolve(result)
                 }
                 
                 // Add to chat messages container
+                console.log('📍 Step 7: Adding to DOM...')
                 const messagesContainer = element.querySelector('.messages') as HTMLElement
+                console.log('📍 Messages container found?', !!messagesContainer)
+                
                 if (messagesContainer) {
-                    // Add instrument info header first
+                    console.log('📍 Appending instrument header...')
                     messagesContainer.appendChild(instrumentHeader)
-                    // Add MIDI player second
+                    
+                    console.log('📍 Appending MIDI component...')
                     messagesContainer.appendChild(midiComponent)
-                    // Then add buttons
+                    
+                    console.log('📍 Appending buttons...')
                     buttonsContainer.appendChild(acceptButton)
                     buttonsContainer.appendChild(refuseButton)
                     messagesContainer.appendChild(buttonsContainer)
+                    
+                    console.log('📍 Scrolling to bottom...')
                     messagesContainer.scrollTop = messagesContainer.scrollHeight
+                    
+                    console.log('✅ All elements appended successfully!')
+                } else {
+                    console.error('❌ Messages container not found!')
                 }
                 
+                console.log('🎵 ========== DISPLAY GENERATION COMPLETE ==========')
                 console.log('🎵 DisplayGeneration UI rendered with Accept/Refuse buttons')
                 
             } catch (error) {
-                console.error('❌ Error in handleDisplayGeneration:', error)
+                console.error('❌ ========== DISPLAY GENERATION ERROR ==========')
+                console.error('❌ Generation ID:', generationId)
+                console.error('❌ Error type:', error?.constructor?.name)
+                console.error('❌ Error message:', error instanceof Error ? error.message : String(error))
+                console.error('❌ Full error:', error)
+                console.error('❌ Stack trace:', error instanceof Error ? error.stack : 'N/A')
+                
                 const errorResult = {
                     success: false,
-                    message: `Failed to display generation ${generationId}: ${error}`
+                    message: `Failed to display generation ${generationId}: ${error instanceof Error ? error.message : String(error)}`
                 }
+                
+                console.error('❌ Resolving with error result:', errorResult)
                 resolve(errorResult)
             }
         })
@@ -1011,8 +1096,15 @@ export const Chatbot = ({lifecycle, isOpen, studioService}: ChatbotProps) => {
      * Fetch generation metadata from database
      */
     const fetchGenerationMetadata = async (generationId: string): Promise<any> => {
+        console.log(`🔍 ========== FETCH GENERATION METADATA START ==========`)
+        console.log(`🔍 Generation ID (string):`, generationId)
+        console.log(`🔍 Generation ID (parsed):`, parseInt(generationId))
+        console.log(`🔍 Supabase client exists?`, !!supabase)
+        
         try {
-            console.log(`🔍 Fetching generation metadata for ID: ${generationId}`)
+            console.log(`🔍 Building Supabase query...`)
+            console.log(`🔍 Table: generations-metadata`)
+            console.log(`🔍 Filter: id = ${parseInt(generationId)}`)
             
             // Use Supabase client instead of direct REST API
             const { data, error } = await supabase
@@ -1021,21 +1113,41 @@ export const Chatbot = ({lifecycle, isOpen, studioService}: ChatbotProps) => {
                 .eq('id', parseInt(generationId))
                 .single()
             
+            console.log(`🔍 Query completed`)
+            console.log(`🔍 Has error?`, !!error)
+            console.log(`🔍 Has data?`, !!data)
+            
             if (error) {
-                console.error('❌ Supabase error fetching generation:', error)
+                console.error('❌ Supabase error details:')
+                console.error('   - Code:', error.code)
+                console.error('   - Message:', error.message)
+                console.error('   - Details:', error.details)
+                console.error('   - Hint:', error.hint)
+                console.error('   - Full error:', error)
                 throw new Error(`Failed to fetch generation metadata: ${error.message}`)
             }
             
             if (!data) {
                 console.warn(`⚠️ No generation found with ID: ${generationId}`)
+                console.warn(`⚠️ This could mean the record doesn't exist in the database`)
                 return null
             }
             
-            console.log(`✅ Fetched generation metadata:`, data)
+            console.log(`✅ Successfully fetched generation metadata`)
+            console.log(`✅ Data keys:`, Object.keys(data))
+            console.log(`✅ Has melody_link?`, !!data.melody_link)
+            console.log(`✅ Has full_link?`, !!data.full_link)
+            console.log(`✅ Has input_parameters?`, !!data.input_parameters)
+            console.log(`✅ Full metadata:`, JSON.stringify(data, null, 2))
+            console.log(`🔍 ========== FETCH GENERATION METADATA COMPLETE ==========`)
             return data
             
         } catch (error) {
-            console.error('❌ Error fetching generation metadata:', error)
+            console.error('❌ ========== FETCH GENERATION METADATA ERROR ==========')
+            console.error('❌ Error type:', error?.constructor?.name)
+            console.error('❌ Error message:', error instanceof Error ? error.message : String(error))
+            console.error('❌ Full error:', error)
+            console.error('❌ Stack trace:', error instanceof Error ? error.stack : 'N/A')
             return null
         }
     }
