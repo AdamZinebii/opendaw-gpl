@@ -108,16 +108,6 @@ requestAnimationFrame(async () => {
                 Dialogs.cache()
                 return
             }
-            const checkExtensions = setInterval(() => {
-                if (document.scripts.length > 1) {
-                    Dialogs.info({
-                        headline: "Warning",
-                        message: "Please disable extensions to avoid undefined behavior.",
-                        okText: "Ignore"
-                    }).finally()
-                    clearInterval(checkExtensions)
-                }
-            }, 5_000)
             const checkUpdates = setInterval(async () => {
                 if (!navigator.onLine) {return}
                 const {status, value: newBuildInfo} = await Promises.tryCatch(loadBuildInfo())
