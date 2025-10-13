@@ -26,7 +26,11 @@ export class AuthService {
             throw new Error('Supabase configuration missing. Please check your environment variables.')
         }
         
-            this.supabase = createClient(AuthService.SUPABASE_URL, AuthService.SUPABASE_ANON_KEY)
+        // Store config in localStorage for auth callback page
+        localStorage.setItem('supabase_url', AuthService.SUPABASE_URL)
+        localStorage.setItem('supabase_anon_key', AuthService.SUPABASE_ANON_KEY)
+        
+        this.supabase = createClient(AuthService.SUPABASE_URL, AuthService.SUPABASE_ANON_KEY)
         this.initialize()
     }
     
@@ -161,6 +165,166 @@ export class AuthService {
             return { error }
         } catch (e) {
             console.error('AuthService: Google OAuth exception:', e)
+            return { error: e }
+        }
+    }
+    
+    /**
+     * Check if email exists in the system
+     */
+    async checkEmailExists(email: string): Promise<{ exists: boolean; error?: any }> {
+        try {
+            console.log('AuthService: Checking if email exists:', email)
+            const { data, error } = await this.supabase.rpc('check_email_exists', {
+                user_email: email
+            })
+            
+            if (error) {
+                console.error('AuthService: Error checking email:', error)
+                return { exists: false, error }
+            }
+            
+            console.log('AuthService: Email exists result:', data)
+            return { exists: data === true }
+        } catch (e) {
+            console.error('AuthService: Error checking email:', e)
+            return { exists: false, error: e }
+        }
+    }
+    
+    /**
+     * Sign up with email and password
+     * Sends verification email automatically
+     */
+    async signUpWithEmail(email: string, password: string): Promise<{ error: any; needsVerification?: boolean }> {
+        console.log('AuthService: Starting email sign up...')
+        try {
+            const { data, error } = await this.supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    emailRedirectTo: `${window.location.origin}/auth-callback.html`
+                }
+            })
+            
+            if (error) {
+                console.error('AuthService: Sign up error:', error)
+                return { error }
+            }
+            
+            console.log('AuthService: Sign up successful, verification email sent')
+            
+            // Check if email confirmation is required
+            const needsVerification = !data.session
+            
+            return { error: null, needsVerification }
+        } catch (e) {
+            console.error('AuthService: Sign up exception:', e)
+            return { error: e }
+        }
+    }
+    
+    /**
+     * Sign in with email and password
+     */
+    async signInWithEmail(email: string, password: string): Promise<{ error: any; needsVerification?: boolean }> {
+        console.log('AuthService: Starting email sign in...')
+        try {
+            const { error } = await this.supabase.auth.signInWithPassword({
+                email,
+                password
+            })
+            
+            if (error) {
+                console.error('AuthService: Sign in error:', error)
+                
+                // Check if it's an email not confirmed error
+                if (error.message.includes('Email not confirmed')) {
+                    return { error, needsVerification: true }
+                }
+                
+                return { error }
+            }
+            
+            console.log('AuthService: Sign in successful')
+            return { error: null }
+        } catch (e) {
+            console.error('AuthService: Sign in exception:', e)
+            return { error: e }
+        }
+    }
+    
+    /**
+     * Resend verification email
+     */
+    async resendVerificationEmail(email: string): Promise<{ error: any }> {
+        console.log('AuthService: Resending verification email...')
+        try {
+            const { error } = await this.supabase.auth.resend({
+                type: 'signup',
+                email,
+                options: {
+                    emailRedirectTo: `${window.location.origin}/auth-callback.html`
+                }
+            })
+            
+            if (error) {
+                console.error('AuthService: Resend verification error:', error)
+                return { error }
+            }
+            
+            console.log('AuthService: Verification email resent successfully')
+            return { error: null }
+        } catch (e) {
+            console.error('AuthService: Resend verification exception:', e)
+            return { error: e }
+        }
+    }
+    
+    /**
+     * Send password reset email
+     */
+    async resetPassword(email: string): Promise<{ error: any }> {
+        console.log('AuthService: Sending password reset email...')
+        const redirectUrl = `${window.location.origin}/auth-callback.html`
+        console.log('AuthService: Password reset redirect URL:', redirectUrl)
+        try {
+            const { error } = await this.supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: redirectUrl
+            })
+            
+            if (error) {
+                console.error('AuthService: Password reset error:', error)
+                return { error }
+            }
+            
+            console.log('AuthService: Password reset email sent successfully')
+            return { error: null }
+        } catch (e) {
+            console.error('AuthService: Password reset exception:', e)
+            return { error: e }
+        }
+    }
+    
+    /**
+     * Update password (used after clicking reset link)
+     */
+    async updatePassword(newPassword: string): Promise<{ error: any }> {
+        console.log('AuthService: Updating password...')
+        try {
+            const { error } = await this.supabase.auth.updateUser({
+                password: newPassword
+            })
+            
+            if (error) {
+                console.error('AuthService: Update password error:', error)
+                return { error }
+            }
+            
+            console.log('AuthService: Password updated successfully')
+            return { error: null }
+        } catch (e) {
+            console.error('AuthService: Update password exception:', e)
             return { error: e }
         }
     }
