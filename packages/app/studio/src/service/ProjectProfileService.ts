@@ -52,22 +52,22 @@ export class ProjectProfileService implements MutableObservableValue<Option<Proj
         })
     }
 
-    async saveAsDef(): Promise<void> {
-        console.log('[SAVEDEF] saveAsDef() starting');
+    async saveAsDef(customName?: string): Promise<void> {
+        console.log('[SAVEDEF] saveAsDef() starting with custom name:', customName);
         return this.#profile.getValue().ifSome(async profile => {
             console.log('[SAVEDEF] Current profile state - saved:', profile.saved(), 'name:', profile.meta?.name);
             
-            // Create default metadata with "Untitled" name
+            // Create default metadata, use custom name if provided, otherwise "Untitled"
             const date = new Date().toISOString()
             const meta = {
-                name: "Untitled",
+                name: customName || "Untitled",
                 description: "",
                 tags: [],
                 created: date,
                 modified: date
             }
             
-            console.log('[SAVEDEF] Calling profile.saveAs() with default name:', meta.name);
+            console.log('[SAVEDEF] Calling profile.saveAs() with name:', meta.name);
             const optProfile = await profile.saveAs(meta)
             
             // Use the Option type's match method to handle both cases

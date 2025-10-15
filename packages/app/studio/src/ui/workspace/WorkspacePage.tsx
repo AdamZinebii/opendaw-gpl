@@ -9,6 +9,8 @@ import {PanelContents} from "@/ui/workspace/PanelContents.tsx"
 import {ContentGlue} from "@/ui/workspace/ContentGlue.ts"
 import {Html} from "@opendaw/lib-dom"
 import {Prompter} from "@/ui/components/Prompter"
+import {PreviewBanner} from "@/ui/components/PreviewBanner"
+import {ApplyingLoader} from "@/ui/components/ApplyingLoader"
 
 const className = Html.adoptStyleSheet(css, "WorkspacePage")
 
@@ -65,12 +67,44 @@ const buildScreen = (lifecycle: Lifecycle,
 export const WorkspacePage: PageFactory<StudioService> = ({lifecycle, service}: PageContext<StudioService>) => {
     const mainElement: HTMLElement = <main/>
     const prompterElement: HTMLElement = <div/>
+    const previewBannerElement: HTMLElement = <div/>
+    const applyingLoaderElement: HTMLElement = <div/>
     let currentPrompter: HTMLElement | null = null
     
     const screenLifeTime = lifecycle.own(new Terminator())
     lifecycle.own(service.layout.screen.catchupAndSubscribe(owner => {
         screenLifeTime.terminate()
         buildScreen(screenLifeTime, service.panelLayout, mainElement, owner.getValue())
+    }))
+    
+    // Handle preview banner visibility (show after loading completes)
+    lifecycle.own(service.preview.showModal.catchupAndSubscribe(owner => {
+        const showModal = owner.getValue()
+        if (showModal) {
+            Html.empty(previewBannerElement)
+            previewBannerElement.appendChild(
+                <PreviewBanner lifecycle={lifecycle} service={service}/>
+            )
+        } else {
+            Html.empty(previewBannerElement)
+        }
+    }))
+    
+    // Handle applying loader visibility (show when applying preview to DAW)
+    lifecycle.own(service.preview.isApplying.catchupAndSubscribe(owner => {
+        const isApplying = owner.getValue()
+        if (isApplying) {
+            Html.empty(applyingLoaderElement)
+            applyingLoaderElement.appendChild(
+                <ApplyingLoader lifecycle={lifecycle}/>
+            )
+            // Hide workspace completely
+            mainElement.style.display = 'none'
+        } else {
+            Html.empty(applyingLoaderElement)
+            // Show workspace again
+            mainElement.style.display = ''
+        }
     }))
     
     // Handle prompter visibility with loading state
@@ -146,8 +180,10 @@ export const WorkspacePage: PageFactory<StudioService> = ({lifecycle, service}: 
 
     return (
         <div className={className}>
+            {previewBannerElement}
             {mainElement}
             {prompterElement}
+            {applyingLoaderElement}
         </div>
     )
 }

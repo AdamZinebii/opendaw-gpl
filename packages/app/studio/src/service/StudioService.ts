@@ -91,6 +91,19 @@ export class StudioService implements ProjectEnv {
         songCreationProgress: new DefaultObservableValue<number>(0), // 0-100 progress
         isSongCreating: new DefaultObservableValue<boolean>(false) // Loading state
     } as const
+    readonly preview = {
+        isActive: new DefaultObservableValue<boolean>(false),
+        showModal: new DefaultObservableValue<boolean>(false), // Show modal after loading
+        isApplying: new DefaultObservableValue<boolean>(false), // Loading state when applying to DAW
+        project: new DefaultObservableValue<any | null>(null), // Observable preview project
+        profile: new DefaultObservableValue<any | null>(null), // Observable preview profile
+        originalProjectData: null as { profile: ProjectProfile, uuid: UUID.Format } | null,
+        originalProjectId: null as string | null, // Supabase project ID for song-maker/retry calls
+        currentPrompt: null as string | null,
+        projectName: null as string | null, // AI-generated project name
+        editingRegion: new DefaultObservableValue<any | null>(null), // Observable: Region being edited in preview
+        sections: new DefaultObservableValue<any[]>([]) // Observable: Song sections from LLM
+    }
     readonly transport = {
         loop: new DefaultObservableValue<boolean>(false)
     } as const
@@ -308,7 +321,7 @@ export class StudioService implements ProjectEnv {
     /**
      * Execute tools using secret address (ultra-secret)
      */
-    async executeRemoteToolWithSecretAddress(secretAddress: string): Promise<{ success: boolean; message: string; resultSecretAddress?: string }> {
+    async executeRemoteToolWithSecretAddress(secretAddress: string): Promise<{ success: boolean; message: string; resultSecretAddress?: string; sections?: any[]; projectName?: string }> {
         if (!this.hasProfile) {
             throw new Error('No project is currently open')
         }
@@ -318,8 +331,17 @@ export class StudioService implements ProjectEnv {
             
             // Track progress during tool execution (will be updated by interval)
             
-            // Extract current project data (no audio files, just structure)
-            const projectData = this.extractProjectData()
+            // Extract project data (from PREVIEW if in preview mode, otherwise active project)
+            const isPreviewMode = this.preview.isActive.getValue() && this.preview.project.getValue()
+            if (isPreviewMode) {
+                console.log('📌 [TOOL-EXECUTOR] PREVIEW MODE ACTIVE - extracting from preview project')
+            } else {
+                console.log('📌 [TOOL-EXECUTOR] Normal mode - extracting from active project')
+            }
+            
+            const projectData = isPreviewMode
+                ? this.extractProjectDataFrom(this.preview.project.getValue()!, this.preview.profile.getValue()!)
+                : this.extractProjectData()
             
             // DEBUG: Check what we extract from current project
             console.log(`🔍 [DRUMFIX-EXTRACT] ========== EXTRACTING PROJECT DATA ==========`)
@@ -421,10 +443,18 @@ export class StudioService implements ProjectEnv {
                 }
             }
             
+            // Store sections if provided (for preview mode)
+            if (result.sections && result.sections.length > 0) {
+                console.log('📊 [SECTIONS] Received', result.sections.length, 'sections from tool-executor')
+                this.preview.sections.setValue(result.sections)
+            }
+            
             return {
                 success: result.success,
                 message: result.message,
-                resultSecretAddress: result.resultSecretAddress
+                resultSecretAddress: result.resultSecretAddress,
+                sections: result.sections,
+                projectName: result.projectName
             }
             
         } catch (error) {
@@ -541,6 +571,19 @@ export class StudioService implements ProjectEnv {
         return {
             meta: profile.meta,
             bpm: project.bpm, // Include project BPM
+            tracks: this.extractTracksData(project),
+            timeline: this.extractTimelineData(project),
+            effects: this.extractEffectsData(project)
+        }
+    }
+
+    /**
+     * Extract project data from a specific project (for preview mode)
+     */
+    private extractProjectDataFrom(project: any, profile: any): any {
+        return {
+            meta: profile.meta,
+            bpm: project.bpm,
             tracks: this.extractTracksData(project),
             timeline: this.extractTimelineData(project),
             effects: this.extractEffectsData(project)
@@ -746,27 +789,70 @@ export class StudioService implements ProjectEnv {
                         
                         const regionType = (region as any)._originalType || region.constructor.name;
                         if (regionType === 'NoteRegionBox') {
-                            console.log(`🔍 [DEBUG] Found NoteRegionBox:`)
-                            console.log(`  - Constructor: ${region.constructor.name}`)
-                            console.log(`  - Position: ${region.position?.getValue?.() || 'undefined'}`)
-                            console.log(`  - Duration: ${region.duration?.getValue?.() || 'undefined'}`)
-                            console.log(`  - Events field:`, region.events)
-                            console.log(`  - Events type:`, typeof region.events)
-                            console.log(`  - Events constructor:`, region.events?.constructor?.name)
-                            console.log(`  - Region keys:`, Object.keys(region))
-                            console.log(`  - Region prototype:`, Object.getPrototypeOf(region)?.constructor?.name)
-                            
                             const notes: any[] = []
                             
-                            // Try to extract notes with safe error handling
+                            // Try multiple methods to extract notes
                             try {
-                                // Use a safer approach to extract notes
-                                const extractedNotes = this.safeExtractNotesFromRegion(region)
-                                notes.push(...extractedNotes)
-                                console.log(`✅ Safely extracted ${extractedNotes.length} notes from region`)
+                                console.log(`🔍 [NOTE-EXTRACT] Attempting to extract notes from region at ${region.position?.getValue()}`)
+                                
+                                // Method 1: Try via targetVertex (most reliable for box graph)
+                                const targetVertex = region.events?.targetVertex
+                                console.log(`🔍 [NOTE-EXTRACT] targetVertex:`, targetVertex)
+                                
+                                if (targetVertex && targetVertex.nonEmpty && targetVertex.nonEmpty()) {
+                                    const collectionBox = targetVertex.unwrap().box
+                                    console.log(`🔍 [NOTE-EXTRACT] Found collection via targetVertex:`, collectionBox.constructor.name)
+                                    
+                                    // Try to get notes from the collection
+                                    const noteTargetVertex = collectionBox.events?.targetVertex
+                                    if (noteTargetVertex && noteTargetVertex.nonEmpty && noteTargetVertex.nonEmpty()) {
+                                        // Collection points to a linked list or array of notes
+                                        console.log(`🔍 [NOTE-EXTRACT] Collection has events targetVertex`)
+                                    }
+                                    
+                                    // Try pointer hub
+                                    const notePointers = collectionBox.events?.pointerHub?.incoming() || []
+                                    console.log(`🔍 [NOTE-EXTRACT] Found ${notePointers.length} note pointers via hub`)
+                                    
+                                    for (const notePointer of notePointers) {
+                                        const noteBox = notePointer.box
+                                        notes.push({
+                                            position: noteBox.position?.getValue() || 0,
+                                            duration: noteBox.duration?.getValue() || 480,
+                                            pitch: noteBox.pitch?.getValue() || 60,
+                                            velocity: noteBox.velocity?.getValue() || 0.8
+                                        })
+                                    }
+                                    
+                                    console.log(`✅ [NOTE-EXTRACT] Extracted ${notes.length} notes via targetVertex`)
+                                } else {
+                                    console.log('⚠️ [NOTE-EXTRACT] No targetVertex, trying pointer hub')
+                                    
+                                    // Method 2: Direct access via events pointer
+                                    const eventsPointer = region.events?.pointerHub?.incoming()
+                                    console.log(`🔍 [NOTE-EXTRACT] eventsPointer:`, eventsPointer)
+                                    
+                                    if (eventsPointer && eventsPointer.length > 0) {
+                                        const collectionBox = eventsPointer[0].box
+                                        const notePointers = collectionBox.events?.pointerHub?.incoming() || []
+                                        
+                                        console.log(`🔍 [NOTE-EXTRACT] Found ${notePointers.length} notes via pointer hub`)
+                                        
+                                        for (const notePointer of notePointers) {
+                                            const noteBox = notePointer.box
+                                            notes.push({
+                                                position: noteBox.position?.getValue() || 0,
+                                                duration: noteBox.duration?.getValue() || 480,
+                                                pitch: noteBox.pitch?.getValue() || 60,
+                                                velocity: noteBox.velocity?.getValue() || 0.8
+                                            })
+                                        }
+                                    }
+                                }
+                                
+                                console.log(`📝 [NOTE-EXTRACT] Final: ${notes.length} notes extracted from region`)
                             } catch (extractError) {
-                                console.warn('⚠️ Could not extract notes from region, preserving empty region:', extractError)
-                                // Keep notes array empty to avoid crashes, but preserve region structure
+                                console.error('❌ [NOTE-EXTRACT] Error:', extractError)
                             }
                             
                             const regionData = {
@@ -792,182 +878,6 @@ export class StudioService implements ProjectEnv {
         return noteRegions
     }
     
-    /**
-     * Safely extract notes from a region without causing pointer errors
-     */
-    private safeExtractNotesFromRegion(region: any): any[] {
-        const notes: any[] = []
-        
-        try {
-            // Try to access the region's events using a different approach
-            // Instead of following pointers, try to access the box graph directly
-            
-            // Get the events field value directly
-            const eventsField = region.events
-            console.log('🔍 [DEBUG-SAFE] Events field:', eventsField)
-            console.log('🔍 [DEBUG-SAFE] Events field keys:', eventsField ? Object.keys(eventsField) : 'no keys')
-            console.log('🔍 [DEBUG-SAFE] Events field prototype:', eventsField ? Object.getPrototypeOf(eventsField) : 'no prototype')
-            
-            if (!eventsField) {
-                console.log('🔍 No events field found in region')
-                return notes
-            }
-            
-            // Try different ways to get the target
-            console.log('🔍 [DEBUG-SAFE] eventsField.target:', eventsField.target)
-            console.log('🔍 [DEBUG-SAFE] eventsField._target:', eventsField._target)
-            console.log('🔍 [DEBUG-SAFE] eventsField.getValue:', typeof eventsField.getValue)
-            
-            // Try to get the target UUID from different possible locations
-            let targetUuid = null
-            
-            // Method 1: PointerField targetAddress getter
-            try {
-                const targetAddress = eventsField.targetAddress
-                console.log('🔍 [DEBUG-SAFE] Method 1 - targetAddress:', targetAddress)
-                if (targetAddress && targetAddress.nonEmpty && targetAddress.nonEmpty()) {
-                    targetUuid = targetAddress.unwrap().uuid
-                    console.log('🔍 [DEBUG-SAFE] Method 1 - extracted UUID from targetAddress:', targetUuid)
-                }
-            } catch (e) {
-                console.log('🔍 [DEBUG-SAFE] Method 1 failed:', e)
-            }
-            
-            // Method 2: PointerField targetVertex getter (THE CORRECT WAY!)
-            if (!targetUuid) {
-                try {
-                    const targetVertex = eventsField.targetVertex
-                    console.log('🔍 [DEBUG-SAFE] Method 2 - targetVertex:', targetVertex)
-                    console.log('🔍 [DEBUG-SAFE] Method 2 - targetVertex type:', typeof targetVertex)
-                    console.log('🔍 [DEBUG-SAFE] Method 2 - targetVertex constructor:', targetVertex?.constructor?.name)
-                    
-                    if (targetVertex && targetVertex.nonEmpty && targetVertex.nonEmpty()) {
-                        const vertex = targetVertex.unwrap()
-                        console.log('🔍 [DEBUG-SAFE] Method 2 - unwrapped vertex:', vertex)
-                        console.log('🔍 [DEBUG-SAFE] Method 2 - vertex.box:', vertex.box)
-                        console.log('🔍 [DEBUG-SAFE] Method 2 - vertex.address:', vertex.address)
-                        targetUuid = vertex.address?.uuid
-                        console.log('🔍 [DEBUG-SAFE] Method 2 - extracted UUID from targetVertex:', targetUuid)
-                        
-                        // Now try to get the actual collection box and its events
-                        if (vertex.box && targetUuid) {
-                            const collection = vertex.box
-                            console.log('🔍 [DEBUG-SAFE] Method 2 - collection box:', collection.constructor?.name)
-                            
-                            // Try to get events from collection
-                            const collectionEventsPointer = collection.events?.pointerHub?.incoming()
-                            console.log('🔍 [DEBUG-SAFE] Method 2 - collection events pointer:', collectionEventsPointer?.length || 0)
-                            
-                            if (collectionEventsPointer && collectionEventsPointer.length > 0) {
-                                for (const notePointer of collectionEventsPointer) {
-                                    try {
-                                        const note = notePointer.box
-                                        const noteData = {
-                                            position: note.position?.getValue() || 0,
-                                            duration: note.duration?.getValue() || 960,
-                                            pitch: note.pitch?.getValue() || 60,
-                                            velocity: note.velocity?.getValue() || 0.8,
-                                            chance: note.chance?.getValue() || 100
-                                        }
-                                        notes.push(noteData)
-                                        console.log('🔍 [DEBUG-SAFE] Method 2 - FOUND NOTE:', noteData)
-                                    } catch (noteError) {
-                                        console.warn('Warning: Could not extract note from collection:', noteError)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } catch (e) {
-                    console.log('🔍 [DEBUG-SAFE] Method 2 failed:', e)
-                }
-            }
-            
-            // Method 3: Try to access private fields
-            if (!targetUuid) {
-                try {
-                    const privateTargetAddress = (eventsField as any)['#targetAddress']
-                    console.log('🔍 [DEBUG-SAFE] Method 3 - #targetAddress:', privateTargetAddress)
-                    if (privateTargetAddress && privateTargetAddress.nonEmpty && privateTargetAddress.nonEmpty()) {
-                        targetUuid = privateTargetAddress.unwrap().uuid
-                        console.log('🔍 [DEBUG-SAFE] Method 3 - extracted UUID from #targetAddress:', targetUuid)
-                    }
-                } catch (e) {
-                    console.log('🔍 [DEBUG-SAFE] Method 3 failed:', e)
-                }
-            }
-            
-            console.log('🔍 [DEBUG-SAFE] Final target UUID:', targetUuid)
-            
-            if (!targetUuid) {
-                console.log('🔍 No target UUID found in events field')
-                return notes
-            }
-            
-            // Find the collection box in the graph by UUID
-            const project = this.project
-            if (!project) {
-                console.log('🔍 No current project for box graph lookup')
-                return notes
-            }
-            
-            // Look for the collection in the box graph
-            const collectionOption = project.boxGraph.findBox(targetUuid)
-            if (!collectionOption || collectionOption.isEmpty()) {
-                console.log('🔍 Collection not found in box graph')
-                return notes
-            }
-            
-            const collection = collectionOption.unwrap()
-            console.log(`🔍 Found collection: ${collection.constructor.name}`)
-            console.log(`🔍 Collection keys:`, Object.keys(collection))
-            
-            // Now access the events field of the collection (cast to any for access)
-            const collectionEventsField = (collection as any).events
-            console.log(`🔍 Collection events field:`, collectionEventsField)
-            console.log(`🔍 Collection events field type:`, typeof collectionEventsField)
-            console.log(`🔍 Collection events field constructor:`, collectionEventsField?.constructor?.name)
-            
-            if (!collectionEventsField) {
-                console.log('🔍 No events field in collection')
-                return notes
-            }
-            
-            // Get incoming pointers to the collection's events (notes point TO the collection)
-            const notePointers = collectionEventsField.pointerHub?.incoming()
-            console.log(`🔍 Note pointers from collection.events.pointerHub.incoming():`, notePointers?.length || 0)
-            
-            if (!notePointers || notePointers.length === 0) {
-                console.log('🔍 No note pointers found in collection')
-                return notes
-            }
-            
-            console.log(`🔍 Found ${notePointers.length} note pointers`)
-            
-            // Extract note data
-            for (const notePointer of notePointers) {
-                try {
-                    const note = notePointer.box
-                    const noteData = {
-                        position: note.position?.getValue() || 0,
-                        duration: note.duration?.getValue() || 960,
-                        pitch: note.pitch?.getValue() || 60,
-                        velocity: note.velocity?.getValue() || 0.8,
-                        chance: note.chance?.getValue() || 100
-                    }
-                    notes.push(noteData)
-                    console.log(`✅ Extracted note: pitch=${noteData.pitch}, pos=${noteData.position}`)
-                } catch (noteError) {
-                    console.warn('Warning: Could not extract individual note:', noteError)
-                }
-            }
-            
-        } catch (error) {
-            console.warn('Warning: Safe note extraction failed:', error)
-        }
-        
-        return notes
-    }
     
     private extractAudioRegions(audioUnit: any): any[] {
         const audioRegions: any[] = []
@@ -1246,22 +1156,60 @@ export class StudioService implements ProjectEnv {
         try {
             console.log('🔄 Applying project changes from server...')
             
-            // Back to the working approach: reconstruct project
-            const currentProfile = this.profileService.getValue().unwrap()
-            
-            // Create a new project with the modified data
-            const newProject = await this.reconstructProjectFromData(modifiedProjectData)
-            
-            // Update the profile with the new project
-            const newProfile = new ProjectProfile(
-                currentProfile.uuid,
-                newProject,
-                modifiedProjectData.meta || currentProfile.meta,
-                currentProfile.cover
-            )
-            
-            this.profileService.setValue(Option.wrap(newProfile))
-            console.log('✅ Project changes applied successfully')
+            // If in preview mode, apply to PREVIEW project, NOT the active one!
+            if (this.preview.isActive.getValue() && this.preview.profile.getValue()) {
+                console.log('📌 PREVIEW MODE: Applying changes to PREVIEW project (NOT main project)')
+                const currentPreviewProject = this.preview.project.getValue()
+                console.log('📊 Preview project BEFORE:', currentPreviewProject?.rootBoxAdapter.audioUnits.adapters().length || 0, 'tracks')
+                const previewProfile = this.preview.profile.getValue()!
+                
+                // Create new project with modified data
+                const newProject = await this.reconstructProjectFromData(modifiedProjectData)
+                console.log('📊 New project FROM SERVER:', newProject.rootBoxAdapter.audioUnits.adapters().length, 'tracks')
+                
+                // Re-initialize audio engine for new preview project
+                console.log('🔊 Re-initializing preview audio engine...')
+                newProject.startAudioWorklet(this.audioWorklets, {
+                    unload: async (event: unknown) => {
+                        console.error('Preview engine error:', event)
+                    },
+                    load: () => {
+                        console.log('✅ Preview engine reloaded')
+                    }
+                })
+                
+                // Update PREVIEW profile (not active profile!)
+                const newPreviewProfile = new ProjectProfile(
+                    previewProfile.uuid,
+                    newProject,
+                    modifiedProjectData.meta || previewProfile.meta,
+                    previewProfile.cover
+                )
+                
+                this.preview.project.setValue(newProject)
+                this.preview.profile.setValue(newPreviewProfile)
+                console.log('✅ Preview project changes applied successfully (main project untouched!)')
+                console.log('📊 Preview project NOW has:', newProject.rootBoxAdapter.audioUnits.adapters().length, 'tracks')
+                
+            } else {
+                // Normal mode: apply to active project
+                console.log('📌 NORMAL MODE: Applying changes to active project')
+                const currentProfile = this.profileService.getValue().unwrap()
+                
+                // Create a new project with the modified data
+                const newProject = await this.reconstructProjectFromData(modifiedProjectData)
+                
+                // Update the profile with the new project
+                const newProfile = new ProjectProfile(
+                    currentProfile.uuid,
+                    newProject,
+                    modifiedProjectData.meta || currentProfile.meta,
+                    currentProfile.cover
+                )
+                
+                this.profileService.setValue(Option.wrap(newProfile))
+                console.log('✅ Project changes applied successfully')
+            }
             
         } catch (error) {
             console.error('❌ Failed to apply project changes:', error)
@@ -1556,6 +1504,7 @@ export class StudioService implements ProjectEnv {
             project.editing.modify(() => {
                 for (const regionData of noteRegions) {
                     console.log(`🎵 Creating region with ${regionData.notes?.length || 0} notes at position ${regionData.position}`)
+                    console.log(`🔍 [MIDI-DEBUG] regionData:`, JSON.stringify(regionData, null, 2))
                     
                     const collection = NoteEventCollectionBox.create(project.boxGraph, UUID.generate());
                     (collection as any)._originalType = 'NoteEventCollectionBox'
@@ -2011,8 +1960,8 @@ export class StudioService implements ProjectEnv {
             }
         }
     }
-    async saveAsDef(): Promise<void> {
-        await this.profileService.saveAsDef()
+    async saveAsDef(customName?: string): Promise<void> {
+        await this.profileService.saveAsDef(customName)
         const currentProfile = this.profileService.getValue()
         if (currentProfile.nonEmpty()) {
             try {
@@ -2222,9 +2171,242 @@ export class StudioService implements ProjectEnv {
         console.log('🎵 Completing song creation')
         this.stopProgressInterval()
         this.layout.songCreationProgress.setValue(100)
+        
+        // After loading completes, show preview modal (if in preview mode)
         setTimeout(() => {
             this.hidePrompter()
+            
+            // Show preview modal if we're in preview mode
+            if (this.preview.isActive.getValue()) {
+                console.log('✨ Showing preview modal after loading complete')
+                this.preview.showModal.setValue(true)
+            }
         }, 1000) // Wait 1 second at 100%
+    }
+
+    /**
+     * Create preview workspace - new empty project for song preview
+     * IMPORTANT: Original project stays active! Preview is stored separately.
+     */
+    private async createPreviewWorkspace(prompt: string): Promise<void> {
+        console.log('🎬 Creating SEPARATE preview workspace (original project stays active)')
+        
+        // Save reference to current project (will stay active!)
+        const currentProfile = this.profileService.getValue()
+        if (currentProfile.isEmpty()) {
+            throw new Error('No active project to create preview from')
+        }
+        
+        const profile = currentProfile.unwrap()
+        this.preview.originalProjectData = {
+            profile: profile,
+            uuid: profile.uuid
+        }
+        this.preview.currentPrompt = prompt
+        
+        console.log('💾 Original project saved (STAYS ACTIVE):', profile.meta.name)
+        
+        // Create new empty preview project (SEPARATE, not active)
+        const {Project, ProjectProfile, ProjectMeta} = await import('@opendaw/studio-core')
+        const previewProject = Project.new(this)
+        
+        // Initialize preview project's audio engine for playback
+        console.log('🔊 Initializing preview project audio engine...')
+        previewProject.startAudioWorklet(this.audioWorklets, {
+            unload: async (event: unknown) => {
+                console.error('Preview engine error:', event)
+            },
+            load: () => {
+                console.log('✅ Preview engine loaded')
+            }
+        })
+        // Don't connect to main engine facade - preview has its own playback
+        
+        // Create preview profile
+        const previewProfile = new ProjectProfile(
+            UUID.generate(),
+            previewProject,
+            ProjectMeta.init('🎵 Preview'),
+            Option.None,
+            false
+        )
+        
+        // Store preview separately (DO NOT set as active profile!)
+        this.preview.project.setValue(previewProject)
+        this.preview.profile.setValue(previewProfile)
+        this.preview.isActive.setValue(true)
+        
+        console.log('✅ Preview project created SEPARATELY (original project still active in main workspace)')
+        console.log('📌 Preview project will receive tool executions, NOT the original!')
+    }
+
+    /**
+     * Accept preview - merge preview tracks into original project
+     */
+    async acceptPreview(): Promise<void> {
+        console.log('✅ Accepting preview - merging to original project')
+        
+        if (!this.preview.project.getValue() || !this.preview.originalProjectData) {
+            console.error('❌ No preview data to apply')
+            return
+        }
+        
+        try {
+            // Show loading state
+            this.preview.isApplying.setValue(true)
+            
+            // Hide preview modal
+            this.preview.showModal.setValue(false)
+            
+            // Extract all tracks/data from preview project
+            const previewData = this.extractProjectDataFrom(this.preview.project.getValue()!, this.preview.profile.getValue()!)
+            
+            console.log(`📋 Merging ${previewData.tracks?.length || 0} tracks from preview to original project`)
+            
+            // DEBUG: Log note regions being extracted
+            previewData.tracks?.forEach((track: any, index: number) => {
+                const noteCount = track.noteRegions?.reduce((sum: number, r: any) => sum + (r.notes?.length || 0), 0) || 0
+                console.log(`  📝 Track ${index} "${track.name}": ${track.noteRegions?.length || 0} regions, ${noteCount} total notes`)
+            })
+            
+            // IMPORTANT: Deactivate preview mode BEFORE restoring original project
+            this.preview.isActive.setValue(false)
+            
+            // Restore original project
+            this.profileService.setValue(Option.wrap(this.preview.originalProjectData.profile))
+            
+            console.log('📌 Preview deactivated, now applying changes to MAIN project')
+            
+            // Now apply preview changes to it (this will merge the tracks)
+            await this.applyProjectChanges(previewData)
+            
+            // Apply modified arrangements based on sections
+            const sections = this.preview.sections.getValue()
+            if (sections && sections.length > 0) {
+                console.log(`🎵 Applying modified arrangements based on ${sections.length} sections`)
+                
+                // Convert sections to arrangement tool calls
+                const trackArrangements = new Map<string, any[]>()
+                
+                sections.forEach((section: any) => {
+                    section.tracks.forEach((trackName: string) => {
+                        const existing = trackArrangements.get(trackName) || []
+                        existing.push([section.startBar, section.endBar])
+                        trackArrangements.set(trackName, existing)
+                    })
+                })
+                
+                console.log(`📊 Applying arrangements for ${trackArrangements.size} tracks based on modified sections`)
+                
+                // Execute arrangements on the now-restored original project
+                for (const [trackName, timeArrangement] of trackArrangements) {
+                    const toolResponse = await this.executeRemoteTool('arrangeInTrack', {
+                        trackName,
+                        timeArrangement
+                    })
+                    
+                    if (toolResponse.success) {
+                        console.log(`✅ Arrangement applied for track "${trackName}"`)
+                    } else {
+                        console.error(`❌ Failed to apply arrangement for track "${trackName}":`, toolResponse.message)
+                    }
+                }
+            }
+            
+            console.log('✅ Preview merged successfully!')
+            
+            // Auto-save with AI-generated project name
+            if (this.preview.projectName) {
+                console.log(`💾 [AUTO-SAVE] Saving project with AI-generated name: ${this.preview.projectName}`)
+                
+                try {
+                    const currentProfile = this.profileService.getValue()
+                    if (currentProfile && 'unwrap' in currentProfile) {
+                        const profile = currentProfile.unwrap()
+                        
+                        // Save the project with custom name
+                        if (!profile.saved()) {
+                            console.log('🆕 [AUTO-SAVE] New project, using saveAsDef() with custom name')
+                            await this.saveAsDef(this.preview.projectName)
+                        } else {
+                            console.log('💾 [AUTO-SAVE] Existing project, updating name and saving')
+                            profile.meta.name = this.preview.projectName
+                            await this.save()
+                        }
+                        
+                        console.log('✅ [AUTO-SAVE] Project saved successfully with name:', this.preview.projectName)
+                    }
+                } catch (saveError) {
+                    console.error('❌ [AUTO-SAVE] Failed to save project:', saveError)
+                    // Don't block the flow on save error
+                }
+            } else {
+                console.log('⚠️ [AUTO-SAVE] No AI-generated project name available, skipping auto-save')
+            }
+            
+            // Clear preview state
+            this.clearPreviewState()
+            
+        } finally {
+            // Always hide loading state when done
+            this.preview.isApplying.setValue(false)
+        }
+    }
+
+    /**
+     * Reject preview - discard preview and keep original project
+     */
+    async rejectPreview(): Promise<void> {
+        console.log('❌ Rejecting preview - discarding preview project')
+        
+        if (!this.preview.isActive.getValue()) {
+            console.warn('No active preview to reject')
+            return
+        }
+        
+        // Hide modal first
+        this.preview.showModal.setValue(false)
+        
+        // Original project is already active - just clear preview state
+        console.log('✅ Preview discarded, original project unchanged')
+        
+        // Clear preview state
+        this.clearPreviewState()
+    }
+
+    /**
+     * Regenerate song - reject preview and create new one with same prompt
+     */
+    async regeneratePreview(): Promise<void> {
+        console.log('🔄 Regenerating preview')
+        
+        const prompt = this.preview.currentPrompt
+        if (!prompt) {
+            console.warn('No prompt stored for regeneration')
+            return
+        }
+        
+        // Reject current preview first
+        await this.rejectPreview()
+        
+        // Trigger new song creation with same prompt
+        await this.handleSongPrompt(prompt)
+    }
+
+    /**
+     * Clear preview state
+     */
+    private clearPreviewState(): void {
+        this.preview.isActive.setValue(false)
+        this.preview.isApplying.setValue(false)
+        this.preview.project.setValue(null)
+        this.preview.profile.setValue(null)
+        this.preview.editingRegion.setValue(null)
+        this.preview.sections.setValue([])
+        this.preview.originalProjectData = null
+        this.preview.originalProjectId = null
+        this.preview.currentPrompt = null
+        this.preview.projectName = null
     }
 
     private async executeToolCallsWithSecretAddress(
@@ -2293,9 +2475,20 @@ export class StudioService implements ProjectEnv {
                         
                         if (isSongMakerStep2Complete) {
                             console.log('🎵 Song-maker STEP 2 - executing final tools (add content) without recursion')
+                            
                             // Execute STEP 2 tools ONE LAST TIME (addMelodyGenerationToTrack, addAudioToAudioPlayer)
+                            // Sections will be received from tool-executor response
                             const step2Results = await this.executeRemoteToolWithSecretAddress(followupResult.secretAddress)
                             console.log('✅ Song-maker STEP 2 tools executed:', step2Results.success)
+                            if (step2Results.sections) {
+                                console.log('📊 [SECTIONS] Received', step2Results.sections.length, 'sections from tool execution')
+                            }
+                            
+                            // Store project name if provided in step 2 response
+                            if (step2Results.projectName) {
+                                this.preview.projectName = step2Results.projectName
+                                console.log(`✨ [PROJECT-NAME] AI generated project name (from step 2): ${step2Results.projectName}`)
+                            }
                             // Fall through to completion below (no recursion)
                         } else {
                             console.log('🔄 Song creator returned more tools to execute - continuing iteratively')
@@ -2415,6 +2608,9 @@ export class StudioService implements ProjectEnv {
             this.layout.songCreationProgress.setValue(0)
             this.startProgressInterval() // Démarre l'avancement automatique de 0.5% toutes les 0.2s jusqu'à 95%
             
+            // Create preview workspace FIRST (before any API calls)
+            await this.createPreviewWorkspace(prompt)
+            
             // Get current project and user info (using same pattern as Chatbot)
             const userId = this.authService?.getCurrentUser()?.id
             if (!userId) {
@@ -2436,6 +2632,9 @@ export class StudioService implements ProjectEnv {
             if (!userId || !projectId) {
                 throw new Error('Missing user or project ID')
             }
+            
+            // Store project ID in preview for retry functionality
+            this.preview.originalProjectId = projectId
             
             // Call song-maker through router
             console.log('🔧 [DEBUG] Calling song-maker with:', { message: prompt, userId, projectId })
@@ -2485,6 +2684,12 @@ export class StudioService implements ProjectEnv {
             
             console.log('🔧 [DEBUG] Song creator initial response:', JSON.stringify(result, null, 2))
             console.log('🔧 [DEBUG] Initial response isBringUpDrums:', result.isBringUpDrums, 'searchQuery:', result.searchQuery)
+            
+            // Store project name if provided
+            if (result.projectName) {
+                this.preview.projectName = result.projectName
+                console.log(`✨ [PROJECT-NAME] AI generated project name: ${result.projectName}`)
+            }
             
             if (result.success && result.send_to_execution) {
                 // Handle tool execution similar to chatbot
@@ -2588,5 +2793,522 @@ export class StudioService implements ProjectEnv {
         assert(timelineBox.isAttached(), "[verify] timelineBox is not attached")
         const result = boxGraph.verifyPointers()
         await Dialogs.info({message: `Project is okay. All ${result.count} pointers are fine.`})
+    }
+
+    /**
+     * Retry melody generation for a MIDI track
+     */
+    async retryMelody(trackName: string, projectId: string, project: Project, audioUnit: any): Promise<void> {
+        console.log(`🔄 [RETRY-MELODY] Starting retry for track "${trackName}"`)
+        
+        try {
+            // Initialize Supabase client
+            const { createClient } = await import('@supabase/supabase-js')
+            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://tsfjukrkryhbypjcnepg.supabase.co'
+            const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+            const supabase = createClient(supabaseUrl, supabaseKey)
+
+            // Step 1: Call retry-melody edge function
+            const response = await fetch(`${supabaseUrl}/functions/v1/retry-melody`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${supabaseKey}`,
+                    'apikey': supabaseKey
+                },
+                body: JSON.stringify({
+                    trackName,
+                    projectId
+                })
+            })
+
+            if (!response.ok) {
+                const errorText = await response.text()
+                throw new Error(`Retry melody failed: ${response.status} - ${errorText}`)
+            }
+
+            const result = await response.json()
+            console.log('✅ [RETRY-MELODY] Generation result:', result)
+
+            // Step 2: Fetch the MIDI file URL from generations-metadata (melody only, not full)
+            console.log('📊 [RETRY-MELODY] Fetching metadata for generation_id:', result.generation_id)
+            
+            // Add timeout to prevent infinite loading
+            const metadataPromise = supabase
+                .from('generations-metadata')
+                .select('melody_link, input_parameters')
+                .eq('id', result.generation_id)
+                .single()
+            
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Metadata fetch timeout after 10s')), 10000)
+            )
+            
+            const { data: metadata, error: metaError } = await Promise.race([
+                metadataPromise,
+                timeoutPromise
+            ]) as any
+
+            console.log('📊 [RETRY-MELODY] Metadata fetch completed')
+            console.log('📊 [RETRY-MELODY] Metadata:', metadata)
+            console.log('📊 [RETRY-MELODY] Error:', metaError)
+
+            if (metaError) {
+                console.error('❌ [RETRY-MELODY] Metadata fetch error:', metaError)
+                throw new Error(`Failed to fetch generation metadata: ${metaError?.message}`)
+            }
+            
+            if (!metadata) {
+                console.error('❌ [RETRY-MELODY] No metadata returned')
+                throw new Error('No metadata found for generation')
+            }
+
+            console.log('📥 [RETRY-MELODY] MIDI URL (melody only):', metadata.melody_link)
+            console.log('📊 [RETRY-MELODY] Generation params:', metadata.input_parameters)
+
+            // Step 3: Download and parse MIDI file (melody only)
+            console.log('⬇️ [RETRY-MELODY] Downloading MIDI from:', metadata.melody_link)
+            const midiResponse = await fetch(metadata.melody_link)
+            if (!midiResponse.ok) {
+                console.error('❌ [RETRY-MELODY] MIDI download failed:', midiResponse.status)
+                throw new Error(`Failed to download MIDI: ${midiResponse.status}`)
+            }
+
+            console.log('📦 [RETRY-MELODY] Converting to ArrayBuffer...')
+            const midiArrayBuffer = await midiResponse.arrayBuffer()
+            console.log('📦 [RETRY-MELODY] ArrayBuffer size:', midiArrayBuffer.byteLength, 'bytes')
+            
+            console.log('🎼 [RETRY-MELODY] Importing MidiFile decoder...')
+            const { MidiFile } = await import('@opendaw/lib-midi')
+            
+            console.log('🎼 [RETRY-MELODY] Decoding MIDI...')
+            const midiFile = MidiFile.decoder(midiArrayBuffer).decode()
+
+            console.log('🎵 [RETRY-MELODY] Parsed MIDI file with', midiFile.tracks.length, 'tracks')
+            console.log('🎵 [RETRY-MELODY] MIDI timeDivision:', midiFile.timeDivision)
+
+            // Step 4: Extract notes from MIDI and convert ticks to PPQN (same as tool-executor)
+            const midiTimeDivision = midiFile.timeDivision || 96 // Pozalabs uses 96
+            const targetPPQN = 960 // OpenDAW PPQN (same as tool-executor)
+            
+            console.log('🔄 [RETRY-MELODY] Converting MIDI ticks to PPQN:', {
+                midiTimeDivision,
+                targetPPQN,
+                conversionRatio: targetPPQN / midiTimeDivision
+            })
+            
+            const notes: any[] = []
+            for (const track of midiFile.tracks) {
+                for (const [_, events] of track.controlEvents) {
+                    const noteMap = new Map()
+                    
+                    for (const event of events) {
+                        if (event.type === 144) { // NOTE_ON
+                            noteMap.set(event.param0, {
+                                startTicks: event.ticks,
+                                pitch: event.param0,
+                                velocity: event.param1 / 127
+                            })
+                        } else if (event.type === 128) { // NOTE_OFF
+                            const noteStart = noteMap.get(event.param0)
+                            if (noteStart) {
+                                const durationTicks = Math.max(midiTimeDivision / 8, event.ticks - noteStart.startTicks)
+                                // Convert MIDI ticks to openDAW PPQN (960 per quarter note) - same as tool-executor
+                                const positionPPQN = Math.floor(noteStart.startTicks / midiTimeDivision * 960)
+                                const durationPPQN = Math.floor(durationTicks / midiTimeDivision * 960)
+                                notes.push({
+                                    position: positionPPQN,
+                                    duration: durationPPQN,
+                                    pitch: noteStart.pitch,
+                                    velocity: noteStart.velocity
+                                })
+                                noteMap.delete(event.param0)
+                            }
+                        }
+                    }
+                }
+            }
+
+            console.log('🎹 [RETRY-MELODY] Extracted', notes.length, 'notes')
+
+            // Step 5: Clear existing regions and add new notes
+            console.log('📦 [RETRY-MELODY] Importing studio boxes...')
+            const {NoteEventBox, NoteEventCollectionBox, NoteRegionBox} = await import('@opendaw/studio-boxes')
+            const {ColorCodes} = await import('@opendaw/studio-core')
+            
+            console.log('🔍 [RETRY-MELODY] Getting trackBox from audioUnit...')
+            const trackBox = audioUnit.tracks.values()[0]
+            if (!trackBox) {
+                console.error('❌ [RETRY-MELODY] No track found in audio unit')
+                throw new Error('No track found in audio unit')
+            }
+            console.log('✅ [RETRY-MELODY] TrackBox found:', trackBox)
+            
+            // Calculate region duration
+            const regionDuration = notes.length > 0 
+                ? Math.max(...notes.map(n => n.position + n.duration))
+                : 1920
+            console.log('📏 [RETRY-MELODY] Region duration:', regionDuration)
+
+            // Clear existing regions and add new notes in ONE transaction
+            console.log('🔄 [RETRY-MELODY] Starting modify transaction...')
+            project.editing.modify(() => {
+                // Step 1: VRAIMENT supprimer toutes les régions existantes
+                const regions = trackBox.regions.collection.asArray()
+                console.log(`🗑️ [RETRY-MELODY] Clearing ${regions.length} existing regions`)
+                
+                // Méthode 1: Terminer chaque région
+                for (let i = regions.length - 1; i >= 0; i--) {
+                    const region = regions[i]
+                    try {
+                        region.box.terminate()
+                    } catch (e) {
+                        console.warn(`⚠️ Could not terminate region ${i}:`, e)
+                    }
+                }
+                
+                // Méthode 2: Clear la collection directement
+                try {
+                    trackBox.regions.collection.clear()
+                } catch (e) {
+                    console.warn(`⚠️ Could not clear collection:`, e)
+                }
+                
+                // Step 2: Créer une nouvelle région pour CHAQUE section (loop de 16 bars)
+                // Calculer combien de sections de 16 bars on a
+                const barsPerSection = 16
+                const ppqnPerBar = 1920 // 4 beats * 480 ppqn
+                const ppqnPerSection = barsPerSection * ppqnPerBar // 30720
+                const totalSections = 8 // 8 sections de 16 bars = 128 bars total
+                
+                console.log(`🔄 [RETRY-MELODY] Creating ${totalSections} looped sections...`)
+                
+                for (let sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
+                    const sectionStartPosition = sectionIndex * ppqnPerSection
+                    
+                    // Créer une nouvelle collection pour cette section
+                    const collection = NoteEventCollectionBox.create(project.boxGraph, UUID.generate())
+                    
+                    // Créer la région pour cette section
+                    NoteRegionBox.create(project.boxGraph, UUID.generate(), box => {
+                        box.position.setValue(sectionStartPosition)
+                        box.duration.setValue(regionDuration)
+                        box.label.setValue(`Regenerated Melody (Loop ${sectionIndex + 1})`)
+                        box.hue.setValue(ColorCodes.forTrackType(0))
+                        box.mute.setValue(false)
+                        box.loopDuration.setValue(regionDuration)
+                        box.events.refer(collection.owners)
+                        box.regions.refer(trackBox.box.regions)
+                    })
+                    
+                    // Ajouter les mêmes notes à chaque section (loop)
+                    for (const note of notes) {
+                        NoteEventBox.create(project.boxGraph, UUID.generate(), box => {
+                            box.position.setValue(note.position)
+                            box.duration.setValue(note.duration)
+                            box.pitch.setValue(note.pitch)
+                            box.velocity.setValue(note.velocity)
+                            box.events.refer(collection.events)
+                        })
+                    }
+                }
+                
+                console.log(`✅ [RETRY-MELODY] Added ${notes.length} notes x ${totalSections} sections`)
+                console.log('🔚 [RETRY-MELODY] Modify transaction complete')
+            })
+
+            console.log('✅ [RETRY-MELODY] Successfully replaced melody - ALL DONE!')
+
+        } catch (error) {
+            console.error('❌ [RETRY-MELODY] Error:', error)
+            const errorMessage = error instanceof Error ? error.message : String(error)
+            await Dialogs.info({
+                headline: 'Retry Failed',
+                message: `Failed to regenerate melody: ${errorMessage}`
+            })
+            throw error
+        }
+    }
+
+    /**
+     * Retry audio generation for an audio track
+     */
+    async retryAudio(trackName: string, projectId: string, project: Project, audioUnit: any, customDescription?: string): Promise<void> {
+        console.log(`🔄 [RETRY-AUDIO] Starting retry for track "${trackName}"`, {customDescription})
+        
+        try {
+            // Get Supabase URL and key
+            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://tsfjukrkryhbypjcnepg.supabase.co'
+            const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+
+            // Step 1: Call retry-audio edge function
+            const response = await fetch(`${supabaseUrl}/functions/v1/retry-audio`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${supabaseKey}`,
+                    'apikey': supabaseKey
+                },
+                body: JSON.stringify({
+                    trackName,
+                    projectId,
+                    customDescription: customDescription || null
+                })
+            })
+
+            if (!response.ok) {
+                const errorText = await response.text()
+                throw new Error(`Retry audio failed: ${response.status} - ${errorText}`)
+            }
+
+            const result = await response.json()
+            console.log('✅ [RETRY-AUDIO] Generation result:', result)
+
+            // Step 2: Get audio file URL and info
+            console.log('📊 [RETRY-AUDIO] Audio UUID:', result.uuid)
+            const audioUrl = `${supabaseUrl}/storage/v1/object/public/pozalabs-audio/${result.filename}`
+            console.log('📥 [RETRY-AUDIO] Audio URL:', audioUrl)
+
+            // Step 3: Update audio track with new audio
+            const trackBox = audioUnit.tracks.values()[0]
+            if (!trackBox) {
+                throw new Error('No track found in audio unit')
+            }
+
+            // Calculate proper duration based on audio length and SAMPLE BPM
+            const audioDurationSeconds = result.durationSeconds || 20.0
+            const sampleBPM = result.sampleBpm || 120
+            const properDuration = Math.round(audioDurationSeconds * sampleBPM / 60.0 * 960) // PPQN formula
+            
+            console.log(`🎵 [RETRY-AUDIO] Duration calculation:`, {
+                audioDurationSeconds,
+                sampleBPM,
+                properDuration
+            })
+
+            // Import required boxes
+            const {AudioRegionBox, AudioFileBox} = await import('@opendaw/studio-boxes')
+            const {UUID} = await import('@opendaw/lib-std')
+            const {ColorCodes} = await import('@opendaw/studio-core')
+
+            project.editing.modify(() => {
+                // Clear existing regions
+                const regions = trackBox.regions.collection.asArray()
+                console.log(`🗑️ [RETRY-AUDIO] Clearing ${regions.length} existing regions`)
+                
+                for (let i = regions.length - 1; i >= 0; i--) {
+                    const region = regions[i]
+                    try {
+                        region.box.terminate()
+                    } catch (e) {
+                        console.warn(`⚠️ Could not terminate region ${i}:`, e)
+                    }
+                }
+                
+                try {
+                    trackBox.regions.collection.clear()
+                } catch (e) {
+                    console.warn(`⚠️ Could not clear collection:`, e)
+                }
+
+                console.log('✅ [RETRY-AUDIO] Regions cleared')
+
+                // Create AudioFileBox for the new audio file
+                // Use result.uuid as the box ID (it identifies the file in storage)
+                const fileUuid = UUID.parse(result.uuid)
+                const audioFileBox = project.boxGraph.findBox(fileUuid)
+                    .unwrapOrElse(() => AudioFileBox.create(project.boxGraph, fileUuid, box => {
+                        box.fileName.setValue(result.filename)
+                    }))
+
+                // Create 8 looped audio regions (same as song-maker does)
+                const barsPerSection = 16
+                const ppqnPerBar = 1920
+                const ppqnPerSection = barsPerSection * ppqnPerBar // 30720
+                const totalSections = 8
+
+                console.log(`🔄 [RETRY-AUDIO] Creating ${totalSections} looped audio sections...`)
+
+                for (let sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
+                    const sectionStartPosition = sectionIndex * ppqnPerSection
+
+                    // Create audio region for this section
+                    AudioRegionBox.create(project.boxGraph, UUID.generate(), box => {
+                        box.position.setValue(sectionStartPosition)
+                        box.duration.setValue(properDuration)
+                        box.label.setValue(`Audio Loop ${sectionIndex + 1}`)
+                        box.hue.setValue(ColorCodes.forTrackType(1)) // Audio track color
+                        box.mute.setValue(false)
+                        box.loopDuration.setValue(properDuration)
+                        box.loopOffset.setValue(0)
+                        box.gain.setValue(1.0)
+                        
+                        // Reference the audio file
+                        box.file.refer(audioFileBox)
+                        
+                        box.regions.refer(trackBox.box.regions)
+                    })
+                }
+
+                console.log(`✅ [RETRY-AUDIO] Added ${totalSections} audio regions`)
+            })
+
+            console.log('✅ [RETRY-AUDIO] Audio retry complete!')
+
+        } catch (error) {
+            console.error('❌ [RETRY-AUDIO] Error:', error)
+            const errorMessage = error instanceof Error ? error.message : String(error)
+            await Dialogs.info({
+                headline: 'Retry Failed',
+                message: `Failed to regenerate audio: ${errorMessage}`
+            })
+            throw error
+        }
+    }
+
+    /**
+     * Retry MIDI melody by converting it to audio with a custom prompt
+     */
+    async retryMelodyWithAudio(trackName: string, projectId: string, project: Project, audioUnit: any, customPrompt: string): Promise<void> {
+        console.log(`🔄 [RETRY-MELODY-TO-AUDIO] Converting MIDI track "${trackName}" to audio`, {customPrompt})
+        
+        try {
+            // Get Supabase URL and key
+            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://tsfjukrkryhbypjcnepg.supabase.co'
+            const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+
+            // Step 1: Call retry-melody-to-audio edge function
+            const response = await fetch(`${supabaseUrl}/functions/v1/retry-melody-to-audio`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${supabaseKey}`,
+                    'apikey': supabaseKey
+                },
+                body: JSON.stringify({
+                    trackName,
+                    projectId,
+                    customPrompt
+                })
+            })
+
+            if (!response.ok) {
+                const errorText = await response.text()
+                throw new Error(`Retry melody-to-audio failed: ${response.status} - ${errorText}`)
+            }
+
+            const result = await response.json()
+            console.log('✅ [RETRY-MELODY-TO-AUDIO] Generation result:', result)
+
+            // Step 2: Get track
+            const trackBox = audioUnit.tracks.values()[0]
+            if (!trackBox) {
+                throw new Error('No track found in audio unit')
+            }
+
+            // Calculate proper duration based on audio length and SAMPLE BPM
+            const audioDurationSeconds = result.durationSeconds || 20.0
+            const sampleBPM = result.sampleBpm || 120
+            const properDuration = Math.round(audioDurationSeconds * sampleBPM / 60.0 * 960) // PPQN formula
+            
+            console.log(`🎵 [RETRY-MELODY-TO-AUDIO] Duration calculation:`, {
+                audioDurationSeconds,
+                sampleBPM,
+                properDuration
+            })
+
+            // Import required boxes and factories
+            const {AudioRegionBox, AudioFileBox} = await import('@opendaw/studio-boxes')
+            const {UUID} = await import('@opendaw/lib-std')
+            const {ColorCodes, InstrumentFactories} = await import('@opendaw/studio-core')
+            
+            // Store track name and position before deleting
+            const oldTrackName = trackName
+            const oldMuteValue = audioUnit.namedParameter.mute.getValue()
+            const oldSoloValue = audioUnit.namedParameter.solo.getValue()
+            const audioUnitIndex = project.rootBoxAdapter.audioUnits.adapters().indexOf(audioUnit)
+            
+            console.log(`🔄 [RETRY-MELODY-TO-AUDIO] Converting MIDI track to audio track...`)
+            console.log(`📊 [RETRY-MELODY-TO-AUDIO] Old track: ${oldTrackName}, index: ${audioUnitIndex}`)
+            
+            // Delete the old AudioUnit with its MIDI device
+            project.editing.modify(() => {
+                audioUnit.box.delete()
+                console.log(`✅ [RETRY-MELODY-TO-AUDIO] Deleted old MIDI AudioUnit`)
+            })
+            
+            // Create a new AudioUnit with TapeDevice at the same position
+            let newAudioUnit: any
+            project.editing.modify(() => {
+                const result = project.api.createInstrument(InstrumentFactories.Tape, {
+                    index: audioUnitIndex,
+                    name: oldTrackName
+                })
+                newAudioUnit = result
+                
+                // Restore mute/solo state
+                result.audioUnitBox.mute.setValue(oldMuteValue)
+                result.audioUnitBox.solo.setValue(oldSoloValue)
+                
+                console.log(`✅ [RETRY-MELODY-TO-AUDIO] Created new Tape AudioUnit at index ${audioUnitIndex}`)
+            })
+            
+            // Get the new trackBox
+            const newTrackBox = newAudioUnit.trackBox
+            
+            console.log(`✅ [RETRY-MELODY-TO-AUDIO] Track converted from MIDI to Audio`)
+
+            // Add audio regions to the new track
+            project.editing.modify(() => {
+                // Create AudioFileBox for the new audio file
+                const fileUuid = UUID.parse(result.uuid)
+                const audioFileBox = project.boxGraph.findBox(fileUuid)
+                    .unwrapOrElse(() => AudioFileBox.create(project.boxGraph, fileUuid, box => {
+                        box.fileName.setValue(result.filename)
+                    }))
+
+                // Create 8 looped audio regions (same as song-maker does)
+                const barsPerSection = 16
+                const ppqnPerBar = 1920
+                const ppqnPerSection = barsPerSection * ppqnPerBar // 30720
+                const totalSections = 8
+
+                console.log(`🔄 [RETRY-MELODY-TO-AUDIO] Creating ${totalSections} looped audio sections...`)
+
+                for (let sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
+                    const sectionStartPosition = sectionIndex * ppqnPerSection
+
+                    // Create audio region for this section
+                    AudioRegionBox.create(project.boxGraph, UUID.generate(), box => {
+                        box.position.setValue(sectionStartPosition)
+                        box.duration.setValue(properDuration)
+                        box.label.setValue(`Audio Loop ${sectionIndex + 1}`)
+                        box.hue.setValue(ColorCodes.forTrackType(1)) // Audio track color
+                        box.mute.setValue(false)
+                        box.loopDuration.setValue(properDuration)
+                        box.loopOffset.setValue(0)
+                        box.gain.setValue(1.0)
+                        
+                        // Reference the audio file
+                        box.file.refer(audioFileBox)
+                        
+                        box.regions.refer(newTrackBox.box.regions)
+                    })
+                }
+
+                console.log(`✅ [RETRY-MELODY-TO-AUDIO] Added ${totalSections} audio regions to new TapeDevice track`)
+            })
+
+            console.log('✅ [RETRY-MELODY-TO-AUDIO] MIDI track converted to audio successfully!')
+
+        } catch (error) {
+            console.error('❌ [RETRY-MELODY-TO-AUDIO] Error:', error)
+            const errorMessage = error instanceof Error ? error.message : String(error)
+            await Dialogs.info({
+                headline: 'MIDI to Audio Conversion Failed',
+                message: `Failed to convert MIDI to audio: ${errorMessage}`
+            })
+            throw error
+        }
     }
 }
