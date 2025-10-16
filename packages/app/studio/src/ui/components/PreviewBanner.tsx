@@ -2,8 +2,10 @@ import css from "./PreviewBanner.sass?inline"
 import {Lifecycle} from "@opendaw/lib-std"
 import {createElement} from "@opendaw/lib-jsx"
 import {Html} from "@opendaw/lib-dom"
+import {Button} from "@/ui/components/Button"
 import {Icon} from "@/ui/components/Icon"
 import {IconSymbol} from "@opendaw/studio-adapters"
+import {Colors} from "@opendaw/studio-core"
 import {StudioService} from "@/service/StudioService"
 import {PreviewTimeline} from "./PreviewTimeline"
 import {PreviewEditor} from "./PreviewEditor"
@@ -141,12 +143,17 @@ export const PreviewBanner = ({lifecycle, service}: Construct) => {
 
                     {/* Footer with actions */}
                     <div className="preview-footer">
-                        <button 
-                            className="apply-to-daw-btn"
+                        <Button
+                            lifecycle={lifecycle}
                             onClick={handleApplyToDAW}
+                            appearance={{
+                                activeColor: Colors.green,
+                                framed: true
+                            }}
                         >
+                            <Icon symbol={IconSymbol.Add}/>
                             Apply to DAW
-                        </button>
+                        </Button>
                     </div>
                 </div>
                 

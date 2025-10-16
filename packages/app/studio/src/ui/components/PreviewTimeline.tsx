@@ -520,12 +520,14 @@ export const PreviewTimeline = ({lifecycle, project, service}: Construct) => {
             const retrySection = (
                 <div className="track-retry-section">
                     <div className="retry-container">
-                        <span className="retry-label">REGENERATE</span>
                         <div className="retry-controls">
+                            {toggleContainer}
                             <div className="retry-input-wrapper">
                                 {descriptionInput}
                             </div>
-                            {toggleContainer}
+                        </div>
+                        <div className="retry-action">
+                            <span className="retry-label">Regenerate</span>
                             {refreshBtn}
                         </div>
                     </div>
