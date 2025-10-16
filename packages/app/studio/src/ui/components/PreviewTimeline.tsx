@@ -32,6 +32,10 @@ export const PreviewTimeline = ({lifecycle, project, service}: Construct) => {
     const sections = service.preview.sections.getValue() || []
     console.log('📊 [PreviewTimeline] Loaded', sections.length, 'sections from service')
     
+    // Track generation history for each track
+    const trackGenerations = new Map<string, any[]>()
+    const currentGenerationIndex = new Map<string, number>()
+    
     // Find the smallest section length (this will be our preview standard)
     const minSectionLength = sections.length > 0
         ? Math.min(...sections.map((s: any) => s.endBar - s.startBar))
@@ -289,6 +293,16 @@ export const PreviewTimeline = ({lifecycle, project, service}: Construct) => {
             const trackName = unit.input.label.unwrapOrElse(() => `Track ${index + 1}`)
             const {mute, solo} = unit.namedParameter
             
+            // Initialize generation history for this track if not exists
+            if (!trackGenerations.has(trackName)) {
+                trackGenerations.set(trackName, [{
+                    type: 'original',
+                    data: unit,
+                    timestamp: Date.now()
+                }])
+                currentGenerationIndex.set(trackName, 0)
+            }
+            
             // Get actual device type
             const inputAdapter = unit.inputAdapter.unwrapOrNull()
             let icon = IconSymbol.Waveform
@@ -332,7 +346,7 @@ export const PreviewTimeline = ({lifecycle, project, service}: Construct) => {
                 </Checkbox>
             )
             
-            // Add instrument selector and retry for MIDI tracks
+            // Create enhanced retry interface with navigation and toggle
             const instrumentLifecycle = lifecycle.own(new Terminator())
             let instrumentSelectorElement: HTMLElement | null = null
             let retryButtonElement: HTMLElement | null = null
@@ -340,6 +354,185 @@ export const PreviewTimeline = ({lifecycle, project, service}: Construct) => {
             let isRetrying = false
             let retryLoadingOverlay: HTMLElement | null = null
             
+            // Get current generation info and initialize if empty
+            let generations = trackGenerations.get(trackName) || []
+            
+            // Initialize with current track as first generation if empty
+            if (generations.length === 0) {
+                const initialGeneration = {
+                    type: trackType,
+                    data: unit,
+                    timestamp: Date.now(),
+                    description: '',
+                    audioUnit: unit,
+                    trackType: trackType
+                }
+                generations = [initialGeneration]
+                trackGenerations.set(trackName, generations)
+                currentGenerationIndex.set(trackName, 0)
+                console.log(`🎵 Initialized first generation for ${trackName} (${trackType})`)
+            }
+            
+            // Navigation functions removed for now
+            
+            // Navigation buttons removed for now
+            
+            // Create a sliding toggle for MIDI/Audio
+            let isAudioMode = false
+            const toggleContainer = <div className="sliding-toggle"/>
+            const descriptionInput = <input 
+                type="text" 
+                className="retry-input" 
+                placeholder="Describe the audio you want..."
+                title="Describe the audio you want"
+            />
+            
+            // Initialize the sliding toggle
+            toggleContainer.innerHTML = `
+                <div class="toggle-track">
+                    <div class="toggle-slider"></div>
+                    <button class="toggle-option" data-mode="midi">MIDI</button>
+                    <button class="toggle-option" data-mode="audio">Audio</button>
+                </div>
+            `
+            
+            // Update toggle state
+            const updateToggleState = () => {
+                const slider = toggleContainer.querySelector('.toggle-slider') as HTMLElement
+                const midiBtn = toggleContainer.querySelector('[data-mode="midi"]') as HTMLElement
+                const audioBtn = toggleContainer.querySelector('[data-mode="audio"]') as HTMLElement
+                
+                if (slider && midiBtn && audioBtn) {
+                    if (isAudioMode) {
+                        slider.style.transform = 'translateX(100%)'
+                        midiBtn.classList.remove('active')
+                        audioBtn.classList.add('active')
+                    } else {
+                        slider.style.transform = 'translateX(0)'
+                        midiBtn.classList.add('active')
+                        audioBtn.classList.remove('active')
+                    }
+                }
+                
+                // Update input state instead of hiding it
+                if (isAudioMode) {
+                    descriptionInput.disabled = false
+                    descriptionInput.style.opacity = '1'
+                    descriptionInput.style.cursor = 'text'
+                    descriptionInput.placeholder = 'Describe the audio you want...'
+                } else {
+                    descriptionInput.disabled = true
+                    descriptionInput.style.opacity = '0.5'
+                    descriptionInput.style.cursor = 'not-allowed'
+                    descriptionInput.placeholder = 'Switch to Audio mode to describe...'
+                }
+            }
+            
+            // Add click handlers
+            toggleContainer.addEventListener('click', (e: Event) => {
+                const target = e.target as HTMLElement
+                if (target.dataset.mode) {
+                    isAudioMode = target.dataset.mode === 'audio'
+                    updateToggleState()
+                    console.log(`🎵 Switched to ${isAudioMode ? 'Audio' : 'MIDI'} mode`)
+                }
+            })
+            
+            // Initial state
+            updateToggleState()
+            
+            
+            // Refresh button
+            const refreshBtn = (
+                <button 
+                    className="refresh-btn"
+                    onclick={async () => {
+                        if (isRetrying) return
+                        
+                        const projectId = service.preview.originalProjectId
+                        if (!projectId) {
+                            console.error('❌ No project ID found')
+                            return
+                        }
+                        
+                        try {
+                            isRetrying = true
+                            refreshBtn.classList.add('loading')
+                            if (retryLoadingOverlay) {
+                                retryLoadingOverlay.style.display = 'flex'
+                            }
+                            
+                            if (isAudioMode) {
+                                const customDescription = (descriptionInput as HTMLInputElement).value.trim()
+                                await service.retryMelodyWithAudio(trackName, projectId, project, unit, customDescription)
+                                
+                                // Add new audio generation to history
+                                const newGeneration = {
+                                    type: 'Audio',
+                                    data: unit,
+                                    timestamp: Date.now(),
+                                    description: customDescription,
+                                    audioUnit: unit,
+                                    trackType: 'Audio'
+                                }
+                                generations.push(newGeneration)
+                                currentGenerationIndex.set(trackName, generations.length - 1)
+                                trackGenerations.set(trackName, generations)
+                                console.log(`🎵 Added audio generation ${generations.length - 1} for ${trackName}`)
+                                
+                                // Navigation buttons removed for now
+                            } else {
+                                await service.retryMelody(trackName, projectId, project, unit)
+                                
+                                // Add new MIDI generation to history
+                                const newGeneration = {
+                                    type: 'MIDI',
+                                    data: unit,
+                                    timestamp: Date.now(),
+                                    description: '',
+                                    audioUnit: unit,
+                                    trackType: 'MIDI'
+                                }
+                                generations.push(newGeneration)
+                                currentGenerationIndex.set(trackName, generations.length - 1)
+                                trackGenerations.set(trackName, generations)
+                                console.log(`🎹 Added MIDI generation ${generations.length - 1} for ${trackName}`)
+                                
+                                // Navigation buttons removed for now
+                            }
+                        } catch (error) {
+                            console.error('❌ Retry failed:', error)
+                        } finally {
+                            isRetrying = false
+                            refreshBtn.classList.remove('loading')
+                            if (retryLoadingOverlay) {
+                                retryLoadingOverlay.style.display = 'none'
+                            }
+                        }
+                    }}
+                    title="Refresh"
+                >
+                    ↻
+                </button>
+            )
+            
+            // Create complete retry section
+            const retrySection = (
+                <div className="track-retry-section">
+                    <div className="retry-container">
+                        <span className="retry-label">REGENERATE</span>
+                        <div className="retry-controls">
+                            <div className="retry-input-wrapper">
+                                {descriptionInput}
+                            </div>
+                            {toggleContainer}
+                            {refreshBtn}
+                        </div>
+                    </div>
+                </div>
+            )
+            
+            // Add instrument selector for MIDI tracks
             if (inputAdapter && isInstanceOf(inputAdapter, NanoDeviceBoxAdapter)) {
                 const previewServiceWrapper = {
                     ...service,
@@ -355,127 +548,55 @@ export const PreviewTimeline = ({lifecycle, project, service}: Construct) => {
                         adapter={inputAdapter}
                     />
                 )
-                
-                // Add input field for MIDI tracks (non-drums)
-                const isDrumTrack = trackName.toLowerCase().includes('drum')
-                let descriptionInput: HTMLInputElement | null = null
-                
-                if (!isDrumTrack) {
-                    descriptionInput = <input 
-                        type="text" 
-                        className="retry-input" 
-                        placeholder="Prompt to generate audio..."
-                        title="Custom prompt to generate audio instead of MIDI (optional)"
-                    /> as HTMLInputElement
-                }
-                
-                const retryBtn = (
-                    <button 
-                        className="retry-btn"
-                        onclick={async () => {
-                            if (isRetrying) return
-                            
-                            const projectId = service.preview.originalProjectId
-                            if (!projectId) {
-                                console.error('❌ No project ID found')
-                                return
-                            }
-                            
-                            // Check if user wants audio generation instead
-                            const customPrompt = descriptionInput ? (descriptionInput as HTMLInputElement).value.trim() : ''
-                            
-                            try {
-                                isRetrying = true
-                                retryBtn.classList.add('loading')
-                                if (retryLoadingOverlay) {
-                                    retryLoadingOverlay.style.display = 'flex'
-                                }
-                                
-                                if (customPrompt && !isDrumTrack) {
-                                    // Generate audio instead of MIDI
-                                    await service.retryMelodyWithAudio(trackName, projectId, project, unit, customPrompt)
-                                } else {
-                                    // Normal MIDI retry
-                                    await service.retryMelody(trackName, projectId, project, unit)
-                                }
-                            } catch (error) {
-                                console.error('❌ Retry failed:', error)
-                            } finally {
-                                isRetrying = false
-                                retryBtn.classList.remove('loading')
-                                if (retryLoadingOverlay) {
-                                    retryLoadingOverlay.style.display = 'none'
-                                }
-                            }
-                        }}
-                        title="Regenerate melody"
-                    >
-                        <Icon symbol={IconSymbol.Random}/>
-                    </button>
-                )
-                
-                if (descriptionInput) {
-                    retryInputElement = descriptionInput
-                }
-                retryButtonElement = retryBtn
-            } else if (trackType === 'Audio') {
-                // Add retry button + input for Audio tracks
-                const descriptionInput = <input 
-                    type="text" 
-                    className="retry-input" 
-                    placeholder="Description..."
-                    title="Custom description (optional)"
-                />
-                
-                const retryBtn = (
-                    <button 
-                        className="retry-btn"
-                        onclick={async () => {
-                            if (isRetrying) return
-                            
-                            const projectId = service.preview.originalProjectId
-                            if (!projectId) {
-                                console.error('❌ No project ID found')
-                                return
-                            }
-                            
-                            const customDescription = (descriptionInput as HTMLInputElement).value.trim()
-                            
-                            try {
-                                isRetrying = true
-                                retryBtn.classList.add('loading')
-                                if (retryLoadingOverlay) {
-                                    retryLoadingOverlay.style.display = 'flex'
-                                }
-                                
-                                await service.retryAudio(trackName, projectId, project, unit, customDescription)
-                            } catch (error) {
-                                console.error('❌ Audio retry failed:', error)
-                            } finally {
-                                isRetrying = false
-                                retryBtn.classList.remove('loading')
-                                if (retryLoadingOverlay) {
-                                    retryLoadingOverlay.style.display = 'none'
-                                }
-                            }
-                        }}
-                        title="Regenerate audio"
-                    >
-                        <Icon symbol={IconSymbol.Random}/>
-                    </button>
-                )
-                
-                retryInputElement = descriptionInput
-                retryButtonElement = retryBtn
             }
+            
+            retryInputElement = descriptionInput
+            retryButtonElement = retrySection
             
             // Create track visualization
             const contentViz = createTrackVisualization(lifecycle, unit)
             
             const isMuted = mute.getValue()
             
+            // Create muted text overlay (will be updated reactively)
+            const mutedOverlay = <div className="muted-overlay" style="display: none;">
+                <div className="muted-text-container">
+                    <span className="muted-text">
+                        Not played in {selectedSectionName}
+                    </span>
+                    <span className="muted-subtext">
+                        Unmute to play
+                    </span>
+                </div>
+            </div>
+            
+            // Function to update muted overlay visibility
+            const updateMutedOverlay = () => {
+                const currentSection = selectedSectionName === 'All' 
+                    ? null 
+                    : sections.find((s: any) => s.name === selectedSectionName)
+                
+                const shouldShow = mute.getValue() && currentSection
+                mutedOverlay.style.display = shouldShow ? 'flex' : 'none'
+                
+                if (shouldShow) {
+                    const textElement = mutedOverlay.querySelector('.muted-text') as HTMLElement
+                    if (textElement) {
+                        textElement.textContent = `Not played in ${currentSection.name}`
+                    }
+                }
+            }
+            
+            // Initial update
+            updateMutedOverlay()
+            
+            // Subscribe to mute changes
+            lifecycle.own(mute.subscribe(() => {
+                updateMutedOverlay()
+            }))
+            
             // Loading overlay for retry
-            if (trackType === 'MIDI' && !retryLoadingOverlay) {
+            if (!retryLoadingOverlay) {
                 retryLoadingOverlay = (
                     <div className="retry-loading-overlay" style="display: none;">
                         <div className="retry-spinner"></div>
@@ -504,6 +625,7 @@ export const PreviewTimeline = ({lifecycle, project, service}: Construct) => {
                     <div className="track-content">
                         {contentViz}
                         {retryLoadingOverlay}
+                        {mutedOverlay}
                     </div>
                     {retryInputElement || retryButtonElement ? (
                         <div className="track-retry-section">

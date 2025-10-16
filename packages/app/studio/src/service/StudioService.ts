@@ -2188,6 +2188,16 @@ export class StudioService implements ProjectEnv {
             // Hide preview modal
             this.preview.showModal.setValue(false)
             
+            // IMPORTANT: Invalidate manifest cache to ensure new audio files are found
+            try {
+                const {SupabaseSampleAPI} = await import('@/service/SupabaseSampleAPI')
+                const sampleAPI = SupabaseSampleAPI.get()
+                sampleAPI.invalidateCache()
+                console.log('🔄 [APPLY-PREVIEW] Invalidated manifest cache before applying preview')
+            } catch (cacheError) {
+                console.warn('⚠️ [APPLY-PREVIEW] Failed to invalidate cache:', cacheError)
+            }
+            
             // Extract all tracks/data from preview project
             const previewData = this.extractProjectDataFrom(this.preview.project.getValue()!, this.preview.profile.getValue()!)
             
@@ -3248,6 +3258,16 @@ export class StudioService implements ProjectEnv {
             })
 
             console.log('✅ [RETRY-MELODY-TO-AUDIO] MIDI track converted to audio successfully!')
+            
+            // IMPORTANT: Invalidate manifest cache so new audio file is found during "Apply to DAW"
+            try {
+                const {SupabaseSampleAPI} = await import('@/service/SupabaseSampleAPI')
+                const sampleAPI = SupabaseSampleAPI.get()
+                sampleAPI.invalidateCache()
+                console.log('🔄 [RETRY-MELODY-TO-AUDIO] Invalidated manifest cache for new audio file')
+            } catch (cacheError) {
+                console.warn('⚠️ [RETRY-MELODY-TO-AUDIO] Failed to invalidate cache:', cacheError)
+            }
 
         } catch (error) {
             console.error('❌ [RETRY-MELODY-TO-AUDIO] Error:', error)

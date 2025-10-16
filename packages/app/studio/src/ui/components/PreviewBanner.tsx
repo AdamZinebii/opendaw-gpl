@@ -2,10 +2,8 @@ import css from "./PreviewBanner.sass?inline"
 import {Lifecycle} from "@opendaw/lib-std"
 import {createElement} from "@opendaw/lib-jsx"
 import {Html} from "@opendaw/lib-dom"
-import {Button} from "@/ui/components/Button"
 import {Icon} from "@/ui/components/Icon"
 import {IconSymbol} from "@opendaw/studio-adapters"
-import {Colors} from "@opendaw/studio-core"
 import {StudioService} from "@/service/StudioService"
 import {PreviewTimeline} from "./PreviewTimeline"
 import {PreviewEditor} from "./PreviewEditor"
@@ -30,7 +28,7 @@ export const PreviewBanner = ({lifecycle, service}: Construct) => {
             <div className="header-left">
                 <Icon symbol={IconSymbol.Robot}/>
                 <div className="header-text">
-                    <h3>🎵 AI Generated Song Preview</h3>
+                    <h3>Preview</h3>
                     <p>{trackCountElement} tracks • 16-bar loops</p>
                 </div>
             </div>
@@ -143,17 +141,12 @@ export const PreviewBanner = ({lifecycle, service}: Construct) => {
 
                     {/* Footer with actions */}
                     <div className="preview-footer">
-                        <Button
-                            lifecycle={lifecycle}
+                        <button 
+                            className="apply-to-daw-btn"
                             onClick={handleApplyToDAW}
-                            appearance={{
-                                activeColor: Colors.green,
-                                framed: true
-                            }}
                         >
-                            <Icon symbol={IconSymbol.Add}/>
                             Apply to DAW
-                        </Button>
+                        </button>
                     </div>
                 </div>
                 
