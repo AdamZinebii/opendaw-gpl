@@ -8,7 +8,7 @@ component
   align-items: start
   font-size: 0.75rem
   padding: 1.5em
-  background: linear-gradient(135deg, hsl(0, 0%, 12%, 6%) 0%, hsl(0, 0%, 10%, 8%) 100%)
+  background: linear-gradient(135deg, hsl(220, 20%, 14%, 0.6) 0%, hsl(220, 18%, 10%, 0.8) 100%)
   overflow-y: auto
 
   > div.resources
@@ -24,30 +24,31 @@ component
       color: var(--color)
 
       &.instrument
-        --color: hsl(0, 0%, 85%)
+        --color: var(--color-green)
 
       &.audio
-        --color: hsl(0, 0%, 85%)
+        --color: var(--color-blue)
 
       &.midi
-        --color: hsl(0, 0%, 85%)
+        --color: var(--color-red)
 
       > h1
         display: inline-block
         width: min-content
         white-space: nowrap
         font-size: 0.85em
-        font-weight: 500
+        font-weight: 600
         padding: 0.4em 0.8em
         margin-bottom: 0.2em
         border-radius: 4px
-        background: rgba(200, 200, 200, 0.08)
+        background: linear-gradient(135deg, hsl(195, 100%, 65%, 0.12) 0%, hsl(195, 100%, 55%, 0.08) 100%)
         backdrop-filter: blur(8px)
-        color: hsl(0, 0%, 85%)
-        border: 1px solid rgba(200, 200, 200, 0.15)
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1)
+        color: var(--color-blue)
+        border: 1px solid hsl(195, 100%, 65%, 0.3)
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 0 15px hsl(195, 100%, 65%, 0.2)
         letter-spacing: 0.03em
         text-transform: uppercase
+        text-shadow: 0 0 10px hsl(195, 100%, 65%, 0.3)
 
       > ul
         margin: 0
@@ -67,11 +68,11 @@ component
           padding: 0.5em 0.7em
           cursor: pointer
           border-radius: 4px
-          background: rgba(200, 200, 200, 0.03)
+          background: linear-gradient(135deg, hsl(220, 18%, 12%, 0.5) 0%, hsl(220, 20%, 10%, 0.6) 100%)
           backdrop-filter: blur(10px)
-          border: 1px solid rgba(200, 200, 200, 0.08)
-          transition: all 0.15s ease
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1)
+          border: 1px solid hsl(195, 100%, 65%, 0.15)
+          transition: all 0.2s ease
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 0 8px hsl(195, 100%, 65%, 0.05)
 
           &[draggable]
             cursor: grab
@@ -81,12 +82,12 @@ component
               transform: scale(0.98)
 
           &:hover
-            color: hsl(0, 0%, 95%)
-            background: rgba(200, 200, 200, 0.08)
+            color: var(--color-blue)
+            background: linear-gradient(135deg, hsl(220, 18%, 14%, 0.7) 0%, hsl(220, 20%, 12%, 0.8) 100%)
             backdrop-filter: blur(12px)
-            border-color: rgba(200, 200, 200, 0.2)
-            box-shadow: 0 2px 6px rgba(200, 200, 200, 0.15)
-            transform: translateX(2px)
+            border-color: hsl(195, 100%, 65%, 0.4)
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 0 20px hsl(195, 100%, 65%, 0.3)
+            transform: translateX(3px)
 
           > div.icon
             width: 24px
@@ -94,18 +95,18 @@ component
             padding: 4px
             border-radius: 4px
             font-size: 1em
-            color: hsl(0, 0%, 10%)
+            color: hsl(220, 25%, 8%)
             display: flex
             align-items: center
             justify-content: center
             background: var(--device-color, var(--color))
             backdrop-filter: blur(8px)
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15)
-            transition: all 0.15s ease
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3), 0 0 10px currentColor, inset 0 1px 0 rgba(255, 255, 255, 0.2)
+            transition: all 0.2s ease
 
           &:hover > div.icon
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)
-            transform: scale(1.08)
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), 0 0 15px currentColor, 0 0 25px currentColor, inset 0 1px 0 rgba(255, 255, 255, 0.3)
+            transform: scale(1.1)
 
   > div.manual
     display: flex

@@ -2246,41 +2246,58 @@ export class StudioService implements ProjectEnv {
             
             console.log('✅ Preview merged successfully!')
             
-            // Auto-save with AI-generated project name
-            if (this.preview.projectName) {
-                console.log(`💾 [AUTO-SAVE] Saving project with AI-generated name: ${this.preview.projectName}`)
+            // Save project name before clearing state
+            const projectNameToSave = this.preview.projectName
+            
+            // Clear preview state and hide loading IMMEDIATELY
+            this.clearPreviewState()
+            this.preview.isApplying.setValue(false)
+            
+            // Save in background (don't await, don't block user)
+            if (projectNameToSave) {
+                console.log(`💾 [BACKGROUND-SAVE] Starting background save with name: ${projectNameToSave}`)
                 
-                try {
-                    const currentProfile = this.profileService.getValue()
-                    if (currentProfile && 'unwrap' in currentProfile) {
-                        const profile = currentProfile.unwrap()
-                        
-                        // Save the project with custom name
-                        if (!profile.saved()) {
-                            console.log('🆕 [AUTO-SAVE] New project, using saveAsDef() with custom name')
-                            await this.saveAsDef(this.preview.projectName)
-                        } else {
-                            console.log('💾 [AUTO-SAVE] Existing project, updating name and saving')
-                            profile.meta.name = this.preview.projectName
-                            await this.save()
-                        }
-                        
-                        console.log('✅ [AUTO-SAVE] Project saved successfully with name:', this.preview.projectName)
-                    }
-                } catch (saveError) {
-                    console.error('❌ [AUTO-SAVE] Failed to save project:', saveError)
-                    // Don't block the flow on save error
-                }
+                // Run save in background without blocking
+                this.saveProjectInBackground(projectNameToSave).catch(error => {
+                    console.error('❌ [BACKGROUND-SAVE] Failed:', error)
+                })
             } else {
-                console.log('⚠️ [AUTO-SAVE] No AI-generated project name available, skipping auto-save')
+                console.log('⚠️ [BACKGROUND-SAVE] No AI-generated project name available, skipping auto-save')
             }
             
-            // Clear preview state
+        } catch (error) {
+            // If error occurs, still clear state and hide loading
+            console.error('❌ Error in acceptPreview:', error)
             this.clearPreviewState()
-            
-        } finally {
-            // Always hide loading state when done
             this.preview.isApplying.setValue(false)
+            throw error
+        }
+    }
+
+    /**
+     * Save project in background without blocking UI
+     */
+    private async saveProjectInBackground(projectName: string): Promise<void> {
+        try {
+            const currentProfile = this.profileService.getValue()
+            if (currentProfile && 'unwrap' in currentProfile) {
+                const profile = currentProfile.unwrap()
+                
+                // Save the project with custom name
+                if (!profile.saved()) {
+                    console.log('🆕 [BACKGROUND-SAVE] New project, using saveAsDef() with custom name')
+                    await this.saveAsDef(projectName)
+                } else {
+                    console.log('💾 [BACKGROUND-SAVE] Existing project, updating name and saving')
+                    profile.meta.name = projectName
+                    await this.save()
+                }
+                
+                console.log('✅ [BACKGROUND-SAVE] Project saved successfully with name:', projectName)
+            }
+        } catch (error) {
+            console.error('❌ [BACKGROUND-SAVE] Save failed:', error)
+            // Don't propagate error - save is optional background operation
         }
     }
 

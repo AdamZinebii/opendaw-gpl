@@ -63,6 +63,43 @@ export const ProjectBrowser = ({ lifecycle: _lifecycle, projectService, studioSe
                 const grid = document.createElement('div')
                 grid.className = 'projects-grid'
 
+                // Add "+ New" card as first element
+                const newProjectCard = document.createElement('div')
+                newProjectCard.className = 'project-card new-project-card'
+                newProjectCard.innerHTML = `
+                    <div class="new-project-content">
+                        <div class="new-project-icon">+</div>
+                        <div class="new-project-text">New Project</div>
+                    </div>
+                `
+                newProjectCard.onclick = async () => {
+                    try {
+                        // Create project in Supabase FIRST
+                        const newProject = await projectService.createProject({
+                            name: "Untitled",
+                            description: ""
+                        })
+                        
+                        console.log('🆕 Created Supabase project:', newProject.id)
+                        
+                        // Create new local project
+                        studioService.cleanSlate()
+                        
+                        // Save project files
+                        await studioService.saveAsDef()
+                        
+                        // Switch to project page
+                        studioService.switchScreen("project")
+                    } catch (error) {
+                        console.error('❌ Failed to create project:', error)
+                        // Fallback: create local project anyway
+                        studioService.cleanSlate()
+                        await studioService.saveAsDef()
+                        studioService.switchScreen("project")
+                    }
+                }
+                grid.appendChild(newProjectCard)
+
                 // Add scroll listener for infinite scroll
                 let isLoadingMore = false
                 grid.addEventListener('scroll', async () => {
@@ -90,7 +127,6 @@ export const ProjectBrowser = ({ lifecycle: _lifecycle, projectService, studioSe
                     cardContent.className = 'project-content'
                     cardContent.innerHTML = `
                         <div class="project-name" title="${project.name}">${project.name}</div>
-                        <div class="project-status">Status: ${project.status || 'unknown'}</div>
                         <div class="project-time">${relativeTime}</div>
                     `
                     

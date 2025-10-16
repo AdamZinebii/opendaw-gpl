@@ -1,13 +1,13 @@
 @use "@/mixins"
 
 component
-  --color: hsl(0, 0%, 70%)
-  --color-active: hsl(0, 0%, 90%)
+  --color: var(--color-blue)
+  --color-active: hsl(195, 100%, 70%)
 
   appearance: none
   margin: 0
-  min-width: 1em
-  min-height: 1em
+  min-width: 1.1em
+  min-height: 1.1em
   flex: 0 0 auto
   display: flex
   place-items: center
@@ -16,13 +16,14 @@ component
   background: none
   color: var(--color)
   font: inherit
-  transition: all 0.2s ease
+  transition: all 0.25s ease
 
   @include mixins.controllable
 
   &.active
     color: var(--color-active)
-    text-shadow: 0 0 8px rgba(200, 200, 200, 0.3)
+    text-shadow: 0 0 12px var(--color-active), 0 0 24px hsl(195, 100%, 65%, 0.4)
+    animation: neon-pulse 2s ease-in-out infinite
 
   > label
     padding: 0 0.25em
@@ -42,13 +43,13 @@ component
 
     &:checked + label, &[type="button"]:active + label
       color: var(--color-active)
-      text-shadow: 0 0 8px rgba(200, 200, 200, 0.3)
+      text-shadow: 0 0 12px var(--color-active), 0 0 24px hsl(195, 100%, 65%, 0.4)
 
   &.framed
     > input:not([type="radio"]) + label
       border-radius: 0.25em
       border: 0.5px solid var(--color)
-      box-shadow: 0 0 3px -1px var(--color), 0 2px 6px rgba(200, 200, 200, 0.1)
+      box-shadow: 0 0 8px hsl(195, 100%, 65%, 0.2), 0 2px 6px rgba(0, 0, 0, 0.2)
 
       > span
         padding: 0 0.5em
@@ -60,7 +61,7 @@ component
         height: 100%
         border-radius: inherit
         background: linear-gradient(135deg, var(--color), transparent)
-        opacity: 0.04
+        opacity: 0.08
         pointer-events: none
 
     &.landscape
@@ -71,7 +72,7 @@ component
       color: var(--color-active)
       border-radius: 0.25em
       border: 0.5px solid var(--color-active)
-      box-shadow: 0 0 6px rgba(200, 200, 200, 0.4), inset 0 1px 2px rgba(200, 200, 200, 0.1)
+      box-shadow: 0 0 15px hsl(195, 100%, 65%, 0.6), 0 0 30px hsl(195, 100%, 65%, 0.3), inset 0 1px 2px hsl(195, 100%, 65%, 0.2)
 
       &:after
         content: ""
@@ -80,5 +81,5 @@ component
         height: 100%
         border-radius: inherit
         background: linear-gradient(135deg, var(--color-active), transparent)
-        opacity: 0.12
+        opacity: 0.15
         pointer-events: none

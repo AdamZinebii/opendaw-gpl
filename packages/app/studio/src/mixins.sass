@@ -12,8 +12,9 @@
   &.automated, .automated &
     border-radius: 1px
     outline-offset: 1px
-    outline: 0.5px hsla(200, 83%, 60%, 0.5) solid
-    background-color: rgba(white, 0.02)
+    outline: 0.5px hsl(195, 100%, 65%, 0.6) solid
+    background-color: hsl(195, 100%, 65%, 0.05)
+    box-shadow: 0 0 10px hsl(195, 100%, 65%, 0.2)
 
 @mixin clips-aware
   &:not(.clips-visible *)
@@ -39,15 +40,19 @@
 @mixin unit-type-colors
   &
     --color: var(--color-green)
+    --neon-glow: var(--neon-glow-green)
 
   &.aux
     --color: var(--color-purple)
+    --neon-glow: var(--neon-glow-purple)
 
   &.bus
     --color: var(--color-orange)
+    --neon-glow: var(--neon-glow-orange)
 
   &.output
     --color: var(--color-blue)
+    --neon-glow: var(--neon-glow-cyan)
 
 @mixin markdown
   color: var(--color-gray)

@@ -32,14 +32,19 @@ component
 
     > h1
       margin-left: -3px
-      color: hsl(0, 0%, 95%)
-      text-shadow: 0 2px 8px rgba(255, 255, 255, 0.3)
+      background: linear-gradient(135deg, hsl(195, 100%, 65%), hsl(195, 100%, 75%))
+      -webkit-background-clip: text
+      -webkit-text-fill-color: transparent
+      background-clip: text
+      text-shadow: none
+      filter: drop-shadow(0 2px 12px hsl(195, 100%, 65%, 0.5))
 
     > h2
       font-size: 1.35em
-      color: hsl(0, 0%, 70%)
+      color: var(--color-blue)
       margin-top: 0.5em
-      font-weight: 500
+      font-weight: 600
+      text-shadow: 0 0 15px hsl(195, 100%, 65%, 0.4)
 
     p, ul
       margin: 0.3em 0
@@ -47,73 +52,3 @@ component
 
     a
       color: var(--color-blue)
-
-    > div.columns
-      margin: 2em 0 0 0
-      display: grid
-      column-gap: 3em
-      grid-template-columns: auto 1fr
-
-      > div
-        display: flex
-        flex-direction: column
-        row-gap: 1em
-
-        > h3
-          font-size: 1em
-          color: hsl(0, 0%, 50%, 65%)
-          padding: 0.5em 1em
-          border-radius: 8px
-          background: linear-gradient(135deg, rgba(200, 200, 200, 0.08) 0%, rgba(200, 200, 200, 0.12) 100%)
-          backdrop-filter: blur(10px)
-          border: 1px solid rgba(200, 200, 200, 0.2)
-          width: fit-content
-          font-weight: 600
-          letter-spacing: 0.02em
-          box-shadow: 0 2px 8px rgba(200, 200, 200, 0.1)
-
-        > div.starters
-          display: grid
-          grid-template-columns: repeat(4, min-content)
-          gap: 1em
-
-          > div
-            display: flex
-            flex-direction: column
-            align-items: center
-            background: linear-gradient(135deg, rgba(200, 200, 200, 0.03) 0%, rgba(200, 200, 200, 0.06) 100%)
-            backdrop-filter: blur(10px)
-            padding: 1em
-            border-radius: 12px
-            border: 1px solid rgba(200, 200, 200, 0.15)
-            font-size: 0.8em
-            cursor: pointer
-            overflow: hidden
-            transition: all 0.2s ease
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2)
-
-            &:first-child
-              fill: var(--color-green)
-              color: var(--color-green)
-
-            &:hover
-              background: linear-gradient(135deg, rgba(200, 200, 200, 0.12) 0%, rgba(200, 200, 200, 0.18) 100%)
-              border-color: rgba(200, 200, 200, 0.4)
-              transform: translateY(-2px)
-              box-shadow: 0 4px 12px rgba(200, 200, 200, 0.2)
-
-              > .icon
-                scale: 0.96
-
-            > .icon
-              width: 80px
-              height: 80px
-              scale: 0.9
-              transition: scale 0.2s ease-out
-
-            > label
-              font-size: 0.75em
-              text-align: center
-              cursor: inherit
-              margin-top: 0.5em
-              font-weight: 500
