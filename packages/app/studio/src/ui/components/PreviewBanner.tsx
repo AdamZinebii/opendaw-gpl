@@ -129,11 +129,7 @@ export const PreviewBanner = ({lifecycle, service}: Construct) => {
     return (
         <div className={className}>
             {/* Dark overlay backdrop */}
-            <div className="preview-backdrop" onclick={(e: Event) => {
-                if (e.target === e.currentTarget) {
-                    service.rejectPreview()
-                }
-            }}>
+            <div className="preview-backdrop">
                 {/* Preview window */}
                 <div className="preview-window">
                     {/* Header */}
