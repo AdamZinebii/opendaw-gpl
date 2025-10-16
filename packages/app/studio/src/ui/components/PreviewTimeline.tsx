@@ -127,11 +127,7 @@ export const PreviewTimeline = ({lifecycle, project, service}: Construct) => {
         // Re-render tracks to update visual mute indicators
         renderTracks()
         
-        // Start playing the selected section after a brief delay
-        setTimeout(() => {
-            console.log('▶️ Starting playback at position:', startUnit)
-            engine.play()
-        }, 100)
+        console.log(`✅ Section "${sectionName}" selected, showing ${minSectionLength} bars (ready to play)`)
     }
     
     // Track currently selected section for visual highlighting
@@ -171,6 +167,77 @@ export const PreviewTimeline = ({lifecycle, project, service}: Construct) => {
     if (sections.length > 0) {
         setTimeout(() => selectSection(sections[0].startBar, sections[0].name), 100)
     }
+    
+    // BPM display and modification
+    const bpmValueElement: HTMLElement = <span/>
+    const minBpm = 40
+    const maxBpm = 240
+    
+    const updateBpmDisplay = () => {
+        const currentBpm = Math.round(project.timelineBox.bpm.getValue())
+        bpmValueElement.textContent = String(currentBpm)
+    }
+    
+    lifecycle.own(project.timelineBox.bpm.subscribe(updateBpmDisplay))
+    updateBpmDisplay()
+    
+    const bpmDisplay: HTMLElement = (
+        <div className="bpm-display">
+            <div className="bpm-value">{bpmValueElement}</div>
+            <div className="bpm-label">BPM</div>
+        </div>
+    )
+    
+    // Add drag-to-modify functionality (like TimeStateDisplay)
+    let isDragging = false
+    let dragStartY = 0
+    let dragStartBpm = 0
+    
+    const handlePointerDown = (event: PointerEvent) => {
+        isDragging = true
+        dragStartY = event.clientY
+        dragStartBpm = project.timelineBox.bpm.getValue()
+        bpmDisplay.setPointerCapture(event.pointerId)
+        bpmDisplay.classList.add('dragging')
+        event.preventDefault()
+    }
+    
+    const handlePointerMove = (event: PointerEvent) => {
+        if (!isDragging) return
+        
+        const deltaY = dragStartY - event.clientY
+        const newBpm = Math.max(minBpm, Math.min(maxBpm, dragStartBpm + deltaY))
+        
+        project.editing.modify(() => {
+            project.timelineBox.bpm.setValue(newBpm)
+        }, false)
+        
+        event.preventDefault()
+    }
+    
+    const handlePointerUp = (event: PointerEvent) => {
+        if (!isDragging) return
+        
+        isDragging = false
+        bpmDisplay.releasePointerCapture(event.pointerId)
+        bpmDisplay.classList.remove('dragging')
+        project.editing.mark()
+        event.preventDefault()
+    }
+    
+    bpmDisplay.addEventListener('pointerdown', handlePointerDown)
+    bpmDisplay.addEventListener('pointermove', handlePointerMove)
+    bpmDisplay.addEventListener('pointerup', handlePointerUp)
+    bpmDisplay.addEventListener('pointercancel', handlePointerUp)
+    
+    lifecycle.own({
+        terminate: () => {
+            bpmDisplay.removeEventListener('pointerdown', handlePointerDown)
+            bpmDisplay.removeEventListener('pointermove', handlePointerMove)
+            bpmDisplay.removeEventListener('pointerup', handlePointerUp)
+            bpmDisplay.removeEventListener('pointercancel', handlePointerUp)
+        }
+    })
     
     // Playback control: play or stop+restart
     const playButtonElement: HTMLButtonElement = <button className="play-btn" onclick={() => {
@@ -673,6 +740,7 @@ export const PreviewTimeline = ({lifecycle, project, service}: Construct) => {
     return {
         element: container,
         playButton: playButtonElement,
+        bpmDisplay: bpmDisplay,
         sectionButtons: sectionButtons
     }
 }

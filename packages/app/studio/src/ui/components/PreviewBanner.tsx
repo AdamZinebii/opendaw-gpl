@@ -70,9 +70,11 @@ export const PreviewBanner = ({lifecycle, service}: Construct) => {
             
             // Add controls below
             const playControlDiv = <div className="play-control">{preview.playButton}</div>
+            const bpmControlDiv = <div className="bpm-control">{preview.bpmDisplay}</div>
             const sectionsDiv = <div className="section-selector">{preview.sectionButtons}</div>
             
             controlsContainer.appendChild(playControlDiv)
+            controlsContainer.appendChild(bpmControlDiv)
             controlsContainer.appendChild(sectionsDiv)
         }
     }
@@ -106,6 +108,23 @@ export const PreviewBanner = ({lifecycle, service}: Construct) => {
     
     lifecycle.own(service.preview.editingRegion.subscribe(() => updateEditor()))
     updateEditor() // Initial render
+
+    // Loading overlay that shows when applying to DAW
+    const loadingOverlay: HTMLElement = <div className="applying-overlay" style={{display: 'none'}}>
+        <div className="applying-content">
+            <div className="spinner"></div>
+            <h3>Applying to DAW...</h3>
+            <p>Merging tracks and arrangements</p>
+        </div>
+    </div>
+
+    // Show/hide loading overlay based on isApplying state
+    const updateLoadingState = () => {
+        const isApplying = service.preview.isApplying.getValue()
+        loadingOverlay.style.display = isApplying ? 'flex' : 'none'
+    }
+    lifecycle.own(service.preview.isApplying.subscribe(() => updateLoadingState()))
+    updateLoadingState() // Initial state
 
     return (
         <div className={className}>
@@ -141,6 +160,9 @@ export const PreviewBanner = ({lifecycle, service}: Construct) => {
                         </Button>
                     </div>
                 </div>
+                
+                {/* Loading overlay when applying */}
+                {loadingOverlay}
             </div>
             
             {/* Editor modal container (reactive) */}

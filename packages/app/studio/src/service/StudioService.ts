@@ -343,38 +343,7 @@ export class StudioService implements ProjectEnv {
                 ? this.extractProjectDataFrom(this.preview.project.getValue()!, this.preview.profile.getValue()!)
                 : this.extractProjectData()
             
-            // DEBUG: Check what we extract from current project
-            console.log(`🔍 [DRUMFIX-EXTRACT] ========== EXTRACTING PROJECT DATA ==========`)
-            console.log(`🔍 [DRUMFIX-EXTRACT] Extracted project with ${projectData.tracks?.length || 0} tracks`)
-            if (projectData.tracks) {
-                projectData.tracks.forEach((t: any, i: number) => {
-                    console.log(`🔍 [DRUMFIX-EXTRACT] Track ${i}: "${t.name}" (${t.type})`)
-                })
-            }
-            console.log(`🎹 [DEBUG-EXTRACT] Extracted project with ${projectData.tracks?.length || 0} tracks`)
-            if (projectData.tracks) {
-                projectData.tracks.forEach((track: any, index: number) => {
-                    const noteRegions = track.noteRegions || []
-                    const totalNotes = noteRegions.reduce((sum: number, region: any) => sum + (region.notes?.length || 0), 0)
-                    console.log(`🎹 [DEBUG-EXTRACT] Track ${index} "${track.name}": ${noteRegions.length} regions, ${totalNotes} notes`)
-                    
-                    // 🔍 DEBUG: Show extracted parameters for each track
-                    console.log(`🔍 [DEBUG-EXTRACT] Track "${track.name}" parameters:`, JSON.stringify(track.parameters, null, 2))
-                    
-                    // 🔍 DEBUG: Special logging for Sampler devices
-                    if (track.type === 'SamplerDeviceBox' || track.type === 'NanoDeviceBox') {
-                        console.log(`🎹 [DEBUG-EXTRACT] Sampler track found:`)
-                        console.log(`  - Type: ${track.type}`)
-                        console.log(`  - Name: ${track.name}`)
-                        console.log(`  - Has instrumentUUID: ${track.parameters.instrumentUUID ? 'YES' : 'NO'}`)
-                        console.log(`  - Has instrumentName: ${track.parameters.instrumentName ? 'YES' : 'NO'}`)
-                        if (track.parameters.instrumentUUID) {
-                            console.log(`  - InstrumentUUID: ${track.parameters.instrumentUUID}`)
-                            console.log(`  - InstrumentName: ${track.parameters.instrumentName}`)
-                        }
-                    }
-                })
-            }
+            // Extract project data (from PREVIEW if in preview mode, otherwise active project)
             
             // Send secret address to tool-executor (no tool names/args visible)
             // Progress is now tracked by startProgressInterval() called at the beginning of song creation
@@ -597,24 +566,17 @@ export class StudioService implements ProjectEnv {
         const tracks: any[] = []
         
         try {
-            console.log(`🔍 [EXTRACT-TRACKS] Starting track extraction...`)
             const audioUnits = project.rootBox.audioUnits.pointerHub.incoming()
-            console.log(`🔍 [EXTRACT-TRACKS] Found ${audioUnits.length} audio units`)
             
             for (const audioUnitPointer of audioUnits) {
                 const audioUnit = audioUnitPointer.box as any
-                console.log(`🔍 [EXTRACT-TRACKS] Processing audio unit: ${audioUnit.constructor.name}`)
                 
                 const inputPointer = audioUnit.input?.pointerHub?.incoming()?.at(0)
-                console.log(`🔍 [EXTRACT-TRACKS] Input pointer: ${inputPointer ? 'found' : 'null'}`)
                 
                 if (inputPointer) {
                     const instrumentBox = inputPointer.box as any
-                    console.log(`🔍 [EXTRACT-TRACKS] Instrument box: ${instrumentBox.constructor.name}`)
-                    console.log(`🔍 [EXTRACT-TRACKS] Instrument name: ${instrumentBox.label?.getValue?.() || 'Unnamed'}`)
                     
                     const instrumentType = instrumentBox._originalType || this.translateToGenericType(instrumentBox.constructor.name)
-                    console.log(`🔍 [EXTRACT-TRACKS] Type: ${instrumentType} (from ${instrumentBox._originalType ? '_originalType' : 'constructor.name'})`)
                     
                     // Extract instrument parameters
                     const instrumentParams = this.extractBoxParameters(instrumentBox)
@@ -641,18 +603,9 @@ export class StudioService implements ProjectEnv {
                         drumSetSamples: this.extractDrumSetSamples(instrumentBox) // Add DrumSet sample data
                     }
                     
-                    console.log(`🔍 [EXTRACT-TRACKS] Created track data:`)
-                    console.log(`  - Name: ${trackData.name}`)
-                    console.log(`  - Type: ${trackData.type}`)
-                    console.log(`  - Parameters keys: ${Object.keys(trackData.parameters).join(', ')}`)
-                    
                     tracks.push(trackData)
-                } else {
-                    console.log(`⚠️ [EXTRACT-TRACKS] Skipped audio unit (no input pointer): ${audioUnit.constructor.name}`)
                 }
             }
-            
-            console.log(`🔍 [EXTRACT-TRACKS] Final result: ${tracks.length} tracks extracted`)
             
         } catch (error) {
             console.warn('Warning: Could not extract tracks data:', error)
@@ -1225,16 +1178,7 @@ export class StudioService implements ProjectEnv {
         // This is where we'll rebuild the project from the modified data
         // For now, create a new project and add the tracks/effects
         
-        console.log(`🔍 [DRUMFIX-RECONSTRUCT] ========== RECONSTRUCTING PROJECT ==========`)
-        console.log(`🔍 [DRUMFIX-RECONSTRUCT] Tracks to add: ${projectData.tracks?.length || 0}`)
-        if (projectData.tracks) {
-            projectData.tracks.forEach((t: any, i: number) => {
-                console.log(`🔍 [DRUMFIX-RECONSTRUCT] Track ${i}: "${t.name}" (${t.type})`)
-            })
-        }
-        
         const newProject = Project.new(this)
-        console.log(`🔍 [DRUMFIX-RECONSTRUCT] New empty project created`)
         
         // Apply BPM if present in modified data
         if (projectData.bpm) {
@@ -1252,7 +1196,6 @@ export class StudioService implements ProjectEnv {
             }
         }
         
-        console.log(`🔍 [DRUMFIX-RECONSTRUCT] Project reconstruction complete`)
         
         if (projectData.tracks) {
             for (const trackData of projectData.tracks) {
@@ -1273,12 +1216,7 @@ export class StudioService implements ProjectEnv {
      */
     private async addTrackFromData(project: Project, trackData: any): Promise<void> {
         try {
-            console.log(`🔍 [DRUMFIX-ADD-TRACK] ========== ADDING TRACK FROM DATA ==========`)
-            console.log(`🔍 [DRUMFIX-ADD-TRACK] Track name: "${trackData.name}"`)
-            console.log(`🔍 [DRUMFIX-ADD-TRACK] Track type: "${trackData.type}"`)
-            
             const {InstrumentFactories} = await import('@opendaw/studio-core')
-            console.log(`🔍 [DRUMFIX-ADD-TRACK] InstrumentFactories loaded:`, Object.keys(InstrumentFactories))
             
             let trackBox: any = null
             
@@ -1312,18 +1250,13 @@ export class StudioService implements ProjectEnv {
                         break
                     // Skip non-instrument types
                     case 'AudioBusBox':
-                        console.log(`🔍 [DRUMFIX-ADD-TRACK] Skipping AudioBusBox track: ${trackData.name}`)
                         return
                     default:
-                        console.log(`🚨 [DRUMFIX-ADD-TRACK] Unknown instrument type: ${trackData.type}`)
                         console.warn(`Unknown instrument type: ${trackData.type}`)
                         return
                 }
                 
-                console.log(`🔍 [DRUMFIX-ADD-TRACK] Factory selected:`, factory ? 'YES' : 'NO')
-                console.log(`🔍 [DRUMFIX-ADD-TRACK] Creating instrument with name: "${trackData.name}"`)
                 const result = project.api.createInstrument(factory, { name: trackData.name })
-                console.log(`🔍 [DRUMFIX-ADD-TRACK] Instrument created successfully`)
                 const instrumentBox = result.instrumentBox
                 trackBox = result.trackBox;
                 (instrumentBox as any)._originalType = trackData.type
@@ -1503,8 +1436,6 @@ export class StudioService implements ProjectEnv {
             // Separate transaction for MIDI notes (to avoid nested transaction conflicts)
             project.editing.modify(() => {
                 for (const regionData of noteRegions) {
-                    console.log(`🎵 Creating region with ${regionData.notes?.length || 0} notes at position ${regionData.position}`)
-                    console.log(`🔍 [MIDI-DEBUG] regionData:`, JSON.stringify(regionData, null, 2))
                     
                     const collection = NoteEventCollectionBox.create(project.boxGraph, UUID.generate());
                     (collection as any)._originalType = 'NoteEventCollectionBox'
@@ -1531,8 +1462,6 @@ export class StudioService implements ProjectEnv {
                             (box as any)._originalType = 'NoteEventBox'
                         })
                     }
-                    
-                    console.log(`✅ Created MIDI region with ${regionData.notes?.length || 0} notes`)
                 }
             })
             
@@ -1638,18 +1567,14 @@ export class StudioService implements ProjectEnv {
             for (const regionData of trackData.audioRegions) {
                 if (regionData.file && regionData.file.uuid) {
                     const audioFileUUID = UUID.parse(regionData.file.uuid)
-                    const audioFileUUIDString = UUID.toString(audioFileUUID)
                     try {
-                        const audioDurationSeconds = await this.getAudioDurationFromManifest(audioFileUUIDString)
+                        const audioDurationSeconds = await this.getAudioDurationFromManifest(audioFileUUID)
                         const projectBPM = this.getProjectBPM(project)
                         const properDuration = Math.round(audioDurationSeconds * projectBPM / 60.0 * 960) // PPQN formula
-                        regionDurations.set(audioFileUUIDString, properDuration)
-                        
-                        console.log(`🎵 [AUDIO-DURATION] UUID: ${audioFileUUIDString}`)
-                        console.log(`🎵 [AUDIO-DURATION] Duration: ${audioDurationSeconds}s, BPM: ${projectBPM}, PPQN: ${properDuration}`)
+                        regionDurations.set(UUID.toString(audioFileUUID), properDuration)
                     } catch (error) {
-                        console.warn(`⚠️ Could not calculate duration for ${audioFileUUIDString}, using fallback`)
-                        regionDurations.set(audioFileUUIDString, 38400) // Fallback: 20s at 120 BPM
+                        console.warn(`⚠️ Could not calculate duration for ${UUID.toString(audioFileUUID)}, using fallback`)
+                        regionDurations.set(UUID.toString(audioFileUUID), 38400) // Fallback: 20s at 120 BPM
                     }
                 }
             }
@@ -1662,8 +1587,7 @@ export class StudioService implements ProjectEnv {
                     }
                     
                     const audioFileUUID = UUID.parse(regionData.file.uuid)
-                    const audioFileUUIDString = UUID.toString(audioFileUUID)
-                    const properDuration = regionDurations.get(audioFileUUIDString) || 38400 // Fallback
+                    const properDuration = regionDurations.get(UUID.toString(audioFileUUID)) || 38400 // Fallback
                     
                     const audioFileBox = project.boxGraph.findBox(audioFileUUID)
                         .unwrapOrElse(() => AudioFileBox.create(project.boxGraph, audioFileUUID, box => {
@@ -1695,15 +1619,15 @@ export class StudioService implements ProjectEnv {
     /**
      * Get audio duration from manifest data
      */
-    private async getAudioDurationFromManifest(audioFileUUID: string): Promise<number> {
+    private async getAudioDurationFromManifest(audioFileUUID: UUID.Format): Promise<number> {
         try {
             // Use the SupabaseSampleAPI to get sample info
             const {SupabaseSampleAPI} = await import('@/service/SupabaseSampleAPI')
             const sampleAPI = SupabaseSampleAPI.get()
-            const sample = await sampleAPI.get(audioFileUUID as any)
+            const sample = await sampleAPI.get(audioFileUUID)
             return sample.duration || 20.0 // Fallback to 20 seconds if not found
         } catch (error) {
-            console.warn(`⚠️ Could not get audio duration for ${audioFileUUID}, using default 20s:`, error)
+            console.warn(`⚠️ Could not get audio duration for ${UUID.toString(audioFileUUID)}, using default 20s:`, error)
             return 20.0 // Default fallback
         }
     }
@@ -1714,7 +1638,6 @@ export class StudioService implements ProjectEnv {
     private getProjectBPM(project: Project): number {
         try {
             const bpm = project.bpm
-            console.log(`🎵 [PROJECT-BPM] Retrieved project BPM: ${bpm}`)
             return bpm
         } catch (error) {
             console.warn(`⚠️ Could not get project BPM, using default 120: ${error}`)
@@ -2252,6 +2175,13 @@ export class StudioService implements ProjectEnv {
         }
         
         try {
+            // Stop preview playback before applying
+            const previewProject = this.preview.project.getValue()
+            if (previewProject?.engine) {
+                previewProject.engine.stop()
+                console.log('⏹️ Stopped preview playback before applying')
+            }
+            
             // Show loading state
             this.preview.isApplying.setValue(true)
             
@@ -2299,6 +2229,7 @@ export class StudioService implements ProjectEnv {
                 console.log(`📊 Applying arrangements for ${trackArrangements.size} tracks based on modified sections`)
                 
                 // Execute arrangements on the now-restored original project
+                // NOTE: Must be sequential because each arrangeInTrack modifies the project data
                 for (const [trackName, timeArrangement] of trackArrangements) {
                     const toolResponse = await this.executeRemoteTool('arrangeInTrack', {
                         trackName,
