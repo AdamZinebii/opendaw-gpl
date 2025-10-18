@@ -92,6 +92,16 @@ export class SupabaseSampleAPI implements FutureSampleApi {
         this.samplesMap.clear()
     }
 
+    /**
+     * Force reload the manifest from Supabase immediately
+     */
+    public async reloadManifest(): Promise<void> {
+        console.debug('Force reloading samples manifest...')
+        this.manifestCache = null
+        this.samplesMap.clear()
+        await this.loadManifest(true)
+    }
+
     private getStorageUrl(filename: string): string {
         const { data } = this.supabase.storage
             .from(SupabaseSampleAPI.BUCKET_NAME)

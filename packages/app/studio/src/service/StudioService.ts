@@ -2234,16 +2234,19 @@ export class StudioService implements ProjectEnv {
             // Hide preview modal
             this.preview.showModal.setValue(false)
             
-            // IMPORTANT: Invalidate manifest cache to ensure new audio files are found
+            // IMPORTANT: Reload manifest to ensure newly generated audio files are found
             try {
                 const {SupabaseSampleAPI} = await import('@/service/SupabaseSampleAPI')
                 const sampleAPI = SupabaseSampleAPI.get()
-                sampleAPI.invalidateCache()
-                console.log('🔄 [APPLY-PREVIEW] Invalidated manifest cache before applying preview')
+
+                // Force a manifest reload to ensure newly generated audio files are available
+                console.log('🔄 [APPLY-PREVIEW] Reloading manifest to include new audio files...')
+                await sampleAPI.reloadManifest()
+                console.log('✅ [APPLY-PREVIEW] Manifest reloaded successfully')
             } catch (cacheError) {
-                console.warn('⚠️ [APPLY-PREVIEW] Failed to invalidate cache:', cacheError)
+                console.warn('⚠️ [APPLY-PREVIEW] Failed to reload manifest cache:', cacheError)
             }
-            
+
             // Extract all tracks/data from preview project
             const previewData = this.extractProjectDataFrom(this.preview.project.getValue()!, this.preview.profile.getValue()!)
             
