@@ -4,7 +4,6 @@ import {App} from "@/ui/App.tsx"
 import {panic, Procedure, unitValue, UUID} from "@opendaw/lib-std"
 import {StudioService} from "@/service/StudioService"
 import {AudioData, SampleMetaData} from "@opendaw/studio-adapters"
-import {Dialogs} from "@/ui/components/dialogs.tsx"
 import {installCursors} from "@/ui/Cursors.ts"
 import {BuildInfo} from "./BuildInfo"
 import {Surface} from "@/ui/surface/Surface.tsx"
@@ -101,12 +100,11 @@ requestAnimationFrame(async () => {
             const sourceCss = document.querySelector<HTMLLinkElement>("link[rel='stylesheet']")?.href ?? ""
             const sourceCode = document.querySelector<HTMLScriptElement>("script[src]")?.src ?? ""
             if (!sourceCss.includes(uuid) || !sourceCode.includes(uuid)) {
-                console.warn("Cache issue:")
+                console.warn("Cache issue detected - version mismatch:")
                 console.warn("expected uuid", uuid)
                 console.warn("sourceCss", sourceCss)
                 console.warn("sourceCode", sourceCode)
-                Dialogs.cache()
-                return
+                console.warn("Continuing anyway - app may experience issues if version mismatch is severe")
             }
             const checkUpdates = setInterval(async () => {
                 if (!navigator.onLine) {return}

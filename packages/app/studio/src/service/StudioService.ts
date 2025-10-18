@@ -834,25 +834,35 @@ export class StudioService implements ProjectEnv {
     
     private extractAudioRegions(audioUnit: any): any[] {
         const audioRegions: any[] = []
-        
+
         try {
+            const audioUnitName = audioUnit.input?.pointerHub?.incoming()?.[0]?.box?.label?.getValue?.() || 'Unknown'
+            console.log(`🔍 [EXTRACT-AUDIO] Extracting audio regions from "${audioUnitName}"`)
+
             const tracksPointer = audioUnit.tracks?.pointerHub?.incoming()
             if (!tracksPointer || tracksPointer.length === 0) {
+                console.log(`  ⚠️ [EXTRACT-AUDIO] No tracks found in audio unit`)
                 return audioRegions
             }
-            
+
+            console.log(`  📦 [EXTRACT-AUDIO] Found ${tracksPointer.length} track(s)`)
+
             for (const trackPointer of tracksPointer) {
                 const track = trackPointer.box
                 const regionsPointer = track.regions?.pointerHub?.incoming()
-                
+
+                console.log(`  📦 [EXTRACT-AUDIO] Track has ${regionsPointer?.length || 0} region(s)`)
+
                 if (regionsPointer && regionsPointer.length > 0) {
                     for (const regionPointer of regionsPointer) {
                         const region = regionPointer.box
                         const regionType = (region as any)._originalType || region.constructor.name
-                        
+
+                        console.log(`    🎵 [EXTRACT-AUDIO] Region type: ${regionType}`)
+
                         if (regionType === 'AudioRegionBox') {
                             const fileRef = this.extractAudioFileReference(region.file)
-                            
+
                             const regionData = {
                                 position: region.position?.getValue() || 0,
                                 duration: region.duration?.getValue() || 0,
@@ -865,14 +875,17 @@ export class StudioService implements ProjectEnv {
                                 file: fileRef
                             }
                             audioRegions.push(regionData)
+                            console.log(`    ✅ [EXTRACT-AUDIO] Extracted audio region: pos=${regionData.position}, dur=${regionData.duration}, file=${fileRef?.uuid || 'NO FILE'}`)
                         }
                     }
                 }
             }
+
+            console.log(`  ✅ [EXTRACT-AUDIO] Total extracted: ${audioRegions.length} audio region(s)`)
         } catch (error) {
-            console.warn('Warning: Could not extract audio regions:', error)
+            console.error('❌ [EXTRACT-AUDIO] Error extracting audio regions:', error)
         }
-        
+
         return audioRegions
     }
     
@@ -1544,27 +1557,39 @@ export class StudioService implements ProjectEnv {
      */
     private async addAudioRegionsToTrack(project: Project, trackData: any): Promise<void> {
         try {
+            console.log(`🎵 [ADD-AUDIO] Starting to add ${trackData.audioRegions?.length || 0} audio region(s) to track "${trackData.name}"`)
+
             const {AudioRegionBox, AudioFileBox} = await import('@opendaw/studio-boxes')
             const {UUID} = await import('@opendaw/lib-std')
             const {ColorCodes} = await import('@opendaw/studio-core')
-            
+
             const targetTrack = this.findTrackByNameInProject(project, trackData.name)
             if (!targetTrack) {
-                console.warn(`❌ Could not find track "${trackData.name}" to add audio regions`)
+                console.error(`❌ [ADD-AUDIO] Could not find track "${trackData.name}" to add audio regions`)
                 return
             }
-            
+            console.log(`✅ [ADD-AUDIO] Found target track "${trackData.name}"`)
+
             const tracksPointer = targetTrack.tracks?.pointerHub?.incoming()
             if (!tracksPointer || tracksPointer.length === 0) {
-                console.warn(`❌ No tracks found in audio unit for "${trackData.name}"`)
+                console.error(`❌ [ADD-AUDIO] No tracks found in audio unit for "${trackData.name}"`)
                 return
             }
-            
+            console.log(`✅ [ADD-AUDIO] Found ${tracksPointer.length} track pointer(s)`)
+
             const trackBox = tracksPointer[0].box
-            
-            // Pre-calculate durations for all audio regions
+
+            // Pre-calculate durations ONLY for regions that don't already have duration data
+            console.log(`📏 [ADD-AUDIO] Checking durations for ${trackData.audioRegions.length} region(s)...`)
             const regionDurations = new Map<string, number>()
             for (const regionData of trackData.audioRegions) {
+                // Skip manifest lookup if region already has valid duration (from preview)
+                if (regionData.duration && regionData.duration > 0) {
+                    console.log(`  ✅ [ADD-AUDIO] Using stored duration for ${regionData.file?.fileName}: ${regionData.duration} PPQN (from region data)`)
+                    continue
+                }
+
+                // Only fetch from manifest if duration is missing
                 if (regionData.file && regionData.file.uuid) {
                     const audioFileUUID = UUID.parse(regionData.file.uuid)
                     try {
@@ -1572,32 +1597,50 @@ export class StudioService implements ProjectEnv {
                         const projectBPM = this.getProjectBPM(project)
                         const properDuration = Math.round(audioDurationSeconds * projectBPM / 60.0 * 960) // PPQN formula
                         regionDurations.set(UUID.toString(audioFileUUID), properDuration)
+                        console.log(`  ✅ [ADD-AUDIO] Calculated duration from manifest for ${regionData.file.fileName}: ${audioDurationSeconds}s = ${properDuration} PPQN`)
                     } catch (error) {
-                        console.warn(`⚠️ Could not calculate duration for ${UUID.toString(audioFileUUID)}, using fallback`)
+                        console.warn(`  ⚠️ [ADD-AUDIO] Could not calculate duration for ${UUID.toString(audioFileUUID)}, using fallback`)
                         regionDurations.set(UUID.toString(audioFileUUID), 38400) // Fallback: 20s at 120 BPM
                     }
                 }
             }
-            
+
+            console.log(`📝 [ADD-AUDIO] Starting editing.modify() transaction...`)
             project.editing.modify(() => {
                 for (const regionData of trackData.audioRegions) {
                     if (!regionData.file || !regionData.file.uuid) {
-                        console.warn('⚠️ Audio region missing file reference, skipping')
+                        console.warn('  ⚠️ [ADD-AUDIO] Audio region missing file reference, skipping')
                         continue
                     }
-                    
+
                     const audioFileUUID = UUID.parse(regionData.file.uuid)
-                    const properDuration = regionDurations.get(UUID.toString(audioFileUUID)) || 38400 // Fallback
-                    
+
+                    // Use duration from regionData if available, otherwise use manifest-calculated duration
+                    let finalDuration: number
+                    let durationSource: string
+                    if (regionData.duration && regionData.duration > 0) {
+                        finalDuration = regionData.duration
+                        durationSource = 'region data'
+                    } else {
+                        finalDuration = regionDurations.get(UUID.toString(audioFileUUID)) || 38400
+                        durationSource = 'manifest/fallback'
+                    }
+
+                    console.log(`  🎵 [ADD-AUDIO] Creating AudioRegionBox for file ${regionData.file.fileName} (${regionData.file.uuid})`)
+                    console.log(`       Duration: ${finalDuration} PPQN (source: ${durationSource})`)
+
                     const audioFileBox = project.boxGraph.findBox(audioFileUUID)
-                        .unwrapOrElse(() => AudioFileBox.create(project.boxGraph, audioFileUUID, box => {
-                            box.fileName.setValue(regionData.file.fileName || 'audio.wav')
-                        }))
-                    
+                        .unwrapOrElse(() => {
+                            console.log(`    📦 [ADD-AUDIO] Creating new AudioFileBox for ${regionData.file.fileName}`)
+                            return AudioFileBox.create(project.boxGraph, audioFileUUID, box => {
+                                box.fileName.setValue(regionData.file.fileName || 'audio.wav')
+                            })
+                        })
+
                     AudioRegionBox.create(project.boxGraph, UUID.generate(), box => {
                         box.position.setValue(regionData.position || 0)
-                        box.duration.setValue(regionData.duration || properDuration)
-                        box.loopDuration.setValue(regionData.loopDuration || regionData.duration || properDuration)
+                        box.duration.setValue(finalDuration)
+                        box.loopDuration.setValue(regionData.loopDuration || finalDuration)
                         box.loopOffset.setValue(regionData.loopOffset || 0)
                         box.hue.setValue(regionData.hue || ColorCodes.forTrackType(0))
                         box.label.setValue(regionData.label || 'Audio Region')
@@ -1607,12 +1650,15 @@ export class StudioService implements ProjectEnv {
                         box.regions.refer(trackBox.regions);
                         (box as any)._originalType = 'AudioRegionBox'
                     })
+                    console.log(`    ✅ [ADD-AUDIO] Created AudioRegionBox at position ${regionData.position}`)
                 }
-                
-                console.log(`✅ Added ${trackData.audioRegions.length} audio regions to track: ${trackData.name}`)
+
+                console.log(`✅ [ADD-AUDIO] Added ${trackData.audioRegions.length} audio region(s) to track: ${trackData.name}`)
             })
+            console.log(`✅ [ADD-AUDIO] editing.modify() transaction complete`)
         } catch (error) {
-            console.error('❌ Failed to add audio regions to track:', error)
+            console.error('❌ [ADD-AUDIO] Failed to add audio regions to track:', error)
+            console.error('❌ [ADD-AUDIO] Error stack:', error instanceof Error ? error.stack : 'No stack')
         }
     }
 
@@ -2202,11 +2248,21 @@ export class StudioService implements ProjectEnv {
             const previewData = this.extractProjectDataFrom(this.preview.project.getValue()!, this.preview.profile.getValue()!)
             
             console.log(`📋 Merging ${previewData.tracks?.length || 0} tracks from preview to original project`)
-            
-            // DEBUG: Log note regions being extracted
+
+            // DEBUG: Log both note regions AND audio regions being extracted
             previewData.tracks?.forEach((track: any, index: number) => {
                 const noteCount = track.noteRegions?.reduce((sum: number, r: any) => sum + (r.notes?.length || 0), 0) || 0
-                console.log(`  📝 Track ${index} "${track.name}": ${track.noteRegions?.length || 0} regions, ${noteCount} total notes`)
+                const audioRegionCount = track.audioRegions?.length || 0
+                console.log(`  📝 Track ${index} "${track.name}" (${track.type}):`)
+                console.log(`     - MIDI: ${track.noteRegions?.length || 0} regions, ${noteCount} total notes`)
+                console.log(`     - Audio: ${audioRegionCount} regions`)
+
+                // Log audio region details
+                if (audioRegionCount > 0) {
+                    track.audioRegions.forEach((region: any, rIndex: number) => {
+                        console.log(`       [${rIndex}] pos=${region.position}, dur=${region.duration}, file=${region.file?.uuid || 'NO FILE'}`)
+                    })
+                }
             })
             
             // IMPORTANT: Deactivate preview mode BEFORE restoring original project
