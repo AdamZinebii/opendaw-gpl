@@ -326,6 +326,47 @@ export const PreviewTimeline = ({lifecycle, project, service}: Construct) => {
             const muteModel = EditWrapper.forAutomatableParameter(project.editing, mute)
             const soloModel = EditWrapper.forAutomatableParameter(project.editing, solo)
             
+            // Subscribe to manual mute changes to update sections
+            lifecycle.own(mute.subscribe((muteAdapter) => {
+                const isMuted = muteAdapter.getValue()
+                
+                // Only update sections if we're NOT in "All" mode
+                if (selectedSectionName !== 'All') {
+                    const currentSections = service.preview.sections.getValue()
+                    const updatedSections = currentSections.map((section: any) => {
+                        if (section.name === selectedSectionName) {
+                            // Track is being manually toggled in this section
+                            const trackIndex = section.tracks.findIndex((t: string) => 
+                                t.trim().toLowerCase() === trackName.trim().toLowerCase()
+                            )
+                            
+                            if (isMuted && trackIndex !== -1) {
+                                // Remove track from section when muted
+                                console.log(`🔇 [SECTION-UPDATE] Removing "${trackName}" from section "${section.name}"`)
+                                return {
+                                    ...section,
+                                    tracks: section.tracks.filter((t: string) => 
+                                        t.trim().toLowerCase() !== trackName.trim().toLowerCase()
+                                    )
+                                }
+                            } else if (!isMuted && trackIndex === -1) {
+                                // Add track to section when unmuted
+                                console.log(`🔊 [SECTION-UPDATE] Adding "${trackName}" to section "${section.name}"`)
+                                return {
+                                    ...section,
+                                    tracks: [...section.tracks, trackName]
+                                }
+                            }
+                        }
+                        return section
+                    })
+                    
+                    // Update the sections
+                    service.preview.sections.setValue(updatedSections)
+                    console.log(`✅ [SECTION-UPDATE] Updated sections:`, updatedSections)
+                }
+            }))
+            
             const muteBtn = (
                 <Checkbox 
                     lifecycle={lifecycle}
