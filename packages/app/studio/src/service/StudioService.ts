@@ -3263,11 +3263,16 @@ export class StudioService implements ProjectEnv {
                 })
                 newAudioUnit = result
                 
+                // Set _originalType to match song-creator behavior (AudioPlayerDeviceBox is generic name)
+                const instrumentBox = result.instrumentBox as any
+                instrumentBox._originalType = 'AudioPlayerDeviceBox'
+                
                 // Restore mute/solo state
                 result.audioUnitBox.mute.setValue(oldMuteValue)
                 result.audioUnitBox.solo.setValue(oldSoloValue)
                 
                 console.log(`✅ [RETRY-MELODY-TO-AUDIO] Created new Tape AudioUnit at index ${audioUnitIndex}`)
+                console.log(`✅ [RETRY-MELODY-TO-AUDIO] Set _originalType to 'AudioPlayerDeviceBox' (like song-creator)`)
             })
             
             // Get the new trackBox
@@ -3275,7 +3280,7 @@ export class StudioService implements ProjectEnv {
             
             console.log(`✅ [RETRY-MELODY-TO-AUDIO] Track converted from MIDI to Audio`)
 
-            // Add audio regions to the new track
+            // Add audio regions to the new track (match song-creator structure)
             project.editing.modify(() => {
                 // Create AudioFileBox for the new audio file
                 const fileUuid = UUID.parse(result.uuid)
@@ -3295,7 +3300,7 @@ export class StudioService implements ProjectEnv {
                 for (let sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
                     const sectionStartPosition = sectionIndex * ppqnPerSection
 
-                    // Create audio region for this section
+                    // Create audio region for this section (with _originalType like song-creator)
                     AudioRegionBox.create(project.boxGraph, UUID.generate(), box => {
                         box.position.setValue(sectionStartPosition)
                         box.duration.setValue(properDuration)
@@ -3310,10 +3315,13 @@ export class StudioService implements ProjectEnv {
                         box.file.refer(audioFileBox)
                         
                         box.regions.refer(newTrackBox.box.regions)
+                        
+                        // Set _originalType to match song-creator extraction behavior
+                        ;(box as any)._originalType = 'AudioRegionBox'
                     })
                 }
 
-                console.log(`✅ [RETRY-MELODY-TO-AUDIO] Added ${totalSections} audio regions to new TapeDevice track`)
+                console.log(`✅ [RETRY-MELODY-TO-AUDIO] Added ${totalSections} audio regions to AudioPlayerDeviceBox track`)
             })
 
             console.log('✅ [RETRY-MELODY-TO-AUDIO] MIDI track converted to audio successfully!')
