@@ -50,55 +50,56 @@ export const ProjectBrowser = ({ lifecycle: _lifecycle, projectService, studioSe
             }
         }
 
-        if (projects.length === 0 && !loading) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-text">No projects yet</div>
-                    <div class="empty-subtitle">Click "New" to create your first project</div>
-                </div>
-            `
-            return
+        const grid = document.createElement('div')
+        grid.className = 'projects-grid'
+
+        // Add "+ New" card as first element
+        const newProjectCard = document.createElement('div')
+        newProjectCard.className = 'project-card new-project-card'
+        newProjectCard.innerHTML = `
+            <div class="new-project-content">
+                <div class="new-project-icon">+</div>
+                <div class="new-project-text">New Project</div>
+            </div>
+        `
+        newProjectCard.onclick = async () => {
+            try {
+                // Create project in Supabase FIRST
+                const newProject = await projectService.createProject({
+                    name: "Untitled",
+                    description: ""
+                })
+
+                console.log('🆕 Created Supabase project:', newProject.id)
+
+                // Create new local project
+                studioService.cleanSlate()
+
+                // Save project files
+                await studioService.saveAsDef()
+
+                // Switch to project page
+                studioService.switchScreen("project")
+            } catch (error) {
+                console.error('❌ Failed to create project:', error)
+                // Fallback: create local project anyway
+                studioService.cleanSlate()
+                await studioService.saveAsDef()
+                studioService.switchScreen("project")
+            }
         }
+        grid.appendChild(newProjectCard)
 
-                const grid = document.createElement('div')
-                grid.className = 'projects-grid'
-
-                // Add "+ New" card as first element
-                const newProjectCard = document.createElement('div')
-                newProjectCard.className = 'project-card new-project-card'
-                newProjectCard.innerHTML = `
-                    <div class="new-project-content">
-                        <div class="new-project-icon">+</div>
-                        <div class="new-project-text">New Project</div>
-                    </div>
-                `
-                newProjectCard.onclick = async () => {
-                    try {
-                        // Create project in Supabase FIRST
-                        const newProject = await projectService.createProject({
-                            name: "Untitled",
-                            description: ""
-                        })
-                        
-                        console.log('🆕 Created Supabase project:', newProject.id)
-                        
-                        // Create new local project
-                        studioService.cleanSlate()
-                        
-                        // Save project files
-                        await studioService.saveAsDef()
-                        
-                        // Switch to project page
-                        studioService.switchScreen("project")
-                    } catch (error) {
-                        console.error('❌ Failed to create project:', error)
-                        // Fallback: create local project anyway
-                        studioService.cleanSlate()
-                        await studioService.saveAsDef()
-                        studioService.switchScreen("project")
-                    }
-                }
-                grid.appendChild(newProjectCard)
+        // Show empty state message if no projects
+        if (projects.length === 0 && !loading) {
+            const emptyMessage = document.createElement('div')
+            emptyMessage.className = 'empty-message'
+            emptyMessage.innerHTML = `
+                <div class="empty-text">No projects yet</div>
+                <div class="empty-subtitle">Click the + button to create your first project</div>
+            `
+            grid.appendChild(emptyMessage)
+        }
 
                 // Add scroll listener for infinite scroll
                 let isLoadingMore = false
