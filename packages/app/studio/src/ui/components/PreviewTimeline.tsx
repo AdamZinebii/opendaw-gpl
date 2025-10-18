@@ -387,6 +387,75 @@ export const PreviewTimeline = ({lifecycle, project, service}: Construct) => {
                 </Checkbox>
             )
             
+            // Track-specific play/pause button with auto-solo
+            let trackIsPlaying = false
+            let wasSoloEnabled = false
+            const trackPlayBtn = (
+                <button 
+                    className="track-play-btn"
+                    onclick={async () => {
+                        if (!trackIsPlaying) {
+                            // Start playing with solo
+                            console.log(`▶️ Playing track "${trackName}" with solo`)
+                            
+                            // Remember if solo was already enabled
+                            wasSoloEnabled = solo.getValue()
+                            
+                            // Enable solo for this track
+                            project.editing.modify(() => {
+                                solo.setValue(true)
+                            })
+                            
+                            // Start playback if not already playing
+                            if (!engine.playing.getValue()) {
+                                await engine.resume()
+                                engine.play()
+                            }
+                            
+                            trackIsPlaying = true
+                            trackPlayBtn.classList.add('playing')
+                            trackPlayBtn.textContent = '⏸'
+                            trackPlayBtn.title = `Pause "${trackName}"`
+                        } else {
+                            // Stop playing and restore solo state
+                            console.log(`⏸ Pausing track "${trackName}" and restoring solo state`)
+                            
+                            // Restore original solo state
+                            project.editing.modify(() => {
+                                solo.setValue(wasSoloEnabled)
+                            })
+                            
+                            // Stop playback
+                            engine.stop(false)
+                            
+                            trackIsPlaying = false
+                            trackPlayBtn.classList.remove('playing')
+                            trackPlayBtn.textContent = '▶'
+                            trackPlayBtn.title = `Play "${trackName}" solo`
+                        }
+                    }}
+                    title={`Play "${trackName}" solo`}
+                >
+                    ▶
+                </button>
+            )
+            
+            // Sync with global playback state
+            lifecycle.own(engine.playing.subscribe((playing) => {
+                if (!playing && trackIsPlaying) {
+                    // Global playback stopped, reset track play button
+                    trackIsPlaying = false
+                    trackPlayBtn.classList.remove('playing')
+                    trackPlayBtn.textContent = '▶'
+                    trackPlayBtn.title = `Play "${trackName}" solo`
+                    
+                    // Restore solo state
+                    project.editing.modify(() => {
+                        solo.setValue(wasSoloEnabled)
+                    })
+                }
+            }))
+            
             // Create enhanced retry interface with navigation and toggle
             const instrumentLifecycle = lifecycle.own(new Terminator())
             let instrumentSelectorElement: HTMLElement | null = null
@@ -661,6 +730,7 @@ export const PreviewTimeline = ({lifecycle, project, service}: Construct) => {
                             </div>
                         ) : null}
                         <div className="track-controls">
+                            {trackPlayBtn}
                             {muteBtn}
                             {soloBtn}
                         </div>
