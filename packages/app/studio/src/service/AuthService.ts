@@ -54,12 +54,12 @@ export class AuthService {
             if (session?.user) {
                 // Touch login RPC server-side to upsert user + session (NON-BLOCKING)
                 console.log('🔐 Calling auth_on_login RPC for user:', session.user.email)
-                this.supabase.rpc('auth_on_login').then(result => {
+                Promise.resolve(this.supabase.rpc('auth_on_login')).then(result => {
                     console.log('✅ auth_on_login RPC result:', result)
                     if (result.error) {
                         console.error('❌ auth_on_login RPC error details:', JSON.stringify(result.error, null, 2))
                     }
-                }).catch(e => {
+                }).catch((e: any) => {
                     console.error('❌ auth_on_login RPC failed:', e)
                 })
 
@@ -82,12 +82,12 @@ export class AuthService {
                 if (session?.user) {
                     // Update activity + presence on any auth change (NON-BLOCKING)
                     console.log('🔐 Auth state change - calling auth_on_login RPC for user:', session.user.email)
-                    this.supabase.rpc('auth_on_login').then(result => {
+                    Promise.resolve(this.supabase.rpc('auth_on_login')).then(result => {
                         console.log('✅ auth_on_login RPC result:', result)
                         if (result.error) {
                             console.error('❌ auth_on_login RPC error details:', JSON.stringify(result.error, null, 2))
                         }
-                    }).catch(e => {
+                    }).catch((e: any) => {
                         console.error('❌ auth_on_login RPC failed:', e)
                     })
 
@@ -97,9 +97,9 @@ export class AuthService {
                     })
                 } else {
                     console.log('🔐 Auth state change - calling auth_on_logout RPC')
-                    this.supabase.rpc('auth_on_logout').then(result => {
+                    Promise.resolve(this.supabase.rpc('auth_on_logout')).then(result => {
                         console.log('✅ auth_on_logout RPC result:', result)
-                    }).catch(e => {
+                    }).catch((e: any) => {
                         console.error('❌ auth_on_logout RPC failed:', e)
                     })
                 }
