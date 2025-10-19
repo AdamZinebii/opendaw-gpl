@@ -23,7 +23,8 @@ export const ProjectBrowser = ({ lifecycle: _lifecycle, projectService, studioSe
         const projects = projectService.projects.getValue()
         const loading = projectService.loading.getValue()
         const hasMore = projectService.hasMore.getValue()
-        
+        const isServiceReady = projectService.isReady
+
         container.innerHTML = ''
 
         // Only show loading if it's taking more than 2 seconds AND no projects yet
@@ -56,36 +57,55 @@ export const ProjectBrowser = ({ lifecycle: _lifecycle, projectService, studioSe
         // Add "+ New" card as first element
         const newProjectCard = document.createElement('div')
         newProjectCard.className = 'project-card new-project-card'
-        newProjectCard.innerHTML = `
-            <div class="new-project-content">
-                <div class="new-project-icon">+</div>
-                <div class="new-project-text">New Project</div>
-            </div>
-        `
-        newProjectCard.onclick = async () => {
-            try {
-                // Create project in Supabase FIRST
-                const newProject = await projectService.createProject({
-                    name: "Untitled",
-                    description: ""
-                })
 
-                console.log('🆕 Created Supabase project:', newProject.id)
+        // Show loading state if service not ready
+        if (!isServiceReady) {
+            newProjectCard.classList.add('disabled')
+            newProjectCard.innerHTML = `
+                <div class="new-project-content">
+                    <div class="new-project-icon">⏳</div>
+                    <div class="new-project-text">Connecting...</div>
+                </div>
+            `
+            newProjectCard.title = 'Waiting for authentication...'
+        } else {
+            newProjectCard.innerHTML = `
+                <div class="new-project-content">
+                    <div class="new-project-icon">+</div>
+                    <div class="new-project-text">New Project</div>
+                </div>
+            `
+            newProjectCard.onclick = async () => {
+                try {
+                    // Double-check service is ready (defensive)
+                    if (!projectService.isReady) {
+                        console.warn('⚠️ ProjectService not ready yet, please wait')
+                        return
+                    }
 
-                // Create new local project
-                studioService.cleanSlate()
+                    // Create project in Supabase FIRST
+                    const newProject = await projectService.createProject({
+                        name: "Untitled",
+                        description: ""
+                    })
 
-                // Save project files
-                await studioService.saveAsDef()
+                    console.log('🆕 Created Supabase project:', newProject.id)
 
-                // Switch to project page
-                studioService.switchScreen("project")
-            } catch (error) {
-                console.error('❌ Failed to create project:', error)
-                // Fallback: create local project anyway
-                studioService.cleanSlate()
-                await studioService.saveAsDef()
-                studioService.switchScreen("project")
+                    // Create new local project
+                    studioService.cleanSlate()
+
+                    // Save project files
+                    await studioService.saveAsDef()
+
+                    // Switch to project page
+                    studioService.switchScreen("project")
+                } catch (error) {
+                    console.error('❌ Failed to create project:', error)
+                    // Fallback: create local project anyway
+                    studioService.cleanSlate()
+                    await studioService.saveAsDef()
+                    studioService.switchScreen("project")
+                }
             }
         }
         grid.appendChild(newProjectCard)

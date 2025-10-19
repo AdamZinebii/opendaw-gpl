@@ -407,8 +407,7 @@ export const PreviewTimeline = ({lifecycle, project, service}: Construct) => {
                             })
                             
                             // Start playback if not already playing
-                            if (!engine.playing.getValue()) {
-                                await engine.resume()
+                            if (!engine.isPlaying.getValue()) {
                                 engine.play()
                             }
                             
@@ -441,7 +440,8 @@ export const PreviewTimeline = ({lifecycle, project, service}: Construct) => {
             )
             
             // Sync with global playback state
-            lifecycle.own(engine.playing.subscribe((playing) => {
+            lifecycle.own(engine.isPlaying.subscribe((observableValue) => {
+                const playing = observableValue.getValue()
                 if (!playing && trackIsPlaying) {
                     // Global playback stopped, reset track play button
                     trackIsPlaying = false

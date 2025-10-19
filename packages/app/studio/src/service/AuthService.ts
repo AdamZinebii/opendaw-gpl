@@ -48,59 +48,60 @@ export class AuthService {
             const { data: { session } } = await Promise.race([sessionPromise, timeout]) as any
             
             console.log('AuthService: Got session:', session?.user?.email || 'No user')
-            
+
             this._user.setValue(session?.user ?? null)
             this._loading.setValue(false)
             if (session?.user) {
-                // Touch login RPC server-side to upsert user + session
+                // Touch login RPC server-side to upsert user + session (NON-BLOCKING)
                 console.log('🔐 Calling auth_on_login RPC for user:', session.user.email)
-                try {
-                    const result = await this.supabase.rpc('auth_on_login')
+                this.supabase.rpc('auth_on_login').then(result => {
                     console.log('✅ auth_on_login RPC result:', result)
                     if (result.error) {
                         console.error('❌ auth_on_login RPC error details:', JSON.stringify(result.error, null, 2))
                     }
-                } catch (e) {
+                }).catch(e => {
                     console.error('❌ auth_on_login RPC failed:', e)
-                }
-                
-                // Load user profile
-                await this.loadUserProfile(session.user.id)
+                })
+
+                // Load user profile (NON-BLOCKING)
+                this.loadUserProfile(session.user.id).catch(e => {
+                    console.error('❌ Failed to load user profile:', e)
+                })
             }
             
             // Listen to auth changes
-            this.supabase.auth.onAuthStateChange(async (event, session) => {
+            this.supabase.auth.onAuthStateChange((event, session) => {
                 console.log(`AuthService: Auth state changed [${event}]:`, session?.user?.email || 'No user')
-                console.log('Session details:', { 
-                    hasUser: !!session?.user, 
+                console.log('Session details:', {
+                    hasUser: !!session?.user,
                     email: session?.user?.email,
-                    expires_at: session?.expires_at 
+                    expires_at: session?.expires_at
                 })
                 this._user.setValue(session?.user ?? null)
                 this._loading.setValue(false)
                 if (session?.user) {
-                    // Update activity + presence on any auth change
+                    // Update activity + presence on any auth change (NON-BLOCKING)
                     console.log('🔐 Auth state change - calling auth_on_login RPC for user:', session.user.email)
-                    try {
-                        const result = await this.supabase.rpc('auth_on_login')
+                    this.supabase.rpc('auth_on_login').then(result => {
                         console.log('✅ auth_on_login RPC result:', result)
                         if (result.error) {
                             console.error('❌ auth_on_login RPC error details:', JSON.stringify(result.error, null, 2))
                         }
-                    } catch (e) {
+                    }).catch(e => {
                         console.error('❌ auth_on_login RPC failed:', e)
-                    }
-                    
-                    // Load user profile
-                    await this.loadUserProfile(session.user.id)
+                    })
+
+                    // Load user profile (NON-BLOCKING)
+                    this.loadUserProfile(session.user.id).catch(e => {
+                        console.error('❌ Failed to load user profile:', e)
+                    })
                 } else {
                     console.log('🔐 Auth state change - calling auth_on_logout RPC')
-                    try {
-                        const result = await this.supabase.rpc('auth_on_logout')
+                    this.supabase.rpc('auth_on_logout').then(result => {
                         console.log('✅ auth_on_logout RPC result:', result)
-                    } catch (e) {
+                    }).catch(e => {
                         console.error('❌ auth_on_logout RPC failed:', e)
-                    }
+                    })
                 }
             })
             
